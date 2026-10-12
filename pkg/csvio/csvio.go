@@ -4,7 +4,8 @@
 // ignored. One row per leg, or per hub stop when hub_type is set. Rows are
 // grouped into shipments by shipment_id, in order of first appearance.
 //
-//	shipment_id, weight_kg                          required
+//	shipment_id                                     required
+//	weight_kg, or teu with teu_net_tonnes or container_load   cargo
 //	leg_id, mode, vehicle_type, distance_km         leg
 //	from_lat, from_lon, to_lat, to_lon              leg, used when distance_km is empty
 //	fuel, fuel_amount, vehicle_tonne_km             leg, fuel-based method
@@ -44,10 +45,13 @@ func Read(r io.Reader) ([]Item, error) {
 	for i, h := range header {
 		col[strings.ToLower(strings.TrimSpace(strings.TrimPrefix(h, "\uFEFF")))] = i
 	}
-	for _, req := range []string{"shipment_id", "weight_kg"} {
-		if _, ok := col[req]; !ok {
-			return nil, fmt.Errorf("missing required column %q", req)
-		}
+	if _, ok := col["shipment_id"]; !ok {
+		return nil, errors.New(`missing required column "shipment_id"`)
+	}
+	_, hasW := col["weight_kg"]
+	_, hasT := col["teu"]
+	if !hasW && !hasT {
+		return nil, errors.New(`need a "weight_kg" or "teu" column`)
 	}
 
 	var items []*Item
@@ -89,17 +93,28 @@ func Read(r io.Reader) ([]Item, error) {
 }
 
 func addRow(s *calc.Shipment, row rowReader) error {
-	w, err := row.float("weight_kg")
-	if err != nil {
-		return err
+	// Shipment-level values may be given on the first row only.
+	for _, f := range []struct {
+		col string
+		dst *float64
+	}{{"weight_kg", &s.WeightKg}, {"teu", &s.TEU}, {"teu_net_tonnes", &s.TEUNetTonnes}} {
+		v, err := row.float(f.col)
+		if err != nil {
+			return err
+		}
+		switch {
+		case v == 0:
+		case *f.dst == 0:
+			*f.dst = v
+		case *f.dst != v:
+			return fmt.Errorf("%s %v conflicts with earlier %v", f.col, v, *f.dst)
+		}
 	}
-	switch {
-	case w == 0:
-		// weight may be given on the first row only
-	case s.WeightKg == 0:
-		s.WeightKg = w
-	case s.WeightKg != w:
-		return fmt.Errorf("weight_kg %v conflicts with earlier %v", w, s.WeightKg)
+	if cl := row.str("container_load"); cl != "" {
+		if s.ContainerLoad != "" && s.ContainerLoad != cl {
+			return fmt.Errorf("container_load %q conflicts with earlier %q", cl, s.ContainerLoad)
+		}
+		s.ContainerLoad = cl
 	}
 
 	if ht := row.str("hub_type"); ht != "" {
@@ -161,7 +176,7 @@ func (r rowReader) float(name string) (float64, error) {
 }
 
 // ResultHeader is the header row written by Writer.
-var ResultHeader = []string{"shipment_id", "tonne_km", "ttw_kg", "wtw_kg", "intensity_g_per_tkm", "error"}
+var ResultHeader = []string{"shipment_id", "weight_kg", "tonne_km", "ttw_kg", "wtw_kg", "intensity_g_per_tkm", "error"}
 
 // Writer writes one summary row per shipment.
 type Writer struct{ cw *csv.Writer }
@@ -178,9 +193,9 @@ func NewWriter(w io.Writer) (*Writer, error) {
 // Write writes a result, or the error for that shipment.
 func (w *Writer) Write(id string, r calc.Result, err error) error {
 	if err != nil {
-		return w.cw.Write([]string{id, "", "", "", "", err.Error()})
+		return w.cw.Write([]string{id, "", "", "", "", "", err.Error()})
 	}
-	return w.cw.Write([]string{id, num(r.TonneKm), num(r.TTWKg), num(r.WTWKg), num(r.IntensityG), ""})
+	return w.cw.Write([]string{id, num(r.WeightKg), num(r.TonneKm), num(r.TTWKg), num(r.WTWKg), num(r.IntensityG), ""})
 }
 
 // Flush flushes buffered rows and reports any write error.

@@ -50,6 +50,7 @@ func TestRead_Structural(t *testing.T) {
 	cases := map[string]string{
 		"empty":          "",
 		"missing weight": "shipment_id,mode\nS1,road\n",
+		"no id":          "weight_kg,mode\n1,road\n",
 		"empty id":       "shipment_id,weight_kg\n,100\n",
 	}
 	for name, in := range cases {
@@ -75,14 +76,14 @@ func TestWriter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_ = w.Write("S1", calc.Result{TonneKm: 5000, TTWKg: 300, WTWKg: 375, IntensityG: 75}, nil)
+	_ = w.Write("S1", calc.Result{WeightKg: 10000, TonneKm: 5000, TTWKg: 300, WTWKg: 375, IntensityG: 75}, nil)
 	_ = w.Write("S2", calc.Result{}, errors.New("boom"))
 	if err := w.Flush(); err != nil {
 		t.Fatal(err)
 	}
-	want := "shipment_id,tonne_km,ttw_kg,wtw_kg,intensity_g_per_tkm,error\n" +
-		"S1,5000.0000,300.0000,375.0000,75.0000,\n" +
-		"S2,,,,,boom\n"
+	want := "shipment_id,weight_kg,tonne_km,ttw_kg,wtw_kg,intensity_g_per_tkm,error\n" +
+		"S1,10000.0000,5000.0000,300.0000,375.0000,75.0000,\n" +
+		"S2,,,,,,boom\n"
 	if buf.String() != want {
 		t.Errorf("got\n%s\nwant\n%s", buf.String(), want)
 	}
@@ -92,5 +93,18 @@ func TestRead_BOMHeader(t *testing.T) {
 	items, err := Read(strings.NewReader("\uFEFFshipment_id,weight_kg,mode,distance_km\nS1,100,road,5\n"))
 	if err != nil || len(items) != 1 || items[0].Err != nil {
 		t.Fatalf("items=%+v err=%v", items, err)
+	}
+}
+
+func TestRead_TEU(t *testing.T) {
+	items, err := Read(strings.NewReader("shipment_id,teu,container_load,mode,vehicle_type,distance_km\nC1,2,average,sea,container_ship,100\nC1,,,road,hgv,10\nC2,1,heavy,sea,x,1\nC2,1,light,sea,x,1\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s := items[0].Shipment; items[0].Err != nil || s.TEU != 2 || s.ContainerLoad != "average" || len(s.Legs) != 2 {
+		t.Errorf("C1 = %+v", items[0])
+	}
+	if items[1].Err == nil {
+		t.Error("C2: want conflicting container_load error")
 	}
 }

@@ -25,6 +25,12 @@ type DistanceMethoder interface {
 	DistanceMethod(mode Mode) string
 }
 
+// ContainerLoadProvider is optionally implemented by a FactorProvider to
+// resolve container load profiles (e.g. "average") to net tonnes per TEU.
+type ContainerLoadProvider interface {
+	ContainerLoad(name string) (float64, error)
+}
+
 // DistanceGiven is the method recorded when the input supplied distance_km.
 const DistanceGiven = "given"
 
@@ -38,6 +44,7 @@ var (
 	ErrInvalidWeight = errors.New("shipment weight must be > 0")
 	ErrNoLegs        = errors.New("shipment has no legs")
 	ErrInvalidFuel   = errors.New("invalid fuel data")
+	ErrInvalidTEU    = errors.New("invalid container data")
 )
 
 // Calculate returns the emissions of a shipment.
@@ -58,14 +65,15 @@ var (
 //
 //	hub kg   = (weight_kg / 1000) * hub g/t / 1000
 func (c Calculator) Calculate(ctx context.Context, s Shipment) (Result, error) {
-	if s.WeightKg <= 0 {
-		return Result{}, ErrInvalidWeight
+	weightKg, basis, err := c.weight(s)
+	if err != nil {
+		return Result{}, err
 	}
 	if len(s.Legs) == 0 {
 		return Result{}, ErrNoLegs
 	}
-	tonnes := s.WeightKg / 1000
-	res := Result{ShipmentID: s.ID}
+	tonnes := weightKg / 1000
+	res := Result{ShipmentID: s.ID, WeightKg: weightKg, WeightBasis: basis}
 
 	for _, leg := range s.Legs {
 		lr, err := c.leg(ctx, tonnes, leg)
@@ -92,6 +100,39 @@ func (c Calculator) Calculate(ctx context.Context, s Shipment) (Result, error) {
 		res.WTWKg += hr.WTWKg
 	}
 	return res, nil
+}
+
+// weight returns the cargo weight in kg and how it was determined.
+func (c Calculator) weight(s Shipment) (float64, string, error) {
+	if s.TEU == 0 && s.TEUNetTonnes == 0 && s.ContainerLoad == "" {
+		if s.WeightKg <= 0 {
+			return 0, "", ErrInvalidWeight
+		}
+		return s.WeightKg, "weight", nil
+	}
+	switch {
+	case s.WeightKg > 0:
+		return 0, "", fmt.Errorf("%w: give weight_kg or teu, not both", ErrInvalidTEU)
+	case s.TEU <= 0:
+		return 0, "", fmt.Errorf("%w: teu must be > 0", ErrInvalidTEU)
+	case s.TEUNetTonnes > 0 && s.ContainerLoad != "":
+		return 0, "", fmt.Errorf("%w: give teu_net_tonnes or container_load, not both", ErrInvalidTEU)
+	}
+	perTEU := s.TEUNetTonnes
+	if s.ContainerLoad != "" {
+		clp, ok := c.Factors.(ContainerLoadProvider)
+		if !ok {
+			return 0, "", fmt.Errorf("%w: dataset has no container load profiles", ErrInvalidTEU)
+		}
+		var err error
+		if perTEU, err = clp.ContainerLoad(s.ContainerLoad); err != nil {
+			return 0, "", fmt.Errorf("%w: %v", ErrInvalidTEU, err)
+		}
+	}
+	if perTEU <= 0 {
+		return 0, "", fmt.Errorf("%w: need teu_net_tonnes or container_load", ErrInvalidTEU)
+	}
+	return s.TEU * perTEU * 1000, "teu", nil
 }
 
 func (c Calculator) leg(ctx context.Context, tonnes float64, leg Leg) (LegResult, error) {

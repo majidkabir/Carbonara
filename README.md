@@ -82,13 +82,16 @@ carbonara calc -osrm http://localhost:5000 examples/cph-rotterdam.json
 
 ## Inputs
 
+**Weight or containers.** Give `weight_kg`, or `teu` plus either `teu_net_tonnes` (net cargo tonnes per TEU) or `container_load`, a profile name from the dataset's `container_loads` (e.g. `{"light": 6, "average": 10}`). No profiles ship by default: the common light/average/heavy values come from EcoTransIT's report, which needs their permission to reuse. Results show the `weight_kg` used and its `weight_basis`. Container tare weight is not added.
+
 **JSON** — see [`examples/cph-rotterdam.json`](examples/cph-rotterdam.json) and the [OpenAPI spec](internal/api/openapi.yaml).
 
 **CSV** — one row per leg or hub stop, grouped by `shipment_id`. Columns (any order):
 
 | Column | Use |
 |---|---|
-| `shipment_id`, `weight_kg` | required; weight can be on the first row only |
+| `shipment_id` | required |
+| `weight_kg`, or `teu` with `teu_net_tonnes` / `container_load` | cargo; can be on the first row only |
 | `leg_id`, `mode`, `vehicle_type`, `distance_km` | leg |
 | `from_lat`, `from_lon`, `to_lat`, `to_lon` | leg, when `distance_km` is empty |
 | `fuel`, `fuel_amount`, `vehicle_tonne_km` | leg, fuel method |
@@ -115,7 +118,7 @@ A bad row fails only its shipment; the rest still calculate.
 | `desnz-2026` (default) | UK government GHG conversion factors 2026, imported from the official flat file |
 | `sample` | Placeholder values, for tests only |
 
-A dataset is JSON with `legs` (g CO2e/tkm), `hubs` (g CO2e/t), `fuels` (kg CO2e/unit) and optional `distance_adjustments`, `vehicle_aliases` and `fuel_aliases`, each factor with a TTW/WTT split, source and year. See [`sample.json`](pkg/factors/data/sample.json) for the shape.
+A dataset is JSON with `legs` (g CO2e/tkm), `hubs` (g CO2e/t), `fuels` (kg CO2e/unit) and optional `distance_adjustments`, `vehicle_aliases`, `fuel_aliases` and `container_loads`, each factor with a TTW/WTT split, source and year. See [`sample.json`](pkg/factors/data/sample.json) for the shape.
 
 **Vehicle types and fuel ids** follow the source's labels, e.g. `hgv_refrigerated_all_diesel/articulated_33t/100pct_laden` or `liquid_fuels/marine_gas_oil/tonnes`. Run `carbonara factors` to list them. Common ones have short aliases; results always show the full id used:
 

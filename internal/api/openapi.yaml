@@ -134,10 +134,14 @@ components:
         hub_type: { type: string, example: container_terminal }
     Shipment:
       type: object
-      required: [weight_kg, legs]
+      required: [legs]
+      description: Give weight_kg, or teu with teu_net_tonnes or container_load.
       properties:
         id: { type: string }
         weight_kg: { type: number, exclusiveMinimum: 0 }
+        teu: { type: number, exclusiveMinimum: 0 }
+        teu_net_tonnes: { type: number, description: Net cargo tonnes per TEU }
+        container_load: { type: string, description: "Profile name from the dataset's container_loads" }
         legs:
           type: array
           minItems: 1
@@ -190,6 +194,8 @@ components:
       type: object
       properties:
         shipment_id: { type: string }
+        weight_kg: { type: number, description: Cargo weight used }
+        weight_basis: { type: string, enum: [weight, teu] }
         legs:
           type: array
           items: { $ref: "#/components/schemas/LegResult" }
@@ -218,6 +224,10 @@ components:
         fuels:
           type: array
           items: { $ref: "#/components/schemas/FuelFactor" }
+        container_loads:
+          type: object
+          additionalProperties: { type: number }
+          description: Profile name to net cargo tonnes per TEU
         distance_adjustments:
           type: array
           description: "Great-circle to actual distance, per mode: gcd * multiplier + add_km"

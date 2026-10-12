@@ -71,10 +71,15 @@ type HubStop struct {
 
 // Shipment is the unit of calculation.
 type Shipment struct {
-	ID       string    `json:"id"`
-	WeightKg float64   `json:"weight_kg"`
-	Legs     []Leg     `json:"legs"`
-	Hubs     []HubStop `json:"hubs,omitempty"`
+	ID string `json:"id"`
+	// WeightKg is the cargo weight. For containers, give TEU instead, with
+	// either TEUNetTonnes or a ContainerLoad profile from the dataset.
+	WeightKg      float64   `json:"weight_kg,omitempty"`
+	TEU           float64   `json:"teu,omitempty"`
+	TEUNetTonnes  float64   `json:"teu_net_tonnes,omitempty"`
+	ContainerLoad string    `json:"container_load,omitempty"`
+	Legs          []Leg     `json:"legs"`
+	Hubs          []HubStop `json:"hubs,omitempty"`
 }
 
 // Factor is an intensity-based emission factor for a mode/vehicle type,
@@ -125,12 +130,16 @@ type HubResult struct {
 
 // Result is the outcome for a whole shipment.
 type Result struct {
-	ShipmentID string      `json:"shipment_id"`
-	Legs       []LegResult `json:"legs"`
-	Hubs       []HubResult `json:"hubs,omitempty"`
-	TonneKm    float64     `json:"tonne_km"`
-	TTWKg      float64     `json:"ttw_kg"`
-	WTWKg      float64     `json:"wtw_kg"`
+	ShipmentID string `json:"shipment_id"`
+	// WeightKg is the cargo weight used; WeightBasis says how it was set:
+	// "weight" (given) or "teu" (TEU x net tonnes per TEU).
+	WeightKg    float64     `json:"weight_kg"`
+	WeightBasis string      `json:"weight_basis"`
+	Legs        []LegResult `json:"legs"`
+	Hubs        []HubResult `json:"hubs,omitempty"`
+	TonneKm     float64     `json:"tonne_km"`
+	TTWKg       float64     `json:"ttw_kg"`
+	WTWKg       float64     `json:"wtw_kg"`
 	// IntensityG is transport WTW intensity in g CO2e per tonne-km (hubs excluded).
 	IntensityG float64 `json:"intensity_g_per_tkm"`
 }

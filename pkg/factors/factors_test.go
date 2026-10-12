@@ -119,3 +119,19 @@ func TestAliases(t *testing.T) {
 		}
 	}
 }
+
+func TestContainerLoads(t *testing.T) {
+	ds, err := Parse(strings.NewReader(`{"container_loads":{"average":10}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v, err := ds.ContainerLoad("average"); err != nil || v != 10 {
+		t.Errorf("average = %v, %v", v, err)
+	}
+	if _, err := ds.ContainerLoad("x"); err == nil {
+		t.Error("want error for unknown profile")
+	}
+	if _, err := Parse(strings.NewReader(`{"container_loads":{"x":0}}`)); err == nil {
+		t.Error("want error for zero tonnes")
+	}
+}

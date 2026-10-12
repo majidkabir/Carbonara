@@ -201,3 +201,54 @@ func FuzzCalculate_Monotonic(f *testing.F) {
 		}
 	})
 }
+
+type withLoads struct {
+	fakeFactors
+	loads map[string]float64
+}
+
+func (w withLoads) ContainerLoad(name string) (float64, error) {
+	if t, ok := w.loads[name]; ok {
+		return t, nil
+	}
+	return 0, errors.New("unknown profile")
+}
+
+func TestCalculate_TEU(t *testing.T) {
+	legs := []Leg{{ID: "l", Mode: Sea, VehicleType: "container", DistanceKm: 1000}}
+	c := Calculator{Factors: withLoads{testFactors, map[string]float64{"average": 10}}}
+	ctx := context.Background()
+
+	// 2 TEU x 10 t = 20 t; 20 t x 1000 km x 10 g/tkm WTW = 200 kg
+	for name, s := range map[string]Shipment{
+		"profile":  {TEU: 2, ContainerLoad: "average", Legs: legs},
+		"explicit": {TEU: 2, TEUNetTonnes: 10, Legs: legs},
+	} {
+		r, err := c.Calculate(ctx, s)
+		if err != nil || r.WeightKg != 20000 || r.WeightBasis != "teu" || !approx(r.WTWKg, 200) {
+			t.Errorf("%s: %+v, %v", name, r, err)
+		}
+	}
+	if r, _ := c.Calculate(ctx, Shipment{WeightKg: 500, Legs: legs}); r.WeightBasis != "weight" || r.WeightKg != 500 {
+		t.Errorf("weight basis = %q %v", r.WeightBasis, r.WeightKg)
+	}
+
+	bad := map[string]Shipment{
+		"weight and teu":  {WeightKg: 1, TEU: 1, TEUNetTonnes: 10},
+		"zero teu":        {TEU: 0, ContainerLoad: "average"},
+		"no per-TEU":      {TEU: 1},
+		"both per-TEU":    {TEU: 1, TEUNetTonnes: 10, ContainerLoad: "average"},
+		"unknown profile": {TEU: 1, ContainerLoad: "feathers"},
+	}
+	for name, s := range bad {
+		s.Legs = legs
+		if _, err := c.Calculate(ctx, s); !errors.Is(err, ErrInvalidTEU) {
+			t.Errorf("%s: want ErrInvalidTEU, got %v", name, err)
+		}
+	}
+	// A provider without profiles can't resolve container_load.
+	plain := Calculator{Factors: testFactors}
+	if _, err := plain.Calculate(ctx, Shipment{TEU: 1, ContainerLoad: "average", Legs: legs}); !errors.Is(err, ErrInvalidTEU) {
+		t.Errorf("want ErrInvalidTEU without profiles, got %v", err)
+	}
+}

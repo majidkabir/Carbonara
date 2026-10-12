@@ -38,6 +38,9 @@ type Dataset struct {
 	// accept either; results always carry the full id.
 	VehicleAliases []VehicleAlias    `json:"vehicle_aliases,omitempty"`
 	FuelAliases    map[string]string `json:"fuel_aliases,omitempty"`
+	// ContainerLoads maps profile names (e.g. "average") to net cargo
+	// tonnes per TEU, for shipments given in TEU.
+	ContainerLoads map[string]float64 `json:"container_loads,omitempty"`
 
 	legIdx  map[string]calc.Factor
 	hubIdx  map[string]calc.HubFactor
@@ -147,6 +150,11 @@ func Parse(r io.Reader) (*Dataset, error) {
 		}
 		d.legIdx[k] = target
 	}
+	for name, t := range d.ContainerLoads {
+		if t <= 0 {
+			return nil, fmt.Errorf("container load %q must be > 0 tonnes per TEU", name)
+		}
+	}
 	for alias, id := range d.FuelAliases {
 		target, ok := d.fuelIdx[id]
 		if !ok {
@@ -186,10 +194,21 @@ func (d *Dataset) FuelFactor(fuel string) (calc.FuelFactor, error) {
 	return calc.FuelFactor{}, fmt.Errorf("no fuel factor for %s in dataset %q", fuel, d.Name)
 }
 
+// ContainerLoad implements calc.ContainerLoadProvider.
+func (d *Dataset) ContainerLoad(name string) (float64, error) {
+	if t, ok := d.ContainerLoads[name]; ok {
+		return t, nil
+	}
+	return 0, fmt.Errorf("no container load profile %q in dataset %q", name, d.Name)
+}
+
 // Distances returns a great-circle provider using the dataset's adjustments.
 func (d *Dataset) Distances() distance.GreatCircle {
 	g, _ := distance.NewGreatCircle(d.DistanceAdjustments) // validated in Parse
 	return g
 }
 
-var _ calc.FactorProvider = (*Dataset)(nil)
+var (
+	_ calc.FactorProvider        = (*Dataset)(nil)
+	_ calc.ContainerLoadProvider = (*Dataset)(nil)
+)
