@@ -133,7 +133,7 @@ A bad row fails only its shipment; the rest still calculate.
 
 ## Factor datasets
 
-`-factors` (or `CARBONARA_FACTORS`) takes an embedded dataset name or a JSON file.
+`-factors` (or `CARBONARA_FACTORS`) takes an embedded dataset name or a JSON file, or several separated by commas to layer them: `-factors desnz-2026,my-hubs.json`. Layers are combined; defining the same factor twice is an error, so nothing is silently overridden.
 
 | Dataset | What |
 |---|---|
@@ -156,7 +156,14 @@ Road aliases use DESNZ's "average laden" factors.
 
 **Notes on DESNZ data:**
 - Air freight comes `with_rf` and `without_rf` (radiative forcing). ISO 14083 reports without RF.
-- No hub factors are included. The only distance adjustment is the air rule above (a convention, not DESNZ data). Add your own (e.g. from GLEC) in a dataset file.
+- No hub factors are included, and none ship by default: the openly published averages we found (Fraunhofer IML's [logistics site values](https://reff.iml.fhg.de/), e.g. per tonne for transhipment and warehousing) carry no reuse licence. Add your own as a layer:
+
+  ```json
+  {"name": "my-hubs", "note": "where these values come from",
+   "hubs": [{"hub_type": "transhipment_ambient", "wtw_g_per_tonne": 0, "source": "…", "year": 2024}]}
+  ```
+  Fill in real values (g CO2e per tonne handled) from a source you're allowed to use.
+- The only distance adjustment is the air rule above (a convention, not DESNZ data).
 - GLEC default values can't be bundled: Smart Freight Centre limits them to members and certified tools. If you have access, put them in a dataset file.
 
 **Updating DESNZ** each year: download the "flat file" from [gov.uk](https://www.gov.uk/government/collections/government-conversion-factors-for-company-reporting) and run
@@ -201,7 +208,8 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 - [x] Containers in TEU
 - [x] Truck load model (load factor, empty trip factor)
 - [x] Electricity by country (213 grids) for electric rail and trucks
-- [ ] Hub / warehouse emission factors
+- [x] Dataset layering (e.g. DESNZ + your own hub factors)
+- [ ] Bundled hub / warehouse factors (needs an openly licensed source)
 - [ ] Cargo-type presets (needs licensed values, e.g. EcoTransIT with permission)
 
 ## Releasing

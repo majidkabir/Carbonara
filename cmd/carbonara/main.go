@@ -71,7 +71,8 @@ type common struct {
 
 func (c *common) register(fs *flag.FlagSet) {
 	fs.StringVar(&c.factorFile, "factors", os.Getenv("CARBONARA_FACTORS"),
-		"embedded dataset name ("+strings.Join(factors.EmbeddedNames(), ", ")+") or a dataset JSON file; "+
+		"embedded dataset name ("+strings.Join(factors.EmbeddedNames(), ", ")+") or a dataset JSON file, "+
+			"or several comma-separated to layer them (e.g. "+factors.Default+",my-hubs.json); "+
 			"also $CARBONARA_FACTORS (default "+factors.Default+")")
 	fs.StringVar(&c.osrmURL, "osrm", os.Getenv("CARBONARA_OSRM_URL"),
 		"OSRM server URL for road distances, also $CARBONARA_OSRM_URL (default: adjusted great-circle)")

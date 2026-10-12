@@ -1,7 +1,9 @@
 package factors
 
 import (
+	"context"
 	"math"
+	"os"
 	"strings"
 	"testing"
 
@@ -241,5 +243,64 @@ func TestGrids(t *testing.T) {
 		if _, err := Parse(strings.NewReader(in)); err == nil {
 			t.Errorf("%s: want error", name)
 		}
+	}
+}
+
+func TestOpen_Layered(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, body string) string {
+		p := dir + "/" + name
+		if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	hubs := write("hubs.json", `{"name":"my-hubs","note":"own measurements",
+		"hubs":[{"hub_type":"transhipment","wtw_g_per_tonne":1300,"source":"own"}],
+		"container_loads":{"average":10}}`)
+
+	ds, err := Open(Default + "," + hubs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ds.Name != "desnz-2026+my-hubs" || !strings.Contains(ds.Note, "own measurements") || !strings.Contains(ds.Note, "Open Government Licence") {
+		t.Errorf("name=%q note=%q", ds.Name, ds.Note)
+	}
+	if h, err := ds.HubFactor("transhipment"); err != nil || h.WTWPerTonneG != 1300 {
+		t.Errorf("hub = %+v, %v", h, err)
+	}
+	if _, err := ds.LegFactor(calc.Road, "hgv"); err != nil {
+		t.Errorf("DESNZ alias lost in layering: %v", err)
+	}
+	if _, err := ds.Grid("DNK"); err != nil {
+		t.Errorf("default grid lost in layering: %v", err)
+	}
+	if _, err := ds.LoadModel(calc.Road, "hgv"); err != nil {
+		t.Errorf("load model lost in layering: %v", err)
+	}
+
+	// End to end: a shipment with a hub stop now calculates.
+	c := calc.Calculator{Factors: ds, Distances: ds.Distances()}
+	r, err := c.Calculate(context.Background(), calc.Shipment{WeightKg: 10_000,
+		Legs: []calc.Leg{{Mode: calc.Road, VehicleType: "hgv", DistanceKm: 100}},
+		Hubs: []calc.HubStop{{ID: "h", HubType: "transhipment"}}})
+	if err != nil || len(r.Hubs) != 1 || r.Hubs[0].WTWKg != 13 {
+		t.Errorf("hub calc = %+v, %v", r.Hubs, err)
+	}
+
+	clash := map[string]string{
+		"duplicate leg":       `{"legs":[{"mode":"rail","vehicle_type":"rail/freight_train","ttw_g_per_tkm":1}]}`,
+		"duplicate alias":     `{"fuel_aliases":{"diesel":"biofuel/biodiesel_hvo/litres"}}`,
+		"duplicate air rule":  `{"distance_adjustments":[{"mode":"air","add_km":100}]}`,
+		"duplicate container": `{"container_loads":{"average":12}}`,
+	}
+	for name, body := range clash {
+		layers := Default + "," + hubs + "," + write(strings.ReplaceAll(name, " ", "_")+".json", body)
+		if _, err := Open(layers); err == nil {
+			t.Errorf("%s: want error", name)
+		}
+	}
+	if _, err := Open(Default + "," + dir + "/missing.json"); err == nil {
+		t.Error("missing layer: want error")
 	}
 }

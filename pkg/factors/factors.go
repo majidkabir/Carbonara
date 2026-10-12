@@ -93,16 +93,118 @@ func EmbeddedNames() []string {
 
 // Open loads an embedded dataset by name, or a JSON file by path.
 // An empty name opens Default.
+//
+// A comma-separated list layers datasets, e.g. "desnz-2026,my-hubs.json":
+// their contents are combined, and defining the same factor, alias,
+// container profile or grid country twice is an error.
 func Open(nameOrPath string) (*Dataset, error) {
 	if nameOrPath == "" {
 		nameOrPath = Default
 	}
+	parts := strings.Split(nameOrPath, ",")
+	if len(parts) == 1 {
+		return openOne(nameOrPath)
+	}
+	var merged Dataset
+	var names, notes []string
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		raw, err := readRaw(p)
+		if err != nil {
+			return nil, err
+		}
+		if err := mergeInto(&merged, raw); err != nil {
+			return nil, fmt.Errorf("layering %s: %w", p, err)
+		}
+		names = append(names, raw.Name)
+		if raw.Note != "" {
+			notes = append(notes, raw.Note)
+		}
+	}
+	merged.Name = strings.Join(names, "+")
+	merged.Note = strings.Join(notes, " | ")
+	b, err := json.Marshal(merged)
+	if err != nil {
+		return nil, err
+	}
+	return Parse(strings.NewReader(string(b)))
+}
+
+func openOne(nameOrPath string) (*Dataset, error) {
 	for _, n := range EmbeddedNames() {
 		if n == nameOrPath {
 			return Embedded(n)
 		}
 	}
 	return Load(nameOrPath)
+}
+
+// readRaw decodes a dataset without indexing or defaults, for layering.
+func readRaw(nameOrPath string) (Dataset, error) {
+	var r io.ReadCloser
+	var err error
+	for _, n := range EmbeddedNames() {
+		if n == nameOrPath {
+			r, err = embedded.Open("data/" + n + ".json")
+			break
+		}
+	}
+	if r == nil && err == nil {
+		r, err = os.Open(nameOrPath)
+	}
+	if err != nil {
+		return Dataset{}, err
+	}
+	defer r.Close()
+	var d Dataset
+	if err := json.NewDecoder(r).Decode(&d); err != nil {
+		return Dataset{}, fmt.Errorf("parse dataset %s: %w", nameOrPath, err)
+	}
+	return d, nil
+}
+
+// mergeInto appends src to dst. Duplicate lists entries are caught by
+// Parse afterwards; map keys are checked here.
+func mergeInto(dst *Dataset, src Dataset) error {
+	dst.Legs = append(dst.Legs, src.Legs...)
+	dst.Hubs = append(dst.Hubs, src.Hubs...)
+	dst.Fuels = append(dst.Fuels, src.Fuels...)
+	dst.LoadModels = append(dst.LoadModels, src.LoadModels...)
+	dst.VehicleAliases = append(dst.VehicleAliases, src.VehicleAliases...)
+	dst.Grids = append(dst.Grids, src.Grids...)
+	if src.GridNote != "" {
+		dst.GridNote = strings.TrimPrefix(dst.GridNote+" | "+src.GridNote, " | ")
+	}
+	for _, a := range src.DistanceAdjustments {
+		for _, b := range dst.DistanceAdjustments {
+			if a.Mode == b.Mode {
+				return fmt.Errorf("distance adjustment for %s defined twice", a.Mode)
+			}
+		}
+		dst.DistanceAdjustments = append(dst.DistanceAdjustments, a)
+	}
+	for k, v := range src.FuelAliases {
+		if _, dup := dst.FuelAliases[k]; dup {
+			return fmt.Errorf("fuel alias %q defined twice", k)
+		}
+		if dst.FuelAliases == nil {
+			dst.FuelAliases = map[string]string{}
+		}
+		dst.FuelAliases[k] = v
+	}
+	for k, v := range src.ContainerLoads {
+		if _, dup := dst.ContainerLoads[k]; dup {
+			return fmt.Errorf("container load %q defined twice", k)
+		}
+		if dst.ContainerLoads == nil {
+			dst.ContainerLoads = map[string]float64{}
+		}
+		dst.ContainerLoads[k] = v
+	}
+	return nil
 }
 
 // Load reads a dataset from a JSON file.
