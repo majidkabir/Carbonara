@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/majidkabir/carbonara/internal/desnz"
+	"github.com/majidkabir/carbonara/internal/grid"
 	"github.com/majidkabir/carbonara/internal/xlsx"
 )
 
@@ -70,4 +71,36 @@ func runImportDESNZ(args []string) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	return enc.Encode(res.Dataset)
+}
+
+// runImportGrid converts Our World in Data's owid-energy-data.csv to a grid table.
+func runImportGrid(args []string) error {
+	fs := flag.NewFlagSet("import-grid", flag.ExitOnError)
+	out := fs.String("o", "-", "output JSON file (default stdout)")
+	_ = fs.Parse(args)
+	if fs.NArg() != 1 {
+		return errors.New("import-grid: expected owid-energy-data.csv")
+	}
+	f, err := open(fs.Arg(0))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	g, err := grid.ParseOWID(f)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(os.Stderr, "%s: %d countries\n", g.Name, len(g.Grids))
+	w := os.Stdout
+	if *out != "-" {
+		fh, err := os.Create(*out)
+		if err != nil {
+			return err
+		}
+		defer fh.Close()
+		w = fh
+	}
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	return enc.Encode(g)
 }

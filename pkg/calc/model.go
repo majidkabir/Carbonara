@@ -36,6 +36,10 @@ type Leg struct {
 	// vehicle, with EmptyTripFactor empty km per loaded km.
 	LoadFactor      float64 `json:"load_factor,omitempty"`
 	EmptyTripFactor float64 `json:"empty_trip_factor,omitempty"`
+	// EnergyKWhPerTkm with Country switches the leg to the energy method:
+	// electricity per tonne-km times the country's grid intensity.
+	EnergyKWhPerTkm float64 `json:"energy_kwh_per_tkm,omitempty"`
+	Country         string  `json:"country,omitempty"`
 }
 
 // FuelUse is measured fuel for the vehicle trip a leg is part of.
@@ -129,6 +133,9 @@ type LegResult struct {
 	LoadFactor      float64 `json:"load_factor,omitempty"`
 	EmptyTripFactor float64 `json:"empty_trip_factor,omitempty"`
 	PayloadT        float64 `json:"payload_t,omitempty"`
+	// Set for the energy method.
+	EnergyKWhPerTkm float64 `json:"energy_kwh_per_tkm,omitempty"`
+	Country         string  `json:"country,omitempty"`
 }
 
 // HubResult is the outcome for one hub stop.

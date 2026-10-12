@@ -143,13 +143,25 @@ func (c Calculator) leg(ctx context.Context, tonnes float64, leg Leg) (LegResult
 	tkm := tonnes * dist
 	lr := LegResult{LegID: leg.ID, DistanceKm: dist, DistanceMethod: method, TonneKm: tkm}
 
+	methods := 0
+	for _, set := range []bool{leg.Fuel != nil, leg.LoadFactor != 0, leg.EnergyKWhPerTkm != 0} {
+		if set {
+			methods++
+		}
+	}
+	if methods > 1 {
+		return LegResult{}, fmt.Errorf("leg uses more than one of fuel, load_factor and energy_kwh_per_tkm")
+	}
+	if leg.Country != "" && leg.EnergyKWhPerTkm == 0 {
+		return LegResult{}, fmt.Errorf("%w: country is only used with energy_kwh_per_tkm", ErrInvalidEnergy)
+	}
+	if leg.EnergyKWhPerTkm != 0 {
+		return c.energyLeg(lr, leg)
+	}
 	if leg.EmptyTripFactor != 0 && leg.LoadFactor == 0 {
 		return LegResult{}, fmt.Errorf("%w: empty_trip_factor needs load_factor", ErrInvalidLoad)
 	}
 	if leg.Fuel != nil {
-		if leg.LoadFactor != 0 {
-			return LegResult{}, fmt.Errorf("%w: give fuel or load_factor, not both", ErrInvalidLoad)
-		}
 		return c.fuelLeg(lr, *leg.Fuel)
 	}
 	if leg.LoadFactor != 0 {

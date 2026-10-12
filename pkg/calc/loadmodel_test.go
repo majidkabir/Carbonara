@@ -90,9 +90,11 @@ func TestCalculate_LoadModel(t *testing.T) {
 	}
 
 	fu := FuelUse{Fuel: "diesel", Amount: 1}
+	if _, err := c.Calculate(ctx, Shipment{WeightKg: 1, Legs: []Leg{{Mode: Road, VehicleType: "truck", DistanceKm: 1, LoadFactor: 0.5, Fuel: &fu}}}); err == nil {
+		t.Error("fuel and lf: want error")
+	}
 	bad := map[string]Leg{
 		"etf without lf":  {Mode: Road, VehicleType: "truck", DistanceKm: 1, EmptyTripFactor: 0.3},
-		"fuel and lf":     {Mode: Road, VehicleType: "truck", DistanceKm: 1, LoadFactor: 0.5, Fuel: &fu},
 		"lf out of range": {Mode: Road, VehicleType: "truck", DistanceKm: 1, LoadFactor: 2},
 	}
 	for name, leg := range bad {

@@ -135,6 +135,13 @@ components:
           type: number
           minimum: 0
           description: Empty km per loaded km (needs load_factor)
+        energy_kwh_per_tkm:
+          type: number
+          exclusiveMinimum: 0
+          description: Electricity per tonne-km; with country, switches the leg to the energy method
+        country:
+          type: string
+          description: ISO 3166-1 alpha-3 country whose grid powers the leg, e.g. DNK
     HubStop:
       type: object
       required: [hub_type]
@@ -195,7 +202,9 @@ components:
         tonne_km: { type: number }
         ttw_kg: { type: number }
         wtw_kg: { type: number }
-        method: { type: string, enum: [intensity, fuel, load_model] }
+        method: { type: string, enum: [intensity, fuel, load_model, energy] }
+        energy_kwh_per_tkm: { type: number }
+        country: { type: string }
         load_factor: { type: number }
         empty_trip_factor: { type: number }
         payload_t: { type: number }
@@ -236,6 +245,17 @@ components:
         fuels:
           type: array
           items: { $ref: "#/components/schemas/FuelFactor" }
+        grids:
+          type: array
+          description: Electricity carbon intensity per country
+          items:
+            type: object
+            properties:
+              country: { type: string }
+              year: { type: integer }
+              g_per_kwh: { type: number }
+              source: { type: string }
+        grid_note: { type: string }
         container_loads:
           type: object
           additionalProperties: { type: number }

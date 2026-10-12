@@ -7,3 +7,8 @@ Department for Energy Security and Net Zero.
 
 Contains public sector information licensed under the Open Government Licence v3.0.
 https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/
+
+This product includes electricity carbon intensity data
+(pkg/factors/data/grid/ember-owid.json) from Ember, Yearly Electricity Data,
+processed by Our World in Data (https://github.com/owid/energy-data).
+Licensed under CC BY 4.0: https://creativecommons.org/licenses/by/4.0/

@@ -1,0 +1,1284 @@
+{
+  "name": "grid-ember-owid",
+  "note": "Electricity carbon intensity: Ember, Yearly Electricity Data; processed by Our World in Data (github.com/owid/energy-data). Licensed under CC BY 4.0.",
+  "grids": [
+    {
+      "country": "ABW",
+      "year": 2024,
+      "g_per_kwh": 550,
+      "source": "Ember via Our World in Data: Aruba"
+    },
+    {
+      "country": "AFG",
+      "year": 2024,
+      "g_per_kwh": 131.31,
+      "source": "Ember via Our World in Data: Afghanistan"
+    },
+    {
+      "country": "AGO",
+      "year": 2024,
+      "g_per_kwh": 185.38,
+      "source": "Ember via Our World in Data: Angola"
+    },
+    {
+      "country": "ALB",
+      "year": 2024,
+      "g_per_kwh": 25.18,
+      "source": "Ember via Our World in Data: Albania"
+    },
+    {
+      "country": "ARE",
+      "year": 2024,
+      "g_per_kwh": 467.51,
+      "source": "Ember via Our World in Data: United Arab Emirates"
+    },
+    {
+      "country": "ARG",
+      "year": 2025,
+      "g_per_kwh": 346,
+      "source": "Ember via Our World in Data: Argentina"
+    },
+    {
+      "country": "ARM",
+      "year": 2025,
+      "g_per_kwh": 211.93,
+      "source": "Ember via Our World in Data: Armenia"
+    },
+    {
+      "country": "ASM",
+      "year": 2024,
+      "g_per_kwh": 611.11,
+      "source": "Ember via Our World in Data: American Samoa"
+    },
+    {
+      "country": "ATG",
+      "year": 2024,
+      "g_per_kwh": 594.6,
+      "source": "Ember via Our World in Data: Antigua and Barbuda"
+    },
+    {
+      "country": "AUS",
+      "year": 2025,
+      "g_per_kwh": 525.18,
+      "source": "Ember via Our World in Data: Australia"
+    },
+    {
+      "country": "AUT",
+      "year": 2025,
+      "g_per_kwh": 116.91,
+      "source": "Ember via Our World in Data: Austria"
+    },
+    {
+      "country": "AZE",
+      "year": 2025,
+      "g_per_kwh": 631.9,
+      "source": "Ember via Our World in Data: Azerbaijan"
+    },
+    {
+      "country": "BDI",
+      "year": 2024,
+      "g_per_kwh": 183.67,
+      "source": "Ember via Our World in Data: Burundi"
+    },
+    {
+      "country": "BEL",
+      "year": 2025,
+      "g_per_kwh": 149.82,
+      "source": "Ember via Our World in Data: Belgium"
+    },
+    {
+      "country": "BEN",
+      "year": 2024,
+      "g_per_kwh": 584.16,
+      "source": "Ember via Our World in Data: Benin"
+    },
+    {
+      "country": "BFA",
+      "year": 2024,
+      "g_per_kwh": 562.13,
+      "source": "Ember via Our World in Data: Burkina Faso"
+    },
+    {
+      "country": "BGD",
+      "year": 2025,
+      "g_per_kwh": 696.13,
+      "source": "Ember via Our World in Data: Bangladesh"
+    },
+    {
+      "country": "BGR",
+      "year": 2025,
+      "g_per_kwh": 275.55,
+      "source": "Ember via Our World in Data: Bulgaria"
+    },
+    {
+      "country": "BHR",
+      "year": 2024,
+      "g_per_kwh": 902.24,
+      "source": "Ember via Our World in Data: Bahrain"
+    },
+    {
+      "country": "BHS",
+      "year": 2024,
+      "g_per_kwh": 653.33,
+      "source": "Ember via Our World in Data: Bahamas"
+    },
+    {
+      "country": "BIH",
+      "year": 2025,
+      "g_per_kwh": 570.64,
+      "source": "Ember via Our World in Data: Bosnia and Herzegovina"
+    },
+    {
+      "country": "BLR",
+      "year": 2025,
+      "g_per_kwh": 309.25,
+      "source": "Ember via Our World in Data: Belarus"
+    },
+    {
+      "country": "BLZ",
+      "year": 2024,
+      "g_per_kwh": 170.21,
+      "source": "Ember via Our World in Data: Belize"
+    },
+    {
+      "country": "BMU",
+      "year": 2024,
+      "g_per_kwh": 639.34,
+      "source": "Ember via Our World in Data: Bermuda"
+    },
+    {
+      "country": "BOL",
+      "year": 2025,
+      "g_per_kwh": 481.29,
+      "source": "Ember via Our World in Data: Bolivia"
+    },
+    {
+      "country": "BRA",
+      "year": 2025,
+      "g_per_kwh": 109.95,
+      "source": "Ember via Our World in Data: Brazil"
+    },
+    {
+      "country": "BRB",
+      "year": 2024,
+      "g_per_kwh": 594.6,
+      "source": "Ember via Our World in Data: Barbados"
+    },
+    {
+      "country": "BRN",
+      "year": 2024,
+      "g_per_kwh": 892.09,
+      "source": "Ember via Our World in Data: Brunei"
+    },
+    {
+      "country": "BTN",
+      "year": 2024,
+      "g_per_kwh": 23.64,
+      "source": "Ember via Our World in Data: Bhutan"
+    },
+    {
+      "country": "BWA",
+      "year": 2024,
+      "g_per_kwh": 851.31,
+      "source": "Ember via Our World in Data: Botswana"
+    },
+    {
+      "country": "CAF",
+      "year": 2023,
+      "g_per_kwh": 0,
+      "source": "Ember via Our World in Data: Central African Republic"
+    },
+    {
+      "country": "CAN",
+      "year": 2025,
+      "g_per_kwh": 190.72,
+      "source": "Ember via Our World in Data: Canada"
+    },
+    {
+      "country": "CHE",
+      "year": 2025,
+      "g_per_kwh": 39.22,
+      "source": "Ember via Our World in Data: Switzerland"
+    },
+    {
+      "country": "CHL",
+      "year": 2025,
+      "g_per_kwh": 289.49,
+      "source": "Ember via Our World in Data: Chile"
+    },
+    {
+      "country": "CHN",
+      "year": 2025,
+      "g_per_kwh": 525.34,
+      "source": "Ember via Our World in Data: China"
+    },
+    {
+      "country": "CIV",
+      "year": 2024,
+      "g_per_kwh": 405.01,
+      "source": "Ember via Our World in Data: Cote d'Ivoire"
+    },
+    {
+      "country": "CMR",
+      "year": 2024,
+      "g_per_kwh": 225.9,
+      "source": "Ember via Our World in Data: Cameroon"
+    },
+    {
+      "country": "COD",
+      "year": 2024,
+      "g_per_kwh": 27.64,
+      "source": "Ember via Our World in Data: Democratic Republic of Congo"
+    },
+    {
+      "country": "COG",
+      "year": 2024,
+      "g_per_kwh": 716.12,
+      "source": "Ember via Our World in Data: Congo"
+    },
+    {
+      "country": "COK",
+      "year": 2024,
+      "g_per_kwh": 250,
+      "source": "Ember via Our World in Data: Cook Islands"
+    },
+    {
+      "country": "COL",
+      "year": 2025,
+      "g_per_kwh": 186.81,
+      "source": "Ember via Our World in Data: Colombia"
+    },
+    {
+      "country": "COM",
+      "year": 2023,
+      "g_per_kwh": 642.86,
+      "source": "Ember via Our World in Data: Comoros"
+    },
+    {
+      "country": "CPV",
+      "year": 2024,
+      "g_per_kwh": 461.54,
+      "source": "Ember via Our World in Data: Cape Verde"
+    },
+    {
+      "country": "CRI",
+      "year": 2025,
+      "g_per_kwh": 24.2,
+      "source": "Ember via Our World in Data: Costa Rica"
+    },
+    {
+      "country": "CUB",
+      "year": 2024,
+      "g_per_kwh": 642.82,
+      "source": "Ember via Our World in Data: Cuba"
+    },
+    {
+      "country": "CYM",
+      "year": 2024,
+      "g_per_kwh": 633.8,
+      "source": "Ember via Our World in Data: Cayman Islands"
+    },
+    {
+      "country": "CYP",
+      "year": 2025,
+      "g_per_kwh": 489,
+      "source": "Ember via Our World in Data: Cyprus"
+    },
+    {
+      "country": "CZE",
+      "year": 2025,
+      "g_per_kwh": 401.46,
+      "source": "Ember via Our World in Data: Czechia"
+    },
+    {
+      "country": "DEU",
+      "year": 2025,
+      "g_per_kwh": 329.65,
+      "source": "Ember via Our World in Data: Germany"
+    },
+    {
+      "country": "DJI",
+      "year": 2024,
+      "g_per_kwh": 450,
+      "source": "Ember via Our World in Data: Djibouti"
+    },
+    {
+      "country": "DMA",
+      "year": 2023,
+      "g_per_kwh": 600,
+      "source": "Ember via Our World in Data: Dominica"
+    },
+    {
+      "country": "DNK",
+      "year": 2025,
+      "g_per_kwh": 114.41,
+      "source": "Ember via Our World in Data: Denmark"
+    },
+    {
+      "country": "DOM",
+      "year": 2025,
+      "g_per_kwh": 537.48,
+      "source": "Ember via Our World in Data: Dominican Republic"
+    },
+    {
+      "country": "DZA",
+      "year": 2024,
+      "g_per_kwh": 632.94,
+      "source": "Ember via Our World in Data: Algeria"
+    },
+    {
+      "country": "ECU",
+      "year": 2025,
+      "g_per_kwh": 159.02,
+      "source": "Ember via Our World in Data: Ecuador"
+    },
+    {
+      "country": "EGY",
+      "year": 2025,
+      "g_per_kwh": 563.23,
+      "source": "Ember via Our World in Data: Egypt"
+    },
+    {
+      "country": "ERI",
+      "year": 2024,
+      "g_per_kwh": 577.78,
+      "source": "Ember via Our World in Data: Eritrea"
+    },
+    {
+      "country": "ESH",
+      "year": 2009,
+      "g_per_kwh": 666.67,
+      "source": "Ember via Our World in Data: Western Sahara"
+    },
+    {
+      "country": "ESP",
+      "year": 2025,
+      "g_per_kwh": 153.6,
+      "source": "Ember via Our World in Data: Spain"
+    },
+    {
+      "country": "EST",
+      "year": 2025,
+      "g_per_kwh": 319.15,
+      "source": "Ember via Our World in Data: Estonia"
+    },
+    {
+      "country": "ETH",
+      "year": 2025,
+      "g_per_kwh": 23.08,
+      "source": "Ember via Our World in Data: Ethiopia"
+    },
+    {
+      "country": "FIN",
+      "year": 2025,
+      "g_per_kwh": 57.47,
+      "source": "Ember via Our World in Data: Finland"
+    },
+    {
+      "country": "FJI",
+      "year": 2024,
+      "g_per_kwh": 278.26,
+      "source": "Ember via Our World in Data: Fiji"
+    },
+    {
+      "country": "FLK",
+      "year": 2023,
+      "g_per_kwh": 1000,
+      "source": "Ember via Our World in Data: Falkland Islands"
+    },
+    {
+      "country": "FRA",
+      "year": 2025,
+      "g_per_kwh": 41.44,
+      "source": "Ember via Our World in Data: France"
+    },
+    {
+      "country": "FRO",
+      "year": 2023,
+      "g_per_kwh": 346.94,
+      "source": "Ember via Our World in Data: Faroe Islands"
+    },
+    {
+      "country": "GAB",
+      "year": 2024,
+      "g_per_kwh": 523.08,
+      "source": "Ember via Our World in Data: Gabon"
+    },
+    {
+      "country": "GBR",
+      "year": 2025,
+      "g_per_kwh": 217.41,
+      "source": "Ember via Our World in Data: United Kingdom"
+    },
+    {
+      "country": "GEO",
+      "year": 2025,
+      "g_per_kwh": 145.93,
+      "source": "Ember via Our World in Data: Georgia"
+    },
+    {
+      "country": "GHA",
+      "year": 2024,
+      "g_per_kwh": 468.89,
+      "source": "Ember via Our World in Data: Ghana"
+    },
+    {
+      "country": "GIB",
+      "year": 2024,
+      "g_per_kwh": 590.91,
+      "source": "Ember via Our World in Data: Gibraltar"
+    },
+    {
+      "country": "GIN",
+      "year": 2024,
+      "g_per_kwh": 181.14,
+      "source": "Ember via Our World in Data: Guinea"
+    },
+    {
+      "country": "GLP",
+      "year": 2023,
+      "g_per_kwh": 497.01,
+      "source": "Ember via Our World in Data: Guadeloupe"
+    },
+    {
+      "country": "GMB",
+      "year": 2024,
+      "g_per_kwh": 666.67,
+      "source": "Ember via Our World in Data: Gambia"
+    },
+    {
+      "country": "GNB",
+      "year": 2024,
+      "g_per_kwh": 625,
+      "source": "Ember via Our World in Data: Guinea-Bissau"
+    },
+    {
+      "country": "GNQ",
+      "year": 2024,
+      "g_per_kwh": 644.3,
+      "source": "Ember via Our World in Data: Equatorial Guinea"
+    },
+    {
+      "country": "GRC",
+      "year": 2025,
+      "g_per_kwh": 315.09,
+      "source": "Ember via Our World in Data: Greece"
+    },
+    {
+      "country": "GRD",
+      "year": 2024,
+      "g_per_kwh": 666.67,
+      "source": "Ember via Our World in Data: Grenada"
+    },
+    {
+      "country": "GRL",
+      "year": 2024,
+      "g_per_kwh": 150,
+      "source": "Ember via Our World in Data: Greenland"
+    },
+    {
+      "country": "GTM",
+      "year": 2024,
+      "g_per_kwh": 301.46,
+      "source": "Ember via Our World in Data: Guatemala"
+    },
+    {
+      "country": "GUF",
+      "year": 2023,
+      "g_per_kwh": 244.9,
+      "source": "Ember via Our World in Data: French Guiana"
+    },
+    {
+      "country": "GUM",
+      "year": 2024,
+      "g_per_kwh": 607.53,
+      "source": "Ember via Our World in Data: Guam"
+    },
+    {
+      "country": "GUY",
+      "year": 2024,
+      "g_per_kwh": 644.93,
+      "source": "Ember via Our World in Data: Guyana"
+    },
+    {
+      "country": "HKG",
+      "year": 2024,
+      "g_per_kwh": 675.48,
+      "source": "Ember via Our World in Data: Hong Kong"
+    },
+    {
+      "country": "HND",
+      "year": 2024,
+      "g_per_kwh": 322.12,
+      "source": "Ember via Our World in Data: Honduras"
+    },
+    {
+      "country": "HRV",
+      "year": 2025,
+      "g_per_kwh": 158.5,
+      "source": "Ember via Our World in Data: Croatia"
+    },
+    {
+      "country": "HTI",
+      "year": 2024,
+      "g_per_kwh": 534.88,
+      "source": "Ember via Our World in Data: Haiti"
+    },
+    {
+      "country": "HUN",
+      "year": 2025,
+      "g_per_kwh": 163.02,
+      "source": "Ember via Our World in Data: Hungary"
+    },
+    {
+      "country": "IDN",
+      "year": 2024,
+      "g_per_kwh": 680.25,
+      "source": "Ember via Our World in Data: Indonesia"
+    },
+    {
+      "country": "IND",
+      "year": 2025,
+      "g_per_kwh": 670.13,
+      "source": "Ember via Our World in Data: India"
+    },
+    {
+      "country": "IRL",
+      "year": 2025,
+      "g_per_kwh": 256.54,
+      "source": "Ember via Our World in Data: Ireland"
+    },
+    {
+      "country": "IRN",
+      "year": 2025,
+      "g_per_kwh": 659.53,
+      "source": "Ember via Our World in Data: Iran"
+    },
+    {
+      "country": "IRQ",
+      "year": 2024,
+      "g_per_kwh": 683.1,
+      "source": "Ember via Our World in Data: Iraq"
+    },
+    {
+      "country": "ISL",
+      "year": 2024,
+      "g_per_kwh": 27.82,
+      "source": "Ember via Our World in Data: Iceland"
+    },
+    {
+      "country": "ISR",
+      "year": 2025,
+      "g_per_kwh": 492.69,
+      "source": "Ember via Our World in Data: Israel"
+    },
+    {
+      "country": "ITA",
+      "year": 2025,
+      "g_per_kwh": 284.78,
+      "source": "Ember via Our World in Data: Italy"
+    },
+    {
+      "country": "JAM",
+      "year": 2024,
+      "g_per_kwh": 563.01,
+      "source": "Ember via Our World in Data: Jamaica"
+    },
+    {
+      "country": "JOR",
+      "year": 2024,
+      "g_per_kwh": 529.79,
+      "source": "Ember via Our World in Data: Jordan"
+    },
+    {
+      "country": "JPN",
+      "year": 2025,
+      "g_per_kwh": 477.26,
+      "source": "Ember via Our World in Data: Japan"
+    },
+    {
+      "country": "KAZ",
+      "year": 2025,
+      "g_per_kwh": 805.32,
+      "source": "Ember via Our World in Data: Kazakhstan"
+    },
+    {
+      "country": "KEN",
+      "year": 2025,
+      "g_per_kwh": 95.44,
+      "source": "Ember via Our World in Data: Kenya"
+    },
+    {
+      "country": "KGZ",
+      "year": 2025,
+      "g_per_kwh": 152.73,
+      "source": "Ember via Our World in Data: Kyrgyzstan"
+    },
+    {
+      "country": "KHM",
+      "year": 2025,
+      "g_per_kwh": 498.87,
+      "source": "Ember via Our World in Data: Cambodia"
+    },
+    {
+      "country": "KIR",
+      "year": 2024,
+      "g_per_kwh": 500,
+      "source": "Ember via Our World in Data: Kiribati"
+    },
+    {
+      "country": "KNA",
+      "year": 2024,
+      "g_per_kwh": 608.7,
+      "source": "Ember via Our World in Data: Saint Kitts and Nevis"
+    },
+    {
+      "country": "KOR",
+      "year": 2025,
+      "g_per_kwh": 417.06,
+      "source": "Ember via Our World in Data: South Korea"
+    },
+    {
+      "country": "KWT",
+      "year": 2025,
+      "g_per_kwh": 635.31,
+      "source": "Ember via Our World in Data: Kuwait"
+    },
+    {
+      "country": "LAO",
+      "year": 2024,
+      "g_per_kwh": 232.08,
+      "source": "Ember via Our World in Data: Laos"
+    },
+    {
+      "country": "LBN",
+      "year": 2024,
+      "g_per_kwh": 389.51,
+      "source": "Ember via Our World in Data: Lebanon"
+    },
+    {
+      "country": "LBR",
+      "year": 2024,
+      "g_per_kwh": 315.79,
+      "source": "Ember via Our World in Data: Liberia"
+    },
+    {
+      "country": "LBY",
+      "year": 2024,
+      "g_per_kwh": 826.83,
+      "source": "Ember via Our World in Data: Libya"
+    },
+    {
+      "country": "LCA",
+      "year": 2024,
+      "g_per_kwh": 650,
+      "source": "Ember via Our World in Data: Saint Lucia"
+    },
+    {
+      "country": "LKA",
+      "year": 2025,
+      "g_per_kwh": 329.28,
+      "source": "Ember via Our World in Data: Sri Lanka"
+    },
+    {
+      "country": "LSO",
+      "year": 2022,
+      "g_per_kwh": 20.83,
+      "source": "Ember via Our World in Data: Lesotho"
+    },
+    {
+      "country": "LTU",
+      "year": 2025,
+      "g_per_kwh": 138.36,
+      "source": "Ember via Our World in Data: Lithuania"
+    },
+    {
+      "country": "LUX",
+      "year": 2025,
+      "g_per_kwh": 123.38,
+      "source": "Ember via Our World in Data: Luxembourg"
+    },
+    {
+      "country": "LVA",
+      "year": 2025,
+      "g_per_kwh": 138.76,
+      "source": "Ember via Our World in Data: Latvia"
+    },
+    {
+      "country": "MAC",
+      "year": 2024,
+      "g_per_kwh": 474.36,
+      "source": "Ember via Our World in Data: Macao"
+    },
+    {
+      "country": "MAR",
+      "year": 2025,
+      "g_per_kwh": 596.4,
+      "source": "Ember via Our World in Data: Morocco"
+    },
+    {
+      "country": "MDA",
+      "year": 2025,
+      "g_per_kwh": 633.12,
+      "source": "Ember via Our World in Data: Moldova"
+    },
+    {
+      "country": "MDG",
+      "year": 2024,
+      "g_per_kwh": 432.1,
+      "source": "Ember via Our World in Data: Madagascar"
+    },
+    {
+      "country": "MDV",
+      "year": 2024,
+      "g_per_kwh": 611.77,
+      "source": "Ember via Our World in Data: Maldives"
+    },
+    {
+      "country": "MEX",
+      "year": 2025,
+      "g_per_kwh": 474.02,
+      "source": "Ember via Our World in Data: Mexico"
+    },
+    {
+      "country": "MKD",
+      "year": 2025,
+      "g_per_kwh": 441.35,
+      "source": "Ember via Our World in Data: North Macedonia"
+    },
+    {
+      "country": "MLI",
+      "year": 2024,
+      "g_per_kwh": 538.59,
+      "source": "Ember via Our World in Data: Mali"
+    },
+    {
+      "country": "MLT",
+      "year": 2025,
+      "g_per_kwh": 484.02,
+      "source": "Ember via Our World in Data: Malta"
+    },
+    {
+      "country": "MMR",
+      "year": 2024,
+      "g_per_kwh": 502.99,
+      "source": "Ember via Our World in Data: Myanmar"
+    },
+    {
+      "country": "MNE",
+      "year": 2025,
+      "g_per_kwh": 264.23,
+      "source": "Ember via Our World in Data: Montenegro"
+    },
+    {
+      "country": "MNG",
+      "year": 2025,
+      "g_per_kwh": 816.31,
+      "source": "Ember via Our World in Data: Mongolia"
+    },
+    {
+      "country": "MOZ",
+      "year": 2024,
+      "g_per_kwh": 129.36,
+      "source": "Ember via Our World in Data: Mozambique"
+    },
+    {
+      "country": "MRT",
+      "year": 2024,
+      "g_per_kwh": 512.08,
+      "source": "Ember via Our World in Data: Mauritania"
+    },
+    {
+      "country": "MSR",
+      "year": 2024,
+      "g_per_kwh": 1000,
+      "source": "Ember via Our World in Data: Montserrat"
+    },
+    {
+      "country": "MTQ",
+      "year": 2023,
+      "g_per_kwh": 529.8,
+      "source": "Ember via Our World in Data: Martinique"
+    },
+    {
+      "country": "MUS",
+      "year": 2024,
+      "g_per_kwh": 642.23,
+      "source": "Ember via Our World in Data: Mauritius"
+    },
+    {
+      "country": "MWI",
+      "year": 2024,
+      "g_per_kwh": 54.65,
+      "source": "Ember via Our World in Data: Malawi"
+    },
+    {
+      "country": "MYS",
+      "year": 2025,
+      "g_per_kwh": 601.97,
+      "source": "Ember via Our World in Data: Malaysia"
+    },
+    {
+      "country": "NAM",
+      "year": 2024,
+      "g_per_kwh": 48.78,
+      "source": "Ember via Our World in Data: Namibia"
+    },
+    {
+      "country": "NCL",
+      "year": 2024,
+      "g_per_kwh": 560.9,
+      "source": "Ember via Our World in Data: New Caledonia"
+    },
+    {
+      "country": "NER",
+      "year": 2024,
+      "g_per_kwh": 673.68,
+      "source": "Ember via Our World in Data: Niger"
+    },
+    {
+      "country": "NGA",
+      "year": 2025,
+      "g_per_kwh": 455.71,
+      "source": "Ember via Our World in Data: Nigeria"
+    },
+    {
+      "country": "NIC",
+      "year": 2024,
+      "g_per_kwh": 300.89,
+      "source": "Ember via Our World in Data: Nicaragua"
+    },
+    {
+      "country": "NLD",
+      "year": 2025,
+      "g_per_kwh": 253.56,
+      "source": "Ember via Our World in Data: Netherlands"
+    },
+    {
+      "country": "NOR",
+      "year": 2025,
+      "g_per_kwh": 28.11,
+      "source": "Ember via Our World in Data: Norway"
+    },
+    {
+      "country": "NPL",
+      "year": 2024,
+      "g_per_kwh": 24.26,
+      "source": "Ember via Our World in Data: Nepal"
+    },
+    {
+      "country": "NRU",
+      "year": 2024,
+      "g_per_kwh": 600,
+      "source": "Ember via Our World in Data: Nauru"
+    },
+    {
+      "country": "NZL",
+      "year": 2025,
+      "g_per_kwh": 92.76,
+      "source": "Ember via Our World in Data: New Zealand"
+    },
+    {
+      "country": "OMN",
+      "year": 2025,
+      "g_per_kwh": 544.47,
+      "source": "Ember via Our World in Data: Oman"
+    },
+    {
+      "country": "PAK",
+      "year": 2025,
+      "g_per_kwh": 346.56,
+      "source": "Ember via Our World in Data: Pakistan"
+    },
+    {
+      "country": "PAN",
+      "year": 2024,
+      "g_per_kwh": 221.15,
+      "source": "Ember via Our World in Data: Panama"
+    },
+    {
+      "country": "PER",
+      "year": 2025,
+      "g_per_kwh": 238.25,
+      "source": "Ember via Our World in Data: Peru"
+    },
+    {
+      "country": "PHL",
+      "year": 2025,
+      "g_per_kwh": 588.29,
+      "source": "Ember via Our World in Data: Philippines"
+    },
+    {
+      "country": "PNG",
+      "year": 2024,
+      "g_per_kwh": 513.74,
+      "source": "Ember via Our World in Data: Papua New Guinea"
+    },
+    {
+      "country": "POL",
+      "year": 2025,
+      "g_per_kwh": 588.6,
+      "source": "Ember via Our World in Data: Poland"
+    },
+    {
+      "country": "PRI",
+      "year": 2025,
+      "g_per_kwh": 654.66,
+      "source": "Ember via Our World in Data: Puerto Rico"
+    },
+    {
+      "country": "PRK",
+      "year": 2024,
+      "g_per_kwh": 340.59,
+      "source": "Ember via Our World in Data: North Korea"
+    },
+    {
+      "country": "PRT",
+      "year": 2025,
+      "g_per_kwh": 127.91,
+      "source": "Ember via Our World in Data: Portugal"
+    },
+    {
+      "country": "PRY",
+      "year": 2025,
+      "g_per_kwh": 24.7,
+      "source": "Ember via Our World in Data: Paraguay"
+    },
+    {
+      "country": "PSE",
+      "year": 2024,
+      "g_per_kwh": 414.14,
+      "source": "Ember via Our World in Data: Palestine"
+    },
+    {
+      "country": "PYF",
+      "year": 2024,
+      "g_per_kwh": 430.56,
+      "source": "Ember via Our World in Data: French Polynesia"
+    },
+    {
+      "country": "QAT",
+      "year": 2025,
+      "g_per_kwh": 581.52,
+      "source": "Ember via Our World in Data: Qatar"
+    },
+    {
+      "country": "REU",
+      "year": 2023,
+      "g_per_kwh": 394.14,
+      "source": "Ember via Our World in Data: Reunion"
+    },
+    {
+      "country": "ROU",
+      "year": 2025,
+      "g_per_kwh": 250.75,
+      "source": "Ember via Our World in Data: Romania"
+    },
+    {
+      "country": "RUS",
+      "year": 2025,
+      "g_per_kwh": 449.73,
+      "source": "Ember via Our World in Data: Russia"
+    },
+    {
+      "country": "RWA",
+      "year": 2024,
+      "g_per_kwh": 353.98,
+      "source": "Ember via Our World in Data: Rwanda"
+    },
+    {
+      "country": "SAU",
+      "year": 2024,
+      "g_per_kwh": 691.95,
+      "source": "Ember via Our World in Data: Saudi Arabia"
+    },
+    {
+      "country": "SDN",
+      "year": 2024,
+      "g_per_kwh": 153.69,
+      "source": "Ember via Our World in Data: Sudan"
+    },
+    {
+      "country": "SEN",
+      "year": 2024,
+      "g_per_kwh": 539.97,
+      "source": "Ember via Our World in Data: Senegal"
+    },
+    {
+      "country": "SGP",
+      "year": 2025,
+      "g_per_kwh": 497.09,
+      "source": "Ember via Our World in Data: Singapore"
+    },
+    {
+      "country": "SHN",
+      "year": 2023,
+      "g_per_kwh": 1000,
+      "source": "Ember via Our World in Data: Saint Helena"
+    },
+    {
+      "country": "SLB",
+      "year": 2024,
+      "g_per_kwh": 636.36,
+      "source": "Ember via Our World in Data: Solomon Islands"
+    },
+    {
+      "country": "SLE",
+      "year": 2024,
+      "g_per_kwh": 47.62,
+      "source": "Ember via Our World in Data: Sierra Leone"
+    },
+    {
+      "country": "SLV",
+      "year": 2025,
+      "g_per_kwh": 139.32,
+      "source": "Ember via Our World in Data: El Salvador"
+    },
+    {
+      "country": "SOM",
+      "year": 2024,
+      "g_per_kwh": 511.63,
+      "source": "Ember via Our World in Data: Somalia"
+    },
+    {
+      "country": "SPM",
+      "year": 2023,
+      "g_per_kwh": 600,
+      "source": "Ember via Our World in Data: Saint Pierre and Miquelon"
+    },
+    {
+      "country": "SRB",
+      "year": 2025,
+      "g_per_kwh": 695.8,
+      "source": "Ember via Our World in Data: Serbia"
+    },
+    {
+      "country": "SSD",
+      "year": 2024,
+      "g_per_kwh": 642.86,
+      "source": "Ember via Our World in Data: South Sudan"
+    },
+    {
+      "country": "STP",
+      "year": 2023,
+      "g_per_kwh": 555.56,
+      "source": "Ember via Our World in Data: Sao Tome and Principe"
+    },
+    {
+      "country": "SUR",
+      "year": 2024,
+      "g_per_kwh": 321.84,
+      "source": "Ember via Our World in Data: Suriname"
+    },
+    {
+      "country": "SVK",
+      "year": 2025,
+      "g_per_kwh": 94.85,
+      "source": "Ember via Our World in Data: Slovakia"
+    },
+    {
+      "country": "SVN",
+      "year": 2025,
+      "g_per_kwh": 183.29,
+      "source": "Ember via Our World in Data: Slovenia"
+    },
+    {
+      "country": "SWE",
+      "year": 2025,
+      "g_per_kwh": 35.26,
+      "source": "Ember via Our World in Data: Sweden"
+    },
+    {
+      "country": "SWZ",
+      "year": 2024,
+      "g_per_kwh": 131.15,
+      "source": "Ember via Our World in Data: Eswatini"
+    },
+    {
+      "country": "SYC",
+      "year": 2024,
+      "g_per_kwh": 555.56,
+      "source": "Ember via Our World in Data: Seychelles"
+    },
+    {
+      "country": "SYR",
+      "year": 2024,
+      "g_per_kwh": 706.19,
+      "source": "Ember via Our World in Data: Syria"
+    },
+    {
+      "country": "TCA",
+      "year": 2024,
+      "g_per_kwh": 629.63,
+      "source": "Ember via Our World in Data: Turks and Caicos Islands"
+    },
+    {
+      "country": "TCD",
+      "year": 2024,
+      "g_per_kwh": 621.62,
+      "source": "Ember via Our World in Data: Chad"
+    },
+    {
+      "country": "TGO",
+      "year": 2024,
+      "g_per_kwh": 422.54,
+      "source": "Ember via Our World in Data: Togo"
+    },
+    {
+      "country": "THA",
+      "year": 2025,
+      "g_per_kwh": 545.74,
+      "source": "Ember via Our World in Data: Thailand"
+    },
+    {
+      "country": "TJK",
+      "year": 2025,
+      "g_per_kwh": 72.56,
+      "source": "Ember via Our World in Data: Tajikistan"
+    },
+    {
+      "country": "TKM",
+      "year": 2024,
+      "g_per_kwh": 1306.27,
+      "source": "Ember via Our World in Data: Turkmenistan"
+    },
+    {
+      "country": "TLS",
+      "year": 2024,
+      "g_per_kwh": 666.67,
+      "source": "Ember via Our World in Data: East Timor"
+    },
+    {
+      "country": "TON",
+      "year": 2024,
+      "g_per_kwh": 571.43,
+      "source": "Ember via Our World in Data: Tonga"
+    },
+    {
+      "country": "TTO",
+      "year": 2024,
+      "g_per_kwh": 681.68,
+      "source": "Ember via Our World in Data: Trinidad and Tobago"
+    },
+    {
+      "country": "TUN",
+      "year": 2025,
+      "g_per_kwh": 560.29,
+      "source": "Ember via Our World in Data: Tunisia"
+    },
+    {
+      "country": "TUR",
+      "year": 2025,
+      "g_per_kwh": 474.74,
+      "source": "Ember via Our World in Data: Turkey"
+    },
+    {
+      "country": "TWN",
+      "year": 2025,
+      "g_per_kwh": 633.21,
+      "source": "Ember via Our World in Data: Taiwan"
+    },
+    {
+      "country": "TZA",
+      "year": 2024,
+      "g_per_kwh": 345.02,
+      "source": "Ember via Our World in Data: Tanzania"
+    },
+    {
+      "country": "UGA",
+      "year": 2024,
+      "g_per_kwh": 58.52,
+      "source": "Ember via Our World in Data: Uganda"
+    },
+    {
+      "country": "UKR",
+      "year": 2022,
+      "g_per_kwh": 250.47,
+      "source": "Ember via Our World in Data: Ukraine"
+    },
+    {
+      "country": "URY",
+      "year": 2025,
+      "g_per_kwh": 80.4,
+      "source": "Ember via Our World in Data: Uruguay"
+    },
+    {
+      "country": "USA",
+      "year": 2025,
+      "g_per_kwh": 384.4,
+      "source": "Ember via Our World in Data: United States"
+    },
+    {
+      "country": "UZB",
+      "year": 2025,
+      "g_per_kwh": 1000,
+      "source": "Ember via Our World in Data: Uzbekistan"
+    },
+    {
+      "country": "VCT",
+      "year": 2024,
+      "g_per_kwh": 600,
+      "source": "Ember via Our World in Data: Saint Vincent and the Grenadines"
+    },
+    {
+      "country": "VEN",
+      "year": 2024,
+      "g_per_kwh": 85.86,
+      "source": "Ember via Our World in Data: Venezuela"
+    },
+    {
+      "country": "VGB",
+      "year": 2023,
+      "g_per_kwh": 647.06,
+      "source": "Ember via Our World in Data: British Virgin Islands"
+    },
+    {
+      "country": "VIR",
+      "year": 2023,
+      "g_per_kwh": 632.35,
+      "source": "Ember via Our World in Data: United States Virgin Islands"
+    },
+    {
+      "country": "VNM",
+      "year": 2025,
+      "g_per_kwh": 460.73,
+      "source": "Ember via Our World in Data: Vietnam"
+    },
+    {
+      "country": "VUT",
+      "year": 2023,
+      "g_per_kwh": 500,
+      "source": "Ember via Our World in Data: Vanuatu"
+    },
+    {
+      "country": "WSM",
+      "year": 2024,
+      "g_per_kwh": 375,
+      "source": "Ember via Our World in Data: Samoa"
+    },
+    {
+      "country": "YEM",
+      "year": 2024,
+      "g_per_kwh": 592.38,
+      "source": "Ember via Our World in Data: Yemen"
+    },
+    {
+      "country": "ZAF",
+      "year": 2025,
+      "g_per_kwh": 699.29,
+      "source": "Ember via Our World in Data: South Africa"
+    },
+    {
+      "country": "ZMB",
+      "year": 2024,
+      "g_per_kwh": 119.68,
+      "source": "Ember via Our World in Data: Zambia"
+    },
+    {
+      "country": "ZWE",
+      "year": 2024,
+      "g_per_kwh": 384.02,
+      "source": "Ember via Our World in Data: Zimbabwe"
+    }
+  ]
+}

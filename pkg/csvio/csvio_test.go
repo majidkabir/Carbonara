@@ -118,3 +118,13 @@ func TestRead_LoadFactor(t *testing.T) {
 		t.Errorf("leg = %+v, %v", l, items[0].Err)
 	}
 }
+
+func TestRead_Energy(t *testing.T) {
+	items, err := Read(strings.NewReader("shipment_id,weight_kg,mode,vehicle_type,distance_km,energy_kwh_per_tkm,country\nS,1000,rail,electric,10,0.03,DNK\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if l := items[0].Shipment.Legs[0]; items[0].Err != nil || l.EnergyKWhPerTkm != 0.03 || l.Country != "DNK" {
+		t.Errorf("leg = %+v, %v", l, items[0].Err)
+	}
+}

@@ -198,3 +198,48 @@ func TestLoadModelsReproduceDESNZ(t *testing.T) {
 		t.Error("vans have no laden rows in DESNZ, want no load model")
 	}
 }
+
+func TestGrids(t *testing.T) {
+	ds, err := Open(Default)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g, err := ds.Grid("dnk")
+	if err != nil || g.Country != "DNK" || g.G <= 0 || g.Year < 2024 {
+		t.Errorf("DNK grid = %+v, %v", g, err)
+	}
+	if !strings.Contains(ds.GridNote, "CC BY 4.0") {
+		t.Error("default grid attribution missing")
+	}
+	f, err := ds.FuelFactor("electricity/DNK")
+	if err != nil || f.Unit != "kWh" || f.TTW != 0 || f.WTT != g.G/1000 {
+		t.Errorf("electricity fuel = %+v, %v", f, err)
+	}
+	if _, err := ds.Grid("DK"); err == nil {
+		t.Error("want error for 2-letter code")
+	}
+	if _, err := ds.FuelFactor("electricity/ZZZ"); err == nil {
+		t.Error("want error for unknown country")
+	}
+
+	// A dataset's own grids replace the default.
+	own, err := Parse(strings.NewReader(`{"grids":[{"country":"dnk","g_per_kwh":50}]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g, _ := own.Grid("DNK"); g.G != 50 {
+		t.Errorf("own grid = %+v", g)
+	}
+	if _, err := own.Grid("SWE"); err == nil {
+		t.Error("own grids should not merge with the default")
+	}
+	for name, in := range map[string]string{
+		"dup":      `{"grids":[{"country":"DNK","g_per_kwh":1},{"country":"dnk","g_per_kwh":2}]}`,
+		"bad iso":  `{"grids":[{"country":"DK","g_per_kwh":1}]}`,
+		"negative": `{"grids":[{"country":"DNK","g_per_kwh":-1}]}`,
+	} {
+		if _, err := Parse(strings.NewReader(in)); err == nil {
+			t.Errorf("%s: want error", name)
+		}
+	}
+}

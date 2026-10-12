@@ -13,6 +13,7 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/majidkabir/carbonara/pkg/calc"
 	"github.com/majidkabir/carbonara/pkg/distance"
@@ -21,8 +22,12 @@ import (
 // Default is the embedded dataset used when none is chosen.
 const Default = "desnz-2026"
 
-//go:embed data/*.json
+//go:embed data/*.json data/grid/*.json
 var embedded embed.FS
+
+// DefaultGrid is the embedded electricity grid table attached to datasets
+// that bring no grids of their own.
+const DefaultGrid = "data/grid/ember-owid.json"
 
 // Dataset is a named set of factors that implements calc.FactorProvider.
 type Dataset struct {
@@ -43,9 +48,14 @@ type Dataset struct {
 	ContainerLoads map[string]float64 `json:"container_loads,omitempty"`
 	// LoadModels give load-dependent emissions per vehicle class.
 	LoadModels []calc.LoadModel `json:"load_models,omitempty"`
+	// Grids give electricity carbon intensity per country. Datasets without
+	// them use the embedded default (Ember via Our World in Data).
+	Grids    []calc.GridFactor `json:"grids,omitempty"`
+	GridNote string            `json:"grid_note,omitempty"`
 
 	legIdx  map[string]calc.Factor
 	loadIdx map[string]calc.LoadModel
+	gridIdx map[string]calc.GridFactor
 	hubIdx  map[string]calc.HubFactor
 	fuelIdx map[string]calc.FuelFactor
 }
@@ -72,6 +82,9 @@ func EmbeddedNames() []string {
 	entries, _ := fs.ReadDir(embedded, "data")
 	var names []string
 	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
 		names = append(names, strings.TrimSuffix(e.Name(), path.Ext(e.Name())))
 	}
 	sort.Strings(names)
@@ -164,6 +177,24 @@ func Parse(r io.Reader) (*Dataset, error) {
 		}
 		d.loadIdx[k] = m
 	}
+	if len(d.Grids) == 0 {
+		g, note, err := defaultGrids()
+		if err != nil {
+			return nil, err
+		}
+		d.Grids, d.GridNote = g, note
+	}
+	d.gridIdx = make(map[string]calc.GridFactor, len(d.Grids))
+	for _, g := range d.Grids {
+		c := strings.ToUpper(g.Country)
+		if len(c) != 3 || g.G < 0 {
+			return nil, fmt.Errorf("grid factor %q: need ISO alpha-3 country and g_per_kwh >= 0", g.Country)
+		}
+		if _, dup := d.gridIdx[c]; dup {
+			return nil, fmt.Errorf("duplicate grid factor for %s", c)
+		}
+		d.gridIdx[c] = g
+	}
 	for name, t := range d.ContainerLoads {
 		if t <= 0 {
 			return nil, fmt.Errorf("container load %q must be > 0 tonnes per TEU", name)
@@ -200,10 +231,19 @@ func (d *Dataset) HubFactor(t string) (calc.HubFactor, error) {
 	return calc.HubFactor{}, fmt.Errorf("no hub factor for %s in dataset %q", t, d.Name)
 }
 
-// FuelFactor implements calc.FactorProvider.
+// FuelFactor implements calc.FactorProvider. "electricity/<ISO3>" is
+// derived from the grid table, per kWh, all upstream (WTT).
 func (d *Dataset) FuelFactor(fuel string) (calc.FuelFactor, error) {
 	if f, ok := d.fuelIdx[fuel]; ok {
 		return f, nil
+	}
+	if c, ok := strings.CutPrefix(fuel, "electricity/"); ok {
+		g, err := d.Grid(c)
+		if err != nil {
+			return calc.FuelFactor{}, err
+		}
+		return calc.FuelFactor{Fuel: fuel, Unit: "kWh", TTW: 0, WTT: g.G / 1000, Year: g.Year,
+			Source: fmt.Sprintf("%s grid %g g/kWh (%d, %s)", g.Country, g.G, g.Year, g.Source)}, nil
 	}
 	return calc.FuelFactor{}, fmt.Errorf("no fuel factor for %s in dataset %q", fuel, d.Name)
 }
@@ -225,6 +265,38 @@ func (d *Dataset) LoadModel(m calc.Mode, vt string) (calc.LoadModel, error) {
 	return calc.LoadModel{}, fmt.Errorf("no load model for %s/%s in dataset %q", m, vt, d.Name)
 }
 
+// Grid implements calc.GridProvider. country is ISO 3166-1 alpha-3.
+func (d *Dataset) Grid(country string) (calc.GridFactor, error) {
+	if g, ok := d.gridIdx[strings.ToUpper(strings.TrimSpace(country))]; ok {
+		return g, nil
+	}
+	return calc.GridFactor{}, fmt.Errorf("no electricity grid factor for country %q (use ISO 3166 alpha-3, e.g. DNK)", country)
+}
+
+var (
+	gridOnce  sync.Once
+	gridCache []calc.GridFactor
+	gridNote  string
+	gridErr   error
+)
+
+func defaultGrids() ([]calc.GridFactor, string, error) {
+	gridOnce.Do(func() {
+		b, err := embedded.ReadFile(DefaultGrid)
+		if err != nil {
+			gridErr = err
+			return
+		}
+		var f struct {
+			Note  string            `json:"note"`
+			Grids []calc.GridFactor `json:"grids"`
+		}
+		gridErr = json.Unmarshal(b, &f)
+		gridCache, gridNote = f.Grids, f.Note
+	})
+	return gridCache, gridNote, gridErr
+}
+
 // ContainerLoad implements calc.ContainerLoadProvider.
 func (d *Dataset) ContainerLoad(name string) (float64, error) {
 	if t, ok := d.ContainerLoads[name]; ok {
@@ -243,4 +315,5 @@ var (
 	_ calc.FactorProvider        = (*Dataset)(nil)
 	_ calc.ContainerLoadProvider = (*Dataset)(nil)
 	_ calc.LoadModelProvider     = (*Dataset)(nil)
+	_ calc.GridProvider          = (*Dataset)(nil)
 )

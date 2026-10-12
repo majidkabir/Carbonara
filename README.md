@@ -25,7 +25,7 @@ curl -X POST localhost:8080/v1/calculate --data @examples/cph-rotterdam.json
 
 ## Calculation
 
-Three methods per leg:
+Four methods per leg:
 
 **Intensity (modelled data)** — the default:
 ```
@@ -47,6 +47,8 @@ E(load)  = emissions per vehicle-km at that load (linear between 0%, 50%, 100% l
 g/tkm    = (E(load) + empty_trip_factor × E(empty)) / (payload_t × load_factor)
 ```
 This is the capacity-utilisation approach EcoTransIT World and GLEC use, built entirely from DESNZ data: per-km factors at 0/50/100% laden give the load curve, and per-km ÷ per-tonne-km at 100% laden gives each class's payload (e.g. 17.9 t for an artic over 33 t). It reproduces DESNZ's per-tonne-km factors at 50% and 100% load within 0.82% WTW. (DESNZ's own well-to-tank rows per km and per tonne-km disagree by up to 3.6%; the model follows the per-km rows.) Works with aliases like `hgv`, or class ids like `hgv_non_refrigerated_all_diesel/articulated_33t`. Vans have no load data in DESNZ, so no model. Cargo-type presets (bulk/average/volume load and empty-trip values) aren't included: EcoTransIT's values need their permission to reuse.
+
+**Energy** — when a leg has `energy_kwh_per_tkm` and `country` (ISO alpha-3, e.g. `DNK`), for electric trains or trucks: the electricity used per tonne-km × that country's grid intensity, all well-to-tank (nothing is emitted at the vehicle). Grid intensities for 213 countries come from Ember via Our World in Data (2024–2025 values). There's no default energy figure: give your operator's, or your own. For metered kWh use the fuel method with fuel `electricity/DNK`.
 
 **Hubs** add `weight_t × hub g/t / 1000` (WTW) to the total. Intensity (g/tkm) covers transport only.
 
@@ -103,6 +105,7 @@ carbonara calc -osrm http://localhost:5000 examples/cph-rotterdam.json
 | `from_lat`, `from_lon`, `to_lat`, `to_lon` | leg, when `distance_km` is empty |
 | `fuel`, `fuel_amount`, `vehicle_tonne_km` | leg, fuel method |
 | `load_factor`, `empty_trip_factor` | leg, load model |
+| `energy_kwh_per_tkm`, `country` | leg, energy method |
 | `hub_id`, `hub_type` | hub stop (row is a hub when `hub_type` is set) |
 
 A bad row fails only its shipment; the rest still calculate.
@@ -153,6 +156,8 @@ carbonara import-desnz -o pkg/factors/data/desnz-2027.json ghg-conversion-factor
 
 It reports how many rows it imported, skipped as blank, or couldn't match to a well-to-tank factor.
 
+**Updating grid intensities**: `carbonara import-grid -o pkg/factors/data/grid/ember-owid.json owid-energy-data.csv`, with the CSV from [owid/energy-data](https://github.com/owid/energy-data).
+
 ## Layout
 
 | Path | What |
@@ -163,6 +168,7 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 | `pkg/csvio` | CSV batch input and output. |
 | `internal/desnz` | DESNZ flat-file importer. |
 | `internal/xlsx` | Minimal stdlib-only .xlsx reader. |
+| `internal/grid` | Grid intensity importer (Our World in Data / Ember). |
 | `internal/api` | HTTP handlers and OpenAPI spec. |
 | `cmd/carbonara` | CLI. |
 
@@ -181,6 +187,11 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 - [x] Short aliases for common vehicle types and fuels
 - [x] OSRM road routing
 - [x] Sea routing on a maritime network (SeaRoute), air = great-circle + 95 km
+- [x] Containers in TEU
+- [x] Truck load model (load factor, empty trip factor)
+- [x] Electricity by country (213 grids) for electric rail and trucks
+- [ ] Hub / warehouse emission factors
+- [ ] Cargo-type presets (needs licensed values, e.g. EcoTransIT with permission)
 
 ## Releasing
 
@@ -190,4 +201,4 @@ Push a tag like `v0.1.0`: binaries go to GitHub Releases, the image to `ghcr.io/
 
 Code: Apache 2.0, see [LICENSE](LICENSE).
 
-DESNZ data: Crown copyright, contains public sector information licensed under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). See [NOTICE](NOTICE).
+DESNZ data: Crown copyright, contains public sector information licensed under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). Grid intensities: Ember via Our World in Data, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). See [NOTICE](NOTICE).
