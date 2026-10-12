@@ -16,6 +16,9 @@ import (
 //go:embed openapi.yaml
 var openAPISpec []byte
 
+//go:embed web/index.html
+var indexHTML []byte
+
 const (
 	maxBodyBytes  = 10 << 20 // 10 MiB
 	maxBatchItems = 10_000
@@ -31,6 +34,13 @@ type Server struct {
 // Handler returns the HTTP routes.
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Content-Security-Policy",
+			"default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		_, _ = w.Write(indexHTML)
+	})
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})

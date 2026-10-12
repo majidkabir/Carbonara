@@ -92,7 +92,7 @@ func TestCalculateBatch(t *testing.T) {
 
 func TestGetEndpoints(t *testing.T) {
 	srv := newTestServer(t)
-	for _, path := range []string{"/healthz", "/v1/factors", "/openapi.yaml"} {
+	for _, path := range []string{"/", "/healthz", "/v1/factors", "/openapi.yaml"} {
 		resp, err := http.Get(srv.URL + path)
 		if err != nil {
 			t.Fatal(err)

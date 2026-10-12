@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carbonara</title>
+<style>
+:root {
+  --paper: #EEF1F4;
+  --sheet: #FFFFFF;
+  --ink: #1D2A38;
+  --muted: #5A6878;
+  --rule: #C9D2DC;
+  --blue: #1F5E8C;
+  --ttw: #3A4F63;
+  --wtt: #6FA8B6;
+  --signal: #F2B705;
+  --error: #B42318;
+  --font: "Bahnschrift", "DIN Alternate", "D-DIN", "DIN 2014", "Barlow Semi Condensed", "Roboto Condensed",
+          "Arial Narrow", "DejaVu Sans Condensed", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #121B25;
+    --sheet: #1A2633;
+    --ink: #E6ECF2;
+    --muted: #9AA8B7;
+    --rule: #2E3E4F;
+    --blue: #7FB4DD;
+    --ttw: #8FA6BC;
+    --wtt: #4E8A99;
+    --error: #FF8A80;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { font-family: var(--font); color: var(--ink); background: var(--paper); font-size: 16px; }
+body { margin: 0; line-height: 1.45; font-variant-numeric: tabular-nums; }
+h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: .01em; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--signal); outline-offset: 2px; }
+
+.top { padding: 28px 24px 8px; max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; }
+.top h1 { font-size: 2rem; letter-spacing: .02em; }
+.top p { margin: 0; color: var(--muted); }
+.top .dataset { margin-left: auto; color: var(--muted); font-size: .9rem; }
+
+main { max-width: 1240px; margin: 0 auto; padding: 16px 24px 48px; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 28px; align-items: start; }
+@media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); padding: 12px 16px 40px; } .top { padding: 20px 16px 4px; } }
+
+section.panel { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; padding: 20px; }
+.panel h2 { font-size: 1.15rem; margin-bottom: 14px; }
+
+label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 4px; }
+input, select { width: 100%; padding: 8px 10px; border: 1px solid var(--rule); border-radius: 4px; background: var(--paper); }
+input:hover, select:hover { border-color: var(--muted); }
+.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.cargo-switch { display: flex; gap: 18px; margin-bottom: 12px; }
+.cargo-switch label { display: flex; align-items: center; gap: 6px; color: var(--ink); font-size: .95rem; margin: 0; }
+.cargo-switch input { width: auto; }
+
+.leg { border-left: 4px solid var(--blue); padding: 12px 0 4px 14px; margin: 18px 0; }
+.leg-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.leg-head h3 { font-size: 1rem; }
+.leg details { margin: 4px 0 8px; }
+.leg summary { cursor: pointer; color: var(--blue); font-size: .9rem; padding: 4px 0; }
+.hint { font-size: .8rem; color: var(--muted); margin: -4px 0 10px; }
+
+.btn { border: 1px solid var(--blue); background: transparent; color: var(--blue); padding: 8px 14px; border-radius: 4px; cursor: pointer; }
+.btn:hover { background: color-mix(in srgb, var(--blue) 10%, transparent); }
+.btn.primary { background: var(--blue); color: var(--sheet); }
+.btn.primary:hover { filter: brightness(1.1); }
+.btn.quiet { border-color: transparent; padding: 4px 6px; color: var(--muted); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.error { color: var(--error); margin-top: 12px; min-height: 1.2em; }
+
+.answer { font-size: 1.35rem; line-height: 1.35; max-width: 34em; }
+.answer strong { font-size: 1.9rem; font-weight: 600; }
+.answer-sub { color: var(--muted); margin: 6px 0 22px; }
+
+.ribbon { display: flex; height: 64px; border-radius: 4px; overflow: hidden; background: var(--paper); }
+.seg { display: flex; flex-direction: column; min-width: 4px; border-right: 2px solid var(--sheet); transform-origin: left; }
+.seg:last-child { border-right: 0; }
+.seg .t { background: var(--ttw); }
+.seg .w { background: var(--wtt); }
+.seg.hub .w { background: repeating-linear-gradient(135deg, var(--wtt) 0 6px, color-mix(in srgb, var(--wtt) 60%, var(--sheet)) 6px 12px); }
+.ribbon-labels { display: flex; margin-top: 6px; font-size: .85rem; }
+.ribbon-labels span { min-width: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding-right: 6px; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 14px 0 24px; font-size: .85rem; color: var(--muted); }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+@media (prefers-reduced-motion: no-preference) {
+  .ribbon.grow .seg { animation: grow .6s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+}
+
+table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+th { text-align: left; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--rule); padding: 6px 8px 6px 0; }
+td { padding: 10px 8px 2px 0; vertical-align: top; }
+tr.how-row td { border-bottom: 1px solid var(--rule); padding: 0 0 10px; }
+.id { color: var(--muted); font-size: .82rem; overflow-wrap: anywhere; }
+td.num, th.num { text-align: right; }
+.how { color: var(--muted); font-size: .82rem; max-width: 72ch; }
+.dtype { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: .8rem; border: 1px solid var(--rule); }
+.dtype.primary { background: var(--signal); border-color: var(--signal); color: #1D2A38; }
+.scroll { overflow-x: auto; }
+.empty { color: var(--muted); padding: 24px 0; }
+details.json { margin-top: 22px; }
+details.json summary { cursor: pointer; color: var(--blue); }
+pre { background: var(--paper); padding: 12px; border-radius: 4px; overflow: auto; font-size: .8rem; max-height: 320px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Carbonara</h1>
+  <p>Freight emissions, with the working shown.</p>
+  <span class="dataset" id="dataset"></span>
+</header>
+
+<main>
+  <section class="panel" aria-labelledby="ship-h">
+    <h2 id="ship-h">Shipment</h2>
+    <form id="form" novalidate>
+      <div class="row">
+        <div><label for="sid">Reference</label><input id="sid" placeholder="e.g. PO-4711"></div>
+      </div>
+      <div class="cargo-switch" role="radiogroup" aria-label="Cargo given as">
+        <label><input type="radio" name="cargo" value="weight" checked> Weight</label>
+        <label><input type="radio" name="cargo" value="teu"> Containers (TEU)</label>
+      </div>
+      <div class="row" id="by-weight">
+        <div><label for="weight">Cargo weight (kg)</label><input id="weight" type="number" min="0" step="any"></div>
+      </div>
+      <div class="row" id="by-teu" hidden>
+        <div><label for="teu">TEU</label><input id="teu" type="number" min="0" step="any"></div>
+        <div><label for="teut">Net tonnes per TEU</label><input id="teut" type="number" min="0" step="any"></div>
+      </div>
+
+      <div id="legs"></div>
+
+      <div class="actions">
+        <button type="button" class="btn" id="add">Add leg</button>
+        <button type="submit" class="btn primary">Calculate</button>
+        <button type="button" class="btn quiet" id="example">Load example</button>
+      </div>
+      <p class="error" id="error" role="alert"></p>
+    </form>
+  </section>
+
+  <section class="panel" aria-labelledby="res-h" aria-live="polite">
+    <h2 id="res-h">Emissions</h2>
+    <div id="result"><p class="empty">Add a leg and calculate to see emissions.</p></div>
+  </section>
+</main>
+
+<template id="leg-t">
+  <div class="leg">
+    <div class="leg-head"><h3>Leg</h3><button type="button" class="btn quiet remove">Remove</button></div>
+    <div class="row">
+      <div><label>Mode</label>
+        <select name="mode">
+          <option value="road">Road</option><option value="rail">Rail</option><option value="sea">Sea</option>
+          <option value="air">Air</option><option value="inland_waterway">Inland waterway</option>
+        </select></div>
+      <div><label>Vehicle</label><input name="vehicle_type" autocomplete="off"></div>
+    </div>
+    <div class="row">
+      <div><label>Distance (km)</label><input name="distance_km" type="number" min="0" step="any"></div>
+    </div>
+    <details><summary>Use coordinates instead of distance</summary>
+      <div class="row">
+        <div><label>From lat</label><input name="from_lat" type="number" step="any"></div>
+        <div><label>From lon</label><input name="from_lon" type="number" step="any"></div>
+        <div><label>To lat</label><input name="to_lat" type="number" step="any"></div>
+        <div><label>To lon</label><input name="to_lon" type="number" step="any"></div>
+      </div>
+    </details>
+    <details><summary>Load and empty running</summary>
+      <p class="hint">For trucks. Replaces the fleet-average factor.</p>
+      <div class="row">
+        <div><label>Load factor (0–1)</label><input name="load_factor" type="number" min="0" max="1" step="any"></div>
+        <div><label>Empty km per loaded km</label><input name="empty_trip_factor" type="number" min="0" step="any"></div>
+      </div>
+    </details>
+    <details><summary>Measured fuel</summary>
+      <div class="row">
+        <div><label>Fuel</label><input name="fuel" placeholder="diesel" autocomplete="off"></div>
+        <div><label>Amount</label><input name="fuel_amount" type="number" min="0" step="any"></div>
+        <div><label>Vehicle tonne-km (shared trip)</label><input name="vehicle_tonne_km" type="number" min="0" step="any"></div>
+      </div>
+    </details>
+    <details><summary>Electric (energy per tonne-km)</summary>
+      <div class="row">
+        <div><label>kWh per tonne-km</label><input name="energy_kwh_per_tkm" type="number" min="0" step="any"></div>
+        <div><label>Country (ISO, e.g. DNK)</label><input name="country" maxlength="3"></div>
+      </div>
+    </details>
+  </div>
+</template>
+
+<script>
+"use strict";
+const $ = (s, el = document) => el.querySelector(s);
+const legsEl = $("#legs");
+let vehicleLists = {};
+
+const fmt = (v, d = 1) => Number(v).toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+const kg = v => v >= 10000 ? fmt(v / 1000, 2) + " t" : fmt(v, 1) + " kg";
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const modeName = { road: "Road", rail: "Rail", sea: "Sea", air: "Air", inland_waterway: "Inland waterway" };
+const distName = { given: "given", great_circle: "great-circle", great_circle_adjusted: "great-circle, adjusted",
+  osrm: "road routing", sea_network: "sea route" };
+const methodName = { intensity: "average factor", fuel: "measured fuel", load_model: "load model", energy: "electricity" };
+
+function addLeg(values = {}) {
+  const node = $("#leg-t").content.firstElementChild.cloneNode(true);
+  const n = legsEl.children.length + 1;
+  node.querySelectorAll("input, select").forEach(el => {
+    el.id = `leg${n}-${el.name}`;
+    const lab = el.closest("div").querySelector("label");
+    if (lab) lab.htmlFor = el.id;
+    if (values[el.name] !== undefined) el.value = values[el.name];
+  });
+  const vt = node.querySelector('[name="vehicle_type"]');
+  const mode = node.querySelector('[name="mode"]');
+  const list = document.createElement("datalist");
+  list.id = `leg${n}-vehicles`;
+  vt.setAttribute("list", list.id);
+  node.appendChild(list);
+  const fillList = () => { list.innerHTML = (vehicleLists[mode.value] || []).map(v => `<option value="${esc(v)}">`).join(""); };
+  mode.addEventListener("change", fillList);
+  fillList();
+  node.querySelector(".remove").addEventListener("click", () => { node.remove(); renumber(); });
+  node.querySelectorAll("details").forEach(d => {
+    if ([...d.querySelectorAll("input")].some(i => i.value !== "")) d.open = true;
+  });
+  legsEl.appendChild(node);
+  renumber();
+}
+
+function renumber() {
+  [...legsEl.children].forEach((leg, i) => {
+    leg.querySelector("h3").textContent = `Leg ${i + 1}`;
+    leg.querySelector(".remove").hidden = legsEl.children.length === 1;
+  });
+}
+
+function num(el) { return el.value === "" ? undefined : Number(el.value); }
+
+function buildShipment() {
+  const s = { id: $("#sid").value.trim() || undefined, legs: [] };
+  if ($('input[name="cargo"]:checked').value === "teu") {
+    s.teu = num($("#teu")); s.teu_net_tonnes = num($("#teut"));
+  } else {
+    s.weight_kg = num($("#weight"));
+  }
+  [...legsEl.children].forEach((leg, i) => {
+    const f = name => leg.querySelector(`[name="${name}"]`);
+    const l = { id: `leg-${i + 1}`, mode: f("mode").value, vehicle_type: f("vehicle_type").value.trim() };
+    const d = num(f("distance_km"));
+    if (d) l.distance_km = d;
+    const coords = ["from_lat", "from_lon", "to_lat", "to_lon"].map(n => num(f(n)));
+    if (coords.every(c => c !== undefined)) {
+      l.from = { lat: coords[0], lon: coords[1] }; l.to = { lat: coords[2], lon: coords[3] };
+    }
+    for (const k of ["load_factor", "empty_trip_factor", "energy_kwh_per_tkm"]) { const v = num(f(k)); if (v) l[k] = v; }
+    const country = f("country").value.trim();
+    if (country) l.country = country.toUpperCase();
+    const fuel = f("fuel").value.trim();
+    if (fuel) l.fuel = { fuel, amount: num(f("fuel_amount")) || 0, vehicle_tonne_km: num(f("vehicle_tonne_km")) };
+    s.legs.push(l);
+  });
+  return s;
+}
+
+async function calculate(e) {
+  e && e.preventDefault();
+  $("#error").textContent = "";
+  const req = buildShipment();
+  let res, body;
+  try {
+    res = await fetch("v1/calculate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(req) });
+    body = await res.json();
+  } catch (err) {
+    $("#error").textContent = "Couldn't reach the Carbonara server. Check it's still running.";
+    return;
+  }
+  if (!res.ok) { $("#error").textContent = body.error || `Request failed (HTTP ${res.status}).`; return; }
+  render(req, body);
+  if (e && window.matchMedia("(max-width: 900px)").matches) {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    $("#res-h").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  }
+}
+
+function render(req, r) {
+  const parts = [
+    ...r.legs.map((l, i) => ({ label: `Leg ${i + 1}, ${(modeName[req.legs[i].mode] || req.legs[i].mode).toLowerCase()}`, ttw: l.ttw_kg, wtt: l.wtt_kg, wtw: l.wtw_kg })),
+    ...(r.hubs || []).map(h => ({ label: h.hub_type, ttw: 0, wtt: h.wtw_kg, wtw: h.wtw_kg, hub: true })),
+  ];
+  const total = r.wtw_kg || 1;
+  const segs = parts.map(p => {
+    const w = Math.max(p.wtw / total * 100, 0.6);
+    const t = p.wtw ? p.ttw / p.wtw * 100 : 0;
+    return `<div class="seg${p.hub ? " hub" : ""}" style="flex:0 0 ${w}%" title="${esc(p.label)}: ${kg(p.wtw)}">
+      <div class="t" style="flex:0 0 ${t}%"></div><div class="w" style="flex:1"></div></div>`;
+  }).join("");
+  const labels = parts.map(p => `<span style="flex:0 0 ${Math.max(p.wtw / total * 100, 0.6)}%">${esc(p.label)}</span>`).join("");
+
+  const unit = u => String(u || "").replace(/s$/, "");
+  const rows = r.legs.map((l, i) => {
+    const f = l.factor || {}, ff = l.fuel_factor;
+    let how;
+    if (ff) {
+      how = `${fmt(ff.wtt_kg_per_unit + ff.ttw_kg_per_unit, 3)} kg CO₂e per ${esc(unit(ff.unit))}` +
+        (l.allocation_share < 1 ? `, ${fmt(l.allocation_share * 100, 1)}% of the trip allocated` : "") + `. ${esc(ff.source)}`;
+    } else {
+      how = `${fmt((f.ttw_g_per_tkm || 0) + (f.wtt_g_per_tkm || 0), 2)} g CO₂e per tonne-km. ${esc(f.source)}`;
+    }
+    const vt = f.vehicle_type || req.legs[i].vehicle_type || "";
+    return `<tr>
+      <td><strong>Leg ${i + 1}</strong> ${esc((modeName[req.legs[i].mode] || "").toLowerCase())}</td>
+      <td class="num">${fmt(l.distance_km, 0)} km<div class="id">${esc(distName[l.distance_method] || l.distance_method || "")}</div></td>
+      <td>${esc(methodName[l.method] || l.method)}<br><span class="dtype ${esc(l.data_type)}">${esc(l.data_type)}</span></td>
+      <td class="num">${kg(l.ttw_kg)}</td><td class="num">${kg(l.wtt_kg)}</td><td class="num"><strong>${kg(l.wtw_kg)}</strong></td>
+    </tr><tr class="how-row"><td colspan="6"><div class="id">${esc(vt)}</div><div class="how">${how}</div></td></tr>`;
+  }).join("") + (r.hubs || []).map(h => `<tr>
+      <td><strong>Hub</strong> ${esc(h.hub_type)}</td><td></td>
+      <td>hub factor<br><span class="dtype ${esc(h.data_type)}">${esc(h.data_type)}</span></td>
+      <td class="num">–</td><td class="num">–</td><td class="num"><strong>${kg(h.wtw_kg)}</strong></td></tr>
+      <tr class="how-row"><td colspan="6"><div class="how">${esc(h.source)}</div></td></tr>`).join("");
+
+  const share = Math.round(r.primary_data_share * 100);
+  $("#result").innerHTML = `
+    <p class="answer">This shipment emits <strong>${kg(r.wtw_kg)}</strong> CO₂e well-to-wheel.</p>
+    <p class="answer-sub">${fmt(r.weight_kg / 1000, 2)} t over ${fmt(r.tonne_km, 0)} tonne-km:
+      ${kg(r.ttw_kg)} from the vehicles, ${kg(r.wtt_kg)} from producing their fuel or electricity,
+      ${fmt(r.intensity_g_per_tkm, 1)} g per tonne-km. ${share}% from measured data.</p>
+    <div class="ribbon grow" role="img" aria-label="Share of emissions by leg">${segs}</div>
+    <div class="ribbon-labels" aria-hidden="true">${labels}</div>
+    <div class="legend"><span><i style="background:var(--ttw)"></i>Vehicle (tank-to-wheel)</span>
+      <span><i style="background:var(--wtt)"></i>Fuel and electricity supply (well-to-tank)</span></div>
+    <h3 style="font-size:1rem;margin-bottom:8px">How each number was made</h3>
+    <div class="scroll"><table>
+      <thead><tr><th>Element</th><th class="num">Distance</th><th>Method</th>
+        <th class="num">Vehicle</th><th class="num">Supply</th><th class="num">Total</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>
+    <details class="json"><summary>Show request and response JSON</summary>
+      <pre>${esc(JSON.stringify(req, null, 2))}</pre><pre>${esc(JSON.stringify(r, null, 2))}</pre></details>`;
+}
+
+function loadExample() {
+  legsEl.innerHTML = "";
+  $("#sid").value = "CPH-RTM-1";
+  $('input[name="cargo"][value="weight"]').checked = true; toggleCargo();
+  $("#weight").value = 12000;
+  addLeg({ mode: "road", vehicle_type: "hgv", from_lat: 55.6761, from_lon: 12.5683, to_lat: 53.5511, to_lon: 9.9937,
+           load_factor: 0.8, empty_trip_factor: 0.2 });
+  addLeg({ mode: "sea", vehicle_type: "container_ship", distance_km: 560 });
+  addLeg({ mode: "road", vehicle_type: "hgv", distance_km: 40, fuel: "diesel", fuel_amount: 14 });
+}
+
+function toggleCargo() {
+  const teu = $('input[name="cargo"]:checked').value === "teu";
+  $("#by-teu").hidden = !teu; $("#by-weight").hidden = teu;
+}
+
+async function loadFactors() {
+  try {
+    const d = await (await fetch("v1/factors")).json();
+    $("#dataset").textContent = `Factors: ${d.name}`;
+    const lists = {};
+    for (const a of d.vehicle_aliases || []) (lists[a.mode] ||= []).push(a.alias);
+    for (const f of d.legs || []) (lists[f.mode] ||= []).push(f.vehicle_type);
+    vehicleLists = lists;
+    document.querySelectorAll('[name="mode"]').forEach(m => m.dispatchEvent(new Event("change")));
+  } catch { /* suggestions are optional */ }
+}
+
+document.querySelectorAll('input[name="cargo"]').forEach(r => r.addEventListener("change", toggleCargo));
+$("#add").addEventListener("click", () => addLeg());
+$("#example").addEventListener("click", () => { loadExample(); calculate(); });
+$("#form").addEventListener("submit", calculate);
+loadExample();
+loadFactors().then(() => calculate());
+</script>
+</body>
+</html>

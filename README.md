@@ -121,6 +121,10 @@ Carbonara isn't certified or verified against ISO 14083, and doesn't yet do ISO 
 
 A bad row fails only its shipment; the rest still calculate.
 
+## Web page
+
+`carbonara serve` also serves a page at `/`: enter a shipment leg by leg and see its emissions, a bar of each leg's share split into vehicle and fuel-supply emissions, and for every number the distance method, calculation method, data type and factor source. It opens with a worked example. Works offline (no external scripts or fonts) and in light or dark mode.
+
 ## API
 
 | Method | Path | |
@@ -130,6 +134,7 @@ A bad row fails only its shipment; the rest still calculate.
 | `GET` | `/v1/factors` | loaded dataset |
 | `GET` | `/openapi.yaml` | spec |
 | `GET` | `/healthz` | liveness |
+| `GET` | `/` | web page |
 
 ## Factor datasets
 
@@ -210,6 +215,7 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 - [x] Electricity by country (213 grids) for electric rail and trucks
 - [x] Dataset layering (e.g. DESNZ + your own hub factors)
 - [ ] Bundled hub / warehouse factors (needs an openly licensed source)
+- [x] Web page for `carbonara serve`
 - [ ] Cargo-type presets (needs licensed values, e.g. EcoTransIT with permission)
 
 ## Releasing

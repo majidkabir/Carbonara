@@ -256,7 +256,7 @@ func (c Calculator) loadLeg(lr LegResult, leg Leg) (LegResult, error) {
 	}
 	f := Factor{
 		Mode: m.Mode, VehicleType: m.VehicleType, TTW: ttw, WTT: wtt, Year: m.Year,
-		Source: fmt.Sprintf("load model (load factor %g, empty trip factor %g, payload %g t) from %s",
+		Source: fmt.Sprintf("load model (load factor %g, empty trip factor %g, payload %.1f t) from %s",
 			leg.LoadFactor, leg.EmptyTripFactor, m.PayloadT, m.Source),
 	}
 	lr.Method = MethodLoadModel
