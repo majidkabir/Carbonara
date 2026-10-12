@@ -23,6 +23,24 @@ docker run -p 8080:8080 ghcr.io/majidkabir/carbonara
 curl -X POST localhost:8080/v1/calculate --data @examples/cph-rotterdam.json
 ```
 
+## As a Go library
+
+```sh
+go get github.com/majidkabir/carbonara
+```
+
+```go
+ds, _ := factors.Open(factors.Default) // or "desnz-2026,my-tocs.json"
+c := calc.Calculator{Factors: ds, Distances: ds.Distances()}
+res, err := c.Calculate(ctx, calc.Shipment{
+	WeightKg: 12_000,
+	Legs: []calc.Leg{{Mode: calc.Road, VehicleType: "hgv", DistanceKm: 290}},
+})
+// res.WTWKg, res.Legs[0].DataType, res.Legs[0].Factor.Source, ...
+```
+
+`pkg/calc` has no dependencies outside the standard library; nothing in the module does. Runnable examples for each package are on [pkg.go.dev](https://pkg.go.dev/github.com/majidkabir/carbonara) (they appear after the next release is fetched there).
+
 ## Calculation
 
 Four methods per leg:
@@ -242,6 +260,7 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 - [x] Web page for `carbonara serve`
 - [x] Streaming, parallel batch
 - [x] Transport and hub operation categories from your own data
+- [x] Package docs and runnable examples
 - [ ] Cargo-type presets (needs licensed values, e.g. EcoTransIT with permission)
 
 ## Releasing

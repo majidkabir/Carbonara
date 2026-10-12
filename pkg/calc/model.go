@@ -1,11 +1,9 @@
-// Package calc holds the Carbonara domain model and the ISO 14083-style
-// emission calculation. It has no dependencies outside the standard library;
-// factors and distances are supplied through small interfaces.
 package calc
 
 // Mode is a transport mode.
 type Mode string
 
+// Transport modes.
 const (
 	Road           Mode = "road"
 	Rail           Mode = "rail"

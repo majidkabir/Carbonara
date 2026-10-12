@@ -40,6 +40,8 @@ type Calculator struct {
 	Distances DistanceProvider
 }
 
+// Input errors returned by Calculate. Wrapped errors carry details; match
+// them with errors.Is.
 var (
 	ErrInvalidWeight = errors.New("shipment weight must be > 0")
 	ErrNoLegs        = errors.New("shipment has no legs")
