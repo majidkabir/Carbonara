@@ -10,6 +10,7 @@ import (
 	"github.com/majidkabir/carbonara/internal/desnz"
 	"github.com/majidkabir/carbonara/internal/grid"
 	"github.com/majidkabir/carbonara/internal/xlsx"
+	"github.com/majidkabir/carbonara/pkg/toc"
 )
 
 // runImportDESNZ converts the UK DESNZ flat-file spreadsheet to a dataset.
@@ -103,4 +104,51 @@ func runImportGrid(args []string) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	return enc.Encode(g)
+}
+
+// runTOC builds a dataset layer from measured operational data.
+func runTOC(args []string) error {
+	fs := flag.NewFlagSet("toc", flag.ExitOnError)
+	var c common
+	c.register(fs)
+	out := fs.String("o", "-", "output JSON file (default stdout)")
+	_ = fs.Parse(args)
+	if fs.NArg() != 1 {
+		return errors.New("toc: expected an operations JSON file")
+	}
+	ds, err := c.dataset()
+	if err != nil {
+		return err
+	}
+	f, err := open(fs.Arg(0))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	ops, err := toc.Parse(f)
+	if err != nil {
+		return err
+	}
+	layer, err := toc.Build(ops, ds)
+	if err != nil {
+		return err
+	}
+	for _, l := range layer.Legs {
+		fmt.Fprintf(os.Stderr, "TOC %-24s %8.2f g CO2e/tkm WTW (%.2f TTW + %.2f WTT)\n", l.VehicleType, l.WTW(), l.TTW, l.WTT)
+	}
+	for _, h := range layer.Hubs {
+		fmt.Fprintf(os.Stderr, "HOC %-24s %8.1f g CO2e/t WTW\n", h.HubType, h.WTWPerTonneG)
+	}
+	w := os.Stdout
+	if *out != "-" {
+		fh, err := os.Create(*out)
+		if err != nil {
+			return err
+		}
+		defer fh.Close()
+		w = fh
+	}
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	return enc.Encode(layer)
 }

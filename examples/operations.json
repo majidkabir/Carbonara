@@ -1,0 +1,35 @@
+{
+  "name": "acme-logistics",
+  "period": "2025",
+  "year": 2025,
+  "tocs": [
+    {
+      "id": "dk_road_ambient",
+      "mode": "road",
+      "description": "Danish domestic trucking, ambient, all trips incl. empty running",
+      "tonne_km": 12500000,
+      "fuels": [
+        { "fuel": "diesel", "amount": 310000 },
+        { "fuel": "hvo", "amount": 90000 }
+      ]
+    },
+    {
+      "id": "dk_road_electric",
+      "mode": "road",
+      "description": "Electric trucks in Copenhagen distribution",
+      "tonne_km": 900000,
+      "fuels": [{ "fuel": "electricity/DNK", "amount": 260000 }]
+    }
+  ],
+  "hocs": [
+    {
+      "id": "cph_crossdock",
+      "description": "Copenhagen cross-dock, ambient",
+      "tonnes": 85000,
+      "energy": [
+        { "fuel": "electricity/DNK", "amount": 410000 },
+        { "fuel": "diesel", "amount": 6000 }
+      ]
+    }
+  ]
+}

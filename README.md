@@ -98,7 +98,27 @@ Results are shaped for ISO 14083-style reporting:
 - **Data type** per element: `primary` (measured fuel), `modelled` (load or energy model from shipment inputs) or `default` (published factor), and `primary_data_share` of total WTW.
 - **Traceability**: each leg carries its factor with source and year, its `distance_method`, and the result names the `dataset`.
 
-Carbonara isn't certified or verified against ISO 14083, and doesn't yet do ISO 14083's transport operation categories (grouping and allocating emissions across many shipments). Treat results as calculations for your own reporting process.
+Carbonara isn't certified or verified against ISO 14083. Treat results as calculations for your own reporting process.
+
+### Your own operational data (TOCs and HOCs)
+
+Carriers can calculate from their own measured data: group similar operations into a *transport operation category* (TOC) or *hub operation category* (HOC), and total a period's fuel and electricity against the activity carried out:
+
+```
+TOC intensity (g CO2e/tkm) = Σ fuel × fuel factor / tonne-km carried (incl. empty running)
+HOC intensity (g CO2e/t)   = Σ energy × energy factor / tonnes handled
+```
+
+`carbonara toc` turns an [operations file](examples/operations.json) into a dataset layer. Shipments then use the TOC id as their vehicle type, or the HOC id as their hub type, and are labelled primary data:
+
+```sh
+carbonara toc -o acme-2025.json examples/operations.json
+#  TOC dk_road_ambient   83.54 g CO2e/tkm WTW (64.33 TTW + 19.22 WTT)
+#  HOC cph_crossdock    777.4 g CO2e/t WTW
+carbonara calc -factors desnz-2026,acme-2025.json shipment.json
+```
+
+Fuels are converted with the selected dataset's fuel factors, including `electricity/<country>`.
 
 ## Inputs
 
@@ -192,6 +212,7 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 | `pkg/distance` | Great-circle with per-mode adjustment, OSRM road routing, maritime network routing. |
 | `pkg/csvio` | CSV input (in-memory or streaming) and output. |
 | `pkg/batch` | Parallel, ordered, bounded-memory batch processing. |
+| `pkg/toc` | Transport and hub operation categories from operational data. |
 | `internal/desnz` | DESNZ flat-file importer. |
 | `internal/xlsx` | Minimal stdlib-only .xlsx reader. |
 | `internal/grid` | Grid intensity importer (Our World in Data / Ember). |
@@ -219,6 +240,8 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 - [x] Dataset layering (e.g. DESNZ + your own hub factors)
 - [ ] Bundled hub / warehouse factors (needs an openly licensed source)
 - [x] Web page for `carbonara serve`
+- [x] Streaming, parallel batch
+- [x] Transport and hub operation categories from your own data
 - [ ] Cargo-type presets (needs licensed values, e.g. EcoTransIT with permission)
 
 ## Releasing

@@ -100,6 +100,9 @@ type Factor struct {
 	WTT         float64 `json:"wtt_g_per_tkm"` // well-to-tank
 	Source      string  `json:"source"`
 	Year        int     `json:"year"`
+	// DataType overrides the default label for factors built from the
+	// operator's own measurements (e.g. transport operation categories).
+	DataType string `json:"data_type,omitempty"`
 }
 
 // WTW is the well-to-wheel factor (WTT + TTW).
@@ -111,6 +114,7 @@ type HubFactor struct {
 	WTWPerTonneG float64 `json:"wtw_g_per_tonne"`
 	Source       string  `json:"source"`
 	Year         int     `json:"year"`
+	DataType     string  `json:"data_type,omitempty"` // as Factor.DataType
 }
 
 // LegResult is the outcome for one leg.

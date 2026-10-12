@@ -88,6 +88,9 @@ func (c Calculator) Calculate(ctx context.Context, s Shipment) (Result, error) {
 			lr.IntensityG = lr.WTWKg * 1000 / lr.TonneKm
 		}
 		lr.DataType = dataType(lr.Method)
+		if lr.Method == MethodIntensity && lr.Factor != nil && lr.Factor.DataType != "" {
+			lr.DataType = lr.Factor.DataType
+		}
 		res.Legs = append(res.Legs, lr)
 		res.TonneKm += lr.TonneKm
 		res.TTWKg += lr.TTWKg
@@ -105,6 +108,9 @@ func (c Calculator) Calculate(ctx context.Context, s Shipment) (Result, error) {
 		}
 		hr := HubResult{HubID: h.ID, HubType: h.HubType, WTWKg: tonnes * hf.WTWPerTonneG / 1000,
 			DataType: DataDefault, Source: hf.Source}
+		if hf.DataType != "" {
+			hr.DataType = hf.DataType
+		}
 		res.Hubs = append(res.Hubs, hr)
 		res.WTWKg += hr.WTWKg
 	}
@@ -118,6 +124,11 @@ func (c Calculator) Calculate(ctx context.Context, s Shipment) (Result, error) {
 	for _, l := range res.Legs {
 		if l.DataType == DataPrimary {
 			primary += l.WTWKg
+		}
+	}
+	for _, h := range res.Hubs {
+		if h.DataType == DataPrimary {
+			primary += h.WTWKg
 		}
 	}
 	if res.WTWKg > 0 {

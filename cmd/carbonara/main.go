@@ -30,6 +30,7 @@ Usage:
   carbonara factors [-factors name|file]                 print the factor dataset
   carbonara import-desnz [-o out.json] flat-file.xlsx   convert UK DESNZ factors
   carbonara import-grid  [-o out.json] owid-energy.csv  convert grid intensities
+  carbonara toc     [-o layer.json] operations.json      intensities from your own fuel data
   carbonara version
 
 Use "-" as the file name to read stdin. The default dataset is UK DESNZ 2026.
@@ -48,6 +49,7 @@ func main() {
 		"factors":      runFactors,
 		"import-desnz": runImportDESNZ,
 		"import-grid":  runImportGrid,
+		"toc":          runTOC,
 		"version":      func([]string) error { fmt.Println(version); return nil },
 	}
 	cmd, ok := cmds[os.Args[1]]
