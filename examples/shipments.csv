@@ -1,0 +1,6 @@
+shipment_id,weight_kg,leg_id,mode,vehicle_type,distance_km,from_lat,from_lon,to_lat,to_lon,fuel,fuel_amount,vehicle_tonne_km,hub_id,hub_type
+CPH-RTM-1,12000,truck,road,truck_40t,,55.6761,12.5683,53.5511,9.9937,,,,,
+CPH-RTM-1,,feeder,sea,container,560,,,,,,,,,
+CPH-RTM-1,,,,,,,,,,,,,ham,container_terminal
+AAR-OSL-7,3500,truck,road,truck_40t,610,,,,,diesel,190,14000,,
+BAD-1,0,truck,road,truck_40t,100,,,,,,,,,
