@@ -1,6 +1,6 @@
 shipment_id,weight_kg,leg_id,mode,vehicle_type,distance_km,from_lat,from_lon,to_lat,to_lon,fuel,fuel_amount,vehicle_tonne_km
-CPH-RTM-1,12000,truck,road,hgv_non_refrigerated_all_diesel/average_non_refrigerated_hgvs/average_laden,,55.6761,12.5683,53.5511,9.9937,,,
-CPH-RTM-1,,feeder,sea,cargo_ship/container_ship/average,560,,,,,,,
-AAR-OSL-7,3500,truck,road,hgv_non_refrigerated_all_diesel/average_non_refrigerated_hgvs/average_laden,610,,,,,liquid_fuels/diesel_average_biofuel_blend/litres,190,14000
-CPH-HAM-RAIL,20000,rail,rail,rail/freight_train,330,,,,,,,
-BAD-1,0,truck,road,hgv_non_refrigerated_all_diesel/average_non_refrigerated_hgvs/average_laden,100,,,,,,,
+CPH-RTM-1,12000,truck,road,hgv,,55.6761,12.5683,53.5511,9.9937,,,
+CPH-RTM-1,,feeder,sea,container_ship,560,,,,,,,
+AAR-OSL-7,3500,truck,road,hgv,610,,,,,diesel,190,14000
+CPH-HAM-RAIL,20000,rail,rail,freight_train,330,,,,,,,
+BAD-1,0,truck,road,hgv,100,,,,,,,

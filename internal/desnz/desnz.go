@@ -158,6 +158,7 @@ func Parse(rows [][]string) (Result, error) {
 	}
 	// Unmatched fuel WTT rows are normal (WTT covers fuels with no direct
 	// emissions factor in some units), so they are not reported.
+	addAliases(ds, warn)
 	return res, nil
 }
 

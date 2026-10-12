@@ -80,9 +80,19 @@ A bad row fails only its shipment; the rest still calculate.
 | `desnz-2026` (default) | UK government GHG conversion factors 2026, imported from the official flat file |
 | `sample` | Placeholder values, for tests only |
 
-A dataset is JSON with `legs` (g CO2e/tkm), `hubs` (g CO2e/t), `fuels` (kg CO2e/unit) and optional `distance_adjustments`, each factor with a TTW/WTT split, source and year. See [`sample.json`](pkg/factors/data/sample.json) for the shape.
+A dataset is JSON with `legs` (g CO2e/tkm), `hubs` (g CO2e/t), `fuels` (kg CO2e/unit) and optional `distance_adjustments`, `vehicle_aliases` and `fuel_aliases`, each factor with a TTW/WTT split, source and year. See [`sample.json`](pkg/factors/data/sample.json) for the shape.
 
-**Vehicle types and fuel ids** follow the source's labels, e.g. `hgv_non_refrigerated_all_diesel/average_non_refrigerated_hgvs/average_laden`, `rail/freight_train`, `liquid_fuels/diesel_average_biofuel_blend/litres`. Run `carbonara factors` to list them.
+**Vehicle types and fuel ids** follow the source's labels, e.g. `hgv_refrigerated_all_diesel/articulated_33t/100pct_laden` or `liquid_fuels/marine_gas_oil/tonnes`. Run `carbonara factors` to list them. Common ones have short aliases; results always show the full id used:
+
+| Mode | Aliases |
+|---|---|
+| road | `hgv`, `hgv_rigid`, `hgv_artic`, `hgv_artic_33t`, `hgv_reefer`, `van`, `van_electric` |
+| rail | `freight_train` |
+| sea | `container_ship`, `bulk_carrier`, `general_cargo`, `roro`, `ropax` |
+| air | `air_freight` (international, without radiative forcing) |
+| fuel (per litre) | `diesel`, `diesel_mineral`, `petrol`, `hvo`, `marine_gas_oil`, `marine_fuel_oil`, `jet_fuel` |
+
+Road aliases use DESNZ's "average laden" factors.
 
 **Notes on DESNZ data:**
 - Air freight comes `with_rf` and `without_rf` (radiative forcing). ISO 14083 reports without RF.
@@ -122,7 +132,7 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 - [x] Dataset-level distance adjustments
 - [ ] GLEC distance adjustment factors (need a verified primary source)
 - [ ] GLEC worked examples as golden tests
-- [ ] Short aliases for common vehicle types
+- [x] Short aliases for common vehicle types and fuels
 - [ ] OSRM road routing, SeaRoute network for sea
 
 ## Releasing

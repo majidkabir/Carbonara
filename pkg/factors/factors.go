@@ -34,6 +34,10 @@ type Dataset struct {
 	// DistanceAdjustments turn great-circle distances into estimated
 	// actual distances per mode, matching the dataset's methodology.
 	DistanceAdjustments []distance.Adjustment `json:"distance_adjustments,omitempty"`
+	// VehicleAliases and FuelAliases map short names to full ids. Lookups
+	// accept either; results always carry the full id.
+	VehicleAliases []VehicleAlias    `json:"vehicle_aliases,omitempty"`
+	FuelAliases    map[string]string `json:"fuel_aliases,omitempty"`
 
 	legIdx  map[string]calc.Factor
 	hubIdx  map[string]calc.HubFactor
@@ -48,6 +52,13 @@ func Embedded(name string) (*Dataset, error) {
 	}
 	defer f.Close()
 	return Parse(f)
+}
+
+// VehicleAlias is a short name for a vehicle type within one mode.
+type VehicleAlias struct {
+	Mode        calc.Mode `json:"mode"`
+	Alias       string    `json:"alias"`
+	VehicleType string    `json:"vehicle_type"`
 }
 
 // EmbeddedNames lists the datasets bundled in the binary.
@@ -124,6 +135,27 @@ func Parse(r io.Reader) (*Dataset, error) {
 	}
 	if _, err := distance.NewGreatCircle(d.DistanceAdjustments); err != nil {
 		return nil, err
+	}
+	for _, a := range d.VehicleAliases {
+		k := legKey(a.Mode, a.Alias)
+		target, ok := d.legIdx[legKey(a.Mode, a.VehicleType)]
+		if !ok {
+			return nil, fmt.Errorf("vehicle alias %s points to unknown %s", k, a.VehicleType)
+		}
+		if _, clash := d.legIdx[k]; clash {
+			return nil, fmt.Errorf("vehicle alias %s clashes with an existing vehicle type", k)
+		}
+		d.legIdx[k] = target
+	}
+	for alias, id := range d.FuelAliases {
+		target, ok := d.fuelIdx[id]
+		if !ok {
+			return nil, fmt.Errorf("fuel alias %s points to unknown %s", alias, id)
+		}
+		if _, clash := d.fuelIdx[alias]; clash {
+			return nil, fmt.Errorf("fuel alias %s clashes with an existing fuel", alias)
+		}
+		d.fuelIdx[alias] = target
 	}
 	return &d, nil
 }

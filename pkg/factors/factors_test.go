@@ -85,3 +85,34 @@ func TestParse_DistanceAdjustments(t *testing.T) {
 		t.Error("want error for negative adjustment")
 	}
 }
+
+func TestAliases(t *testing.T) {
+	base := `"legs":[{"mode":"road","vehicle_type":"long/name","ttw_g_per_tkm":1}],
+		"fuels":[{"fuel":"long/diesel","unit":"l","ttw_kg_per_unit":2}]`
+	ds, err := Parse(strings.NewReader(`{` + base + `,
+		"vehicle_aliases":[{"mode":"road","alias":"hgv","vehicle_type":"long/name"}],
+		"fuel_aliases":{"diesel":"long/diesel"}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := ds.LegFactor(calc.Road, "hgv")
+	if err != nil || f.VehicleType != "long/name" {
+		t.Errorf("alias lookup = %+v, %v; want resolved full id", f, err)
+	}
+	if _, err := ds.LegFactor(calc.Rail, "hgv"); err == nil {
+		t.Error("alias must be scoped to its mode")
+	}
+	if ff, err := ds.FuelFactor("diesel"); err != nil || ff.Fuel != "long/diesel" {
+		t.Errorf("fuel alias = %+v, %v", ff, err)
+	}
+	bad := map[string]string{
+		"unknown target": `"vehicle_aliases":[{"mode":"road","alias":"x","vehicle_type":"nope"}]`,
+		"clash":          `"vehicle_aliases":[{"mode":"road","alias":"long/name","vehicle_type":"long/name"}]`,
+		"fuel unknown":   `"fuel_aliases":{"x":"nope"}`,
+	}
+	for name, extra := range bad {
+		if _, err := Parse(strings.NewReader(`{` + base + `,` + extra + `}`)); err == nil {
+			t.Errorf("%s: want error", name)
+		}
+	}
+}

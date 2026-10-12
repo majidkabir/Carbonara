@@ -105,7 +105,7 @@ components:
       type: object
       required: [fuel, amount]
       properties:
-        fuel: { type: string, example: liquid_fuels/diesel_average_biofuel_blend/litres }
+        fuel: { type: string, example: diesel }
         amount: { type: number, description: In the fuel factor's unit }
         vehicle_tonne_km:
           type: number
@@ -118,7 +118,7 @@ components:
         mode: { $ref: "#/components/schemas/Mode" }
         vehicle_type:
           type: string
-          example: hgv_non_refrigerated_all_diesel/average_non_refrigerated_hgvs/average_laden
+          example: hgv
           description: Must exist in the loaded dataset; list them with GET /v1/factors
         from: { $ref: "#/components/schemas/Location" }
         to: { $ref: "#/components/schemas/Location" }

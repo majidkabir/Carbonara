@@ -5,14 +5,14 @@
     {
       "id": "truck-to-port",
       "mode": "road",
-      "vehicle_type": "hgv_non_refrigerated_all_diesel/average_non_refrigerated_hgvs/average_laden",
+      "vehicle_type": "hgv",
       "from": { "name": "Copenhagen", "lat": 55.6761, "lon": 12.5683 },
       "to": { "name": "Hamburg", "lat": 53.5511, "lon": 9.9937 }
     },
     {
       "id": "feeder",
       "mode": "sea",
-      "vehicle_type": "cargo_ship/container_ship/average",
+      "vehicle_type": "container_ship",
       "from": { "name": "Hamburg", "lat": 53.5511, "lon": 9.9937 },
       "to": { "name": "Rotterdam", "lat": 51.9244, "lon": 4.4777 },
       "distance_km": 560

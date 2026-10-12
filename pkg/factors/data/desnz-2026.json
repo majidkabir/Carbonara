@@ -2349,5 +2349,86 @@
       "source": "DESNZ 2026: Bioenergy \u003e Biogas \u003e Landfill gas (kWh)",
       "year": 2026
     }
-  ]
+  ],
+  "vehicle_aliases": [
+    {
+      "mode": "road",
+      "alias": "hgv",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/average_non_refrigerated_hgvs/average_laden"
+    },
+    {
+      "mode": "road",
+      "alias": "hgv_rigid",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/average_non_refrigerated_rigids/average_laden"
+    },
+    {
+      "mode": "road",
+      "alias": "hgv_artic",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/average_non_refrigerated_artics/average_laden"
+    },
+    {
+      "mode": "road",
+      "alias": "hgv_artic_33t",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/articulated_33t/average_laden"
+    },
+    {
+      "mode": "road",
+      "alias": "hgv_reefer",
+      "vehicle_type": "hgv_refrigerated_all_diesel/average_refrigerated_hgvs/average_laden"
+    },
+    {
+      "mode": "road",
+      "alias": "van",
+      "vehicle_type": "vans/average_up_to_3_5_tonnes/diesel"
+    },
+    {
+      "mode": "road",
+      "alias": "van_electric",
+      "vehicle_type": "vans/average_up_to_3_5_tonnes/battery_electric_vehicle"
+    },
+    {
+      "mode": "rail",
+      "alias": "freight_train",
+      "vehicle_type": "rail/freight_train"
+    },
+    {
+      "mode": "sea",
+      "alias": "container_ship",
+      "vehicle_type": "cargo_ship/container_ship/average"
+    },
+    {
+      "mode": "sea",
+      "alias": "bulk_carrier",
+      "vehicle_type": "cargo_ship/bulk_carrier/average"
+    },
+    {
+      "mode": "sea",
+      "alias": "general_cargo",
+      "vehicle_type": "cargo_ship/general_cargo/average"
+    },
+    {
+      "mode": "sea",
+      "alias": "roro",
+      "vehicle_type": "cargo_ship/roro_ferry/average"
+    },
+    {
+      "mode": "sea",
+      "alias": "ropax",
+      "vehicle_type": "cargo_ship/large_ropax_ferry/average"
+    },
+    {
+      "mode": "air",
+      "alias": "air_freight",
+      "vehicle_type": "freight_flights/international_to_from_non_uk/without_rf"
+    }
+  ],
+  "fuel_aliases": {
+    "diesel": "liquid_fuels/diesel_average_biofuel_blend/litres",
+    "diesel_mineral": "liquid_fuels/diesel_100pct_mineral_diesel/litres",
+    "hvo": "biofuel/biodiesel_hvo/litres",
+    "jet_fuel": "liquid_fuels/aviation_turbine_fuel/litres",
+    "marine_fuel_oil": "liquid_fuels/marine_fuel_oil/litres",
+    "marine_gas_oil": "liquid_fuels/marine_gas_oil/litres",
+    "petrol": "liquid_fuels/petrol_average_biofuel_blend/litres"
+  }
 }

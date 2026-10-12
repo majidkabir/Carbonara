@@ -87,7 +87,7 @@ func TestParse(t *testing.T) {
 	}
 
 	joined := strings.Join(res.Warnings, "\n")
-	for _, w := range []string{"no WTT factor for rail/freight_train", `no transport mode for "Pipeline"`, "no WTT factor for fuel liquid_fuels/diesel_average_biofuel_blend/tonnes"} {
+	for _, w := range []string{"alias road/hgv: target", "no WTT factor for rail/freight_train", `no transport mode for "Pipeline"`, "no WTT factor for fuel liquid_fuels/diesel_average_biofuel_blend/tonnes"} {
 		if !strings.Contains(joined, w) {
 			t.Errorf("missing warning %q in:\n%s", w, joined)
 		}
