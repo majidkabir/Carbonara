@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"flag"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/majidkabir/carbonara/pkg/batch"
 	"github.com/majidkabir/carbonara/pkg/calc"
 	"github.com/majidkabir/carbonara/pkg/csvio"
 	"github.com/majidkabir/carbonara/pkg/distance"
@@ -197,6 +199,8 @@ func runBatch(args []string) error {
 	fs := flag.NewFlagSet("batch", flag.ExitOnError)
 	var c common
 	c.register(fs)
+	workers := fs.Int("workers", 0, "parallel calculations (default: one per CPU)")
+	ungrouped := fs.Bool("ungrouped", false, "allow a shipment's rows anywhere in the file (loads the whole file into memory)")
 	_ = fs.Parse(args)
 	if fs.NArg() != 1 {
 		return fmt.Errorf("batch: expected one CSV file")
@@ -210,33 +214,59 @@ func runBatch(args []string) error {
 		return err
 	}
 	defer f.Close()
-	items, err := csvio.Read(f)
-	if err != nil {
-		return err
-	}
-	w, err := csvio.NewWriter(os.Stdout)
-	if err != nil {
-		return err
-	}
-	failed := 0
-	for _, it := range items {
-		err := it.Err
-		var res calc.Result
-		if err == nil {
-			res, err = calculator.Calculate(context.Background(), it.Shipment)
-		}
+
+	var src batch.Source
+	if *ungrouped {
+		items, err := csvio.Read(f)
 		if err != nil {
-			failed++
+			return err
 		}
-		if werr := w.Write(it.Shipment.ID, res, err); werr != nil {
-			return werr
+		src = &sliceSource{items: items}
+	} else {
+		r, err := csvio.NewReader(bufio.NewReaderSize(f, 1<<20))
+		if err != nil {
+			return err
 		}
+		src = r
 	}
-	if err := w.Flush(); err != nil {
+
+	bw := bufio.NewWriterSize(os.Stdout, 1<<20)
+	w, err := csvio.NewWriter(bw)
+	if err != nil {
 		return err
 	}
-	fmt.Fprintf(os.Stderr, "%d shipments, %d failed\n", len(items), failed)
-	return nil
+	ungroupedSeen := false
+	stats, err := batch.Process(context.Background(), calculator, src, *workers,
+		func(it csvio.Item, res calc.Result, err error) error {
+			if err != nil && strings.Contains(err.Error(), "must be together") {
+				ungroupedSeen = true
+			}
+			return w.Write(it.Shipment.ID, res, err)
+		})
+	if ferr := w.Flush(); err == nil {
+		err = ferr
+	}
+	if ferr := bw.Flush(); err == nil {
+		err = ferr
+	}
+	fmt.Fprintf(os.Stderr, "%d shipments, %d failed\n", stats.Shipments, stats.Failed)
+	if ungroupedSeen {
+		fmt.Fprintln(os.Stderr, "hint: some shipments' rows are split up; sort the file by shipment_id, or use -ungrouped")
+	}
+	return err
+}
+
+type sliceSource struct {
+	items []csvio.Item
+	i     int
+}
+
+func (s *sliceSource) Next() (csvio.Item, error) {
+	if s.i >= len(s.items) {
+		return csvio.Item{}, io.EOF
+	}
+	s.i++
+	return s.items[s.i-1], nil
 }
 
 func runFactors(args []string) error {

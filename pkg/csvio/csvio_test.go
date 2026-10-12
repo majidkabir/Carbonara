@@ -3,6 +3,8 @@ package csvio
 import (
 	"bytes"
 	"errors"
+	"io"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -127,5 +129,82 @@ func TestRead_Energy(t *testing.T) {
 	}
 	if l := items[0].Shipment.Legs[0]; items[0].Err != nil || l.EnergyKWhPerTkm != 0.03 || l.Country != "DNK" {
 		t.Errorf("leg = %+v, %v", l, items[0].Err)
+	}
+}
+
+func readAll(t *testing.T, in string) []Item {
+	t.Helper()
+	r, err := NewReader(strings.NewReader(in))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out []Item
+	for {
+		it, err := r.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		out = append(out, it)
+	}
+	if _, err := r.Next(); !errors.Is(err, io.EOF) {
+		t.Errorf("Next after EOF = %v, want EOF", err)
+	}
+	return out
+}
+
+// On grouped input the streaming Reader must produce exactly what Read does.
+func TestReader_MatchesRead(t *testing.T) {
+	want, err := Read(strings.NewReader(input))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := readAll(t, input)
+	if len(got) != len(want) {
+		t.Fatalf("got %d items, want %d", len(got), len(want))
+	}
+	for i := range want {
+		if !reflect.DeepEqual(got[i].Shipment, want[i].Shipment) || (got[i].Err == nil) != (want[i].Err == nil) {
+			t.Errorf("item %d:\n got %+v\nwant %+v", i, got[i], want[i])
+		}
+		if want[i].Err != nil && got[i].Err.Error() != want[i].Err.Error() {
+			t.Errorf("item %d error %q, want %q", i, got[i].Err, want[i].Err)
+		}
+	}
+}
+
+func TestReader_Ungrouped(t *testing.T) {
+	in := "shipment_id,weight_kg,mode,distance_km\nA,1,road,1\nB,1,road,1\nA,1,road,x\nA,1,road,2\nC,1,road,1\n"
+	got := readAll(t, in)
+	ids := []string{}
+	for _, it := range got {
+		ids = append(ids, it.Shipment.ID)
+	}
+	if strings.Join(ids, ",") != "A,B,A,C" {
+		t.Fatalf("ids = %v", ids)
+	}
+	if got[0].Err != nil || got[1].Err != nil || got[3].Err != nil {
+		t.Errorf("unexpected errors: %v %v %v", got[0].Err, got[1].Err, got[3].Err)
+	}
+	// The reappearing A is rejected with both line numbers.
+	if e := got[2].Err; e == nil || !strings.Contains(e.Error(), "line 4") || !strings.Contains(e.Error(), "first seen on line 2") {
+		t.Errorf("reappearing A: %v", e)
+	}
+}
+
+func TestReader_LineNumbers(t *testing.T) {
+	in := "shipment_id,weight_kg,mode,distance_km\nA,1,road,1\nB,1,road,bad\n"
+	got := readAll(t, in)
+	if e := got[1].Err; e == nil || !strings.Contains(e.Error(), "line 3") {
+		t.Errorf("want error on line 3, got %v", e)
+	}
+	r, _ := NewReader(strings.NewReader("shipment_id,weight_kg\nA,1\n,2\n"))
+	if _, err := r.Next(); err == nil || !strings.Contains(err.Error(), "line 3") {
+		t.Errorf("empty id: want structural error on line 3, got %v", err)
+	}
+	if _, err := NewReader(strings.NewReader("")); err == nil {
+		t.Error("empty input: want error")
 	}
 }

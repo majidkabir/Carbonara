@@ -2,7 +2,8 @@
 //
 // Input has a header row; column order is free and unknown columns are
 // ignored. One row per leg, or per hub stop when hub_type is set. Rows are
-// grouped into shipments by shipment_id, in order of first appearance.
+// grouped into shipments by shipment_id: anywhere in the file for Read,
+// next to each other for the streaming Reader.
 //
 //	shipment_id                                     required
 //	weight_kg, or teu with teu_net_tonnes or container_load   cargo
@@ -18,6 +19,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"strconv"
 	"strings"
@@ -31,31 +33,16 @@ type Item struct {
 	Err      error
 }
 
-// Read parses all shipments from r. Row-level problems are reported on the
-// affected shipment's Item, so one bad row doesn't fail the whole file.
-// Structural problems (no header, missing required columns) return an error.
+// Read parses all shipments from r into memory. Row-level problems are
+// reported on the affected shipment's Item, so one bad row doesn't fail the
+// whole file. Structural problems (no header, missing required columns)
+// return an error. A shipment's rows may be anywhere in the file; for large
+// files use Reader, which streams but needs each shipment's rows together.
 func Read(r io.Reader) ([]Item, error) {
-	cr := csv.NewReader(r)
-	cr.FieldsPerRecord = -1
-	cr.TrimLeadingSpace = true
-
-	header, err := cr.Read()
+	cr, col, err := open(r)
 	if err != nil {
-		return nil, fmt.Errorf("read header: %w", err)
+		return nil, err
 	}
-	col := make(map[string]int, len(header))
-	for i, h := range header {
-		col[strings.ToLower(strings.TrimSpace(strings.TrimPrefix(h, "\uFEFF")))] = i
-	}
-	if _, ok := col["shipment_id"]; !ok {
-		return nil, errors.New(`missing required column "shipment_id"`)
-	}
-	_, hasW := col["weight_kg"]
-	_, hasT := col["teu"]
-	if !hasW && !hasT {
-		return nil, errors.New(`need a "weight_kg" or "teu" column`)
-	}
-
 	var items []*Item
 	byID := map[string]*Item{}
 	line := 1
@@ -92,6 +79,114 @@ func Read(r io.Reader) ([]Item, error) {
 		out[i] = *it
 	}
 	return out, nil
+}
+
+func open(r io.Reader) (*csv.Reader, map[string]int, error) {
+	cr := csv.NewReader(r)
+	cr.FieldsPerRecord = -1
+	cr.TrimLeadingSpace = true
+
+	header, err := cr.Read()
+	if err != nil {
+		return nil, nil, fmt.Errorf("read header: %w", err)
+	}
+	col := make(map[string]int, len(header))
+	for i, h := range header {
+		col[strings.ToLower(strings.TrimSpace(strings.TrimPrefix(h, "\uFEFF")))] = i
+	}
+	if _, ok := col["shipment_id"]; !ok {
+		return nil, nil, errors.New(`missing required column "shipment_id"`)
+	}
+	_, hasW := col["weight_kg"]
+	_, hasT := col["teu"]
+	if !hasW && !hasT {
+		return nil, nil, errors.New(`need a "weight_kg" or "teu" column`)
+	}
+	cr.ReuseRecord = true
+	return cr, col, nil
+}
+
+// Reader streams shipments from CSV one at a time, so memory stays flat
+// however large the file. Each shipment's rows must be next to each other
+// (as when the file is sorted or grouped by shipment_id); a shipment_id
+// that reappears after another shipment is returned as an error Item.
+type Reader struct {
+	cr      *csv.Reader
+	col     map[string]int
+	line    int
+	cur     *Item
+	curLine int
+	next    []string // a row read ahead that starts the next shipment
+	// seen maps a 64-bit hash of each finished shipment_id to its first
+	// line, to catch ungrouped files without keeping every id in memory.
+	seen map[uint64]int
+	done bool
+}
+
+// NewReader reads the header and returns a streaming Reader.
+func NewReader(r io.Reader) (*Reader, error) {
+	cr, col, err := open(r)
+	if err != nil {
+		return nil, err
+	}
+	return &Reader{cr: cr, col: col, line: 1, seen: map[uint64]int{}}, nil
+}
+
+// Next returns the next shipment, or io.EOF after the last one. Other
+// errors are structural (malformed CSV, empty shipment_id) and end the read.
+func (r *Reader) Next() (Item, error) {
+	for {
+		var rec []string
+		if r.next != nil {
+			rec, r.next = r.next, nil
+		} else if !r.done {
+			var err error
+			rec, err = r.cr.Read()
+			r.line++
+			switch {
+			case errors.Is(err, io.EOF):
+				r.done = true
+			case err != nil:
+				return Item{}, fmt.Errorf("line %d: %w", r.line, err)
+			}
+		}
+		if rec == nil {
+			if r.cur == nil {
+				return Item{}, io.EOF
+			}
+			it := *r.cur
+			r.cur = nil
+			return it, nil
+		}
+
+		row := rowReader{rec: rec, col: r.col}
+		id := row.str("shipment_id")
+		if id == "" {
+			return Item{}, fmt.Errorf("line %d: empty shipment_id", r.line)
+		}
+		if r.cur != nil && r.cur.Shipment.ID != id {
+			// Hold this row for the next call; it starts another shipment.
+			r.next = append([]string(nil), rec...)
+			it := *r.cur
+			r.cur = nil
+			return it, nil
+		}
+		if r.cur == nil {
+			r.cur = &Item{Shipment: calc.Shipment{ID: id}}
+			h := fnv.New64a()
+			_, _ = h.Write([]byte(id))
+			if first, dup := r.seen[h.Sum64()]; dup {
+				r.cur.Err = fmt.Errorf("line %d: rows for shipment %q must be together (first seen on line %d)", r.line, id, first)
+			} else {
+				r.seen[h.Sum64()] = r.line
+			}
+		}
+		if r.cur.Err == nil {
+			if err := addRow(&r.cur.Shipment, row); err != nil {
+				r.cur.Err = fmt.Errorf("line %d: %w", r.line, err)
+			}
+		}
+	}
 }
 
 func addRow(s *calc.Shipment, row rowReader) error {

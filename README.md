@@ -121,6 +121,8 @@ Carbonara isn't certified or verified against ISO 14083, and doesn't yet do ISO 
 
 A bad row fails only its shipment; the rest still calculate.
 
+`batch` streams: it reads one shipment at a time and calculates in parallel (`-workers`, default one per CPU), writing results in input order. Memory stays flat — a million rows used about 50 MB. This needs each shipment's rows next to each other (sorted or grouped by `shipment_id`); split-up shipments are reported per shipment. For unsorted files use `-ungrouped`, which loads the whole file.
+
 ## Web page
 
 `carbonara serve` also serves a page at `/`: enter a shipment leg by leg and see its emissions, a bar of each leg's share split into vehicle and fuel-supply emissions, and for every number the distance method, calculation method, data type and factor source. It opens with a worked example. Works offline (no external scripts or fonts) and in light or dark mode.
@@ -188,7 +190,8 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 | `pkg/calc` | Domain model and calculation. Stdlib only. |
 | `pkg/factors` | Factor datasets, embedded or from file. |
 | `pkg/distance` | Great-circle with per-mode adjustment, OSRM road routing, maritime network routing. |
-| `pkg/csvio` | CSV batch input and output. |
+| `pkg/csvio` | CSV input (in-memory or streaming) and output. |
+| `pkg/batch` | Parallel, ordered, bounded-memory batch processing. |
 | `internal/desnz` | DESNZ flat-file importer. |
 | `internal/xlsx` | Minimal stdlib-only .xlsx reader. |
 | `internal/grid` | Grid intensity importer (Our World in Data / Ember). |
