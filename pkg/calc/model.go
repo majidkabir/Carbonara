@@ -30,7 +30,38 @@ type Leg struct {
 	To          Location `json:"to"`
 	// DistanceKm overrides the DistanceProvider when > 0 (e.g. actual odometer distance).
 	DistanceKm float64 `json:"distance_km,omitempty"`
+	// Fuel, when set, switches the leg to the fuel-based (primary data) method.
+	Fuel *FuelUse `json:"fuel,omitempty"`
 }
+
+// FuelUse is measured fuel for the vehicle trip a leg is part of.
+type FuelUse struct {
+	Fuel   string  `json:"fuel"`   // e.g. "diesel", must match a FuelFactor
+	Amount float64 `json:"amount"` // in the FuelFactor's unit
+	// VehicleTonneKm is the total tonne-km carried on that trip, used to
+	// allocate fuel to this shipment by tonne-km share. 0 means the whole
+	// trip belongs to this shipment.
+	VehicleTonneKm float64 `json:"vehicle_tonne_km,omitempty"`
+}
+
+// FuelFactor converts fuel to emissions, in kg CO2e per unit of fuel.
+type FuelFactor struct {
+	Fuel   string  `json:"fuel"`
+	Unit   string  `json:"unit"` // e.g. "l", "kg", "kWh"
+	TTW    float64 `json:"ttw_kg_per_unit"`
+	WTT    float64 `json:"wtt_kg_per_unit"`
+	Source string  `json:"source"`
+	Year   int     `json:"year"`
+}
+
+// WTW is the well-to-wheel factor (WTT + TTW).
+func (f FuelFactor) WTW() float64 { return f.TTW + f.WTT }
+
+// Calculation methods recorded on each leg result.
+const (
+	MethodIntensity = "intensity"
+	MethodFuel      = "fuel"
+)
 
 // HubStop is a transshipment or warehouse activity between legs.
 type HubStop struct {
@@ -75,7 +106,12 @@ type LegResult struct {
 	TonneKm    float64 `json:"tonne_km"`
 	TTWKg      float64 `json:"ttw_kg"`
 	WTWKg      float64 `json:"wtw_kg"`
-	Factor     Factor  `json:"factor"`
+	Method     string  `json:"method"`
+	// Factor is set for the intensity method, FuelFactor and
+	// AllocationShare for the fuel method.
+	Factor          *Factor     `json:"factor,omitempty"`
+	FuelFactor      *FuelFactor `json:"fuel_factor,omitempty"`
+	AllocationShare float64     `json:"allocation_share,omitempty"`
 }
 
 // HubResult is the outcome for one hub stop.

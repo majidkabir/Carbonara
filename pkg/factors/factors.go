@@ -18,13 +18,15 @@ var embedded embed.FS
 
 // Dataset is a named set of factors that implements calc.FactorProvider.
 type Dataset struct {
-	Name string           `json:"name"`
-	Note string           `json:"note,omitempty"`
-	Legs []calc.Factor    `json:"legs"`
-	Hubs []calc.HubFactor `json:"hubs"`
+	Name  string            `json:"name"`
+	Note  string            `json:"note,omitempty"`
+	Legs  []calc.Factor     `json:"legs"`
+	Hubs  []calc.HubFactor  `json:"hubs"`
+	Fuels []calc.FuelFactor `json:"fuels"`
 
-	legIdx map[string]calc.Factor
-	hubIdx map[string]calc.HubFactor
+	legIdx  map[string]calc.Factor
+	hubIdx  map[string]calc.HubFactor
+	fuelIdx map[string]calc.FuelFactor
 }
 
 // Embedded loads a dataset bundled in the binary, e.g. "sample".
@@ -74,6 +76,16 @@ func Parse(r io.Reader) (*Dataset, error) {
 		}
 		d.hubIdx[h.HubType] = h
 	}
+	d.fuelIdx = make(map[string]calc.FuelFactor, len(d.Fuels))
+	for _, f := range d.Fuels {
+		if f.TTW < 0 || f.WTT < 0 {
+			return nil, fmt.Errorf("negative fuel factor for %s", f.Fuel)
+		}
+		if _, dup := d.fuelIdx[f.Fuel]; dup {
+			return nil, fmt.Errorf("duplicate fuel factor for %s", f.Fuel)
+		}
+		d.fuelIdx[f.Fuel] = f
+	}
 	return &d, nil
 }
 
@@ -93,6 +105,14 @@ func (d *Dataset) HubFactor(t string) (calc.HubFactor, error) {
 		return h, nil
 	}
 	return calc.HubFactor{}, fmt.Errorf("no hub factor for %s in dataset %q", t, d.Name)
+}
+
+// FuelFactor implements calc.FactorProvider.
+func (d *Dataset) FuelFactor(fuel string) (calc.FuelFactor, error) {
+	if f, ok := d.fuelIdx[fuel]; ok {
+		return f, nil
+	}
+	return calc.FuelFactor{}, fmt.Errorf("no fuel factor for %s in dataset %q", fuel, d.Name)
 }
 
 var _ calc.FactorProvider = (*Dataset)(nil)

@@ -12,5 +12,10 @@
   "hubs": [
     { "hub_type": "container_terminal", "wtw_g_per_tonne": 1000, "source": "placeholder", "year": 2026 },
     { "hub_type": "warehouse_ambient", "wtw_g_per_tonne": 2000, "source": "placeholder", "year": 2026 }
+  ],
+  "fuels": [
+    { "fuel": "diesel", "unit": "l", "ttw_kg_per_unit": 2.5, "wtt_kg_per_unit": 0.6, "source": "placeholder", "year": 2026 },
+    { "fuel": "hvo100", "unit": "l", "ttw_kg_per_unit": 0.0, "wtt_kg_per_unit": 0.5, "source": "placeholder", "year": 2026 },
+    { "fuel": "electricity_dk", "unit": "kWh", "ttw_kg_per_unit": 0.0, "wtt_kg_per_unit": 0.1, "source": "placeholder", "year": 2026 }
   ]
 }

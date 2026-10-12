@@ -8,8 +8,9 @@ import (
 )
 
 type fakeFactors struct {
-	legs map[string]Factor
-	hubs map[string]HubFactor
+	legs  map[string]Factor
+	hubs  map[string]HubFactor
+	fuels map[string]FuelFactor
 }
 
 func (f fakeFactors) LegFactor(m Mode, vt string) (Factor, error) {
@@ -26,6 +27,13 @@ func (f fakeFactors) HubFactor(t string) (HubFactor, error) {
 	return HubFactor{}, errors.New("no hub factor")
 }
 
+func (f fakeFactors) FuelFactor(fuel string) (FuelFactor, error) {
+	if x, ok := f.fuels[fuel]; ok {
+		return x, nil
+	}
+	return FuelFactor{}, errors.New("no fuel factor")
+}
+
 type fixedDistance float64
 
 func (d fixedDistance) Distance(context.Context, Mode, Location, Location) (float64, error) {
@@ -37,7 +45,58 @@ var testFactors = fakeFactors{
 		"road/truck_40t": {Mode: Road, VehicleType: "truck_40t", TTW: 60, WTT: 15},
 		"sea/container":  {Mode: Sea, VehicleType: "container", TTW: 8, WTT: 2},
 	},
-	hubs: map[string]HubFactor{"container_terminal": {HubType: "container_terminal", WTWPerTonneG: 1000}},
+	hubs:  map[string]HubFactor{"container_terminal": {HubType: "container_terminal", WTWPerTonneG: 1000}},
+	fuels: map[string]FuelFactor{"diesel": {Fuel: "diesel", Unit: "l", TTW: 2.5, WTT: 0.5}},
+}
+
+// Fuel method golden tests (hand-computed).
+func TestCalculate_Fuel(t *testing.T) {
+	c := Calculator{Factors: testFactors}
+	tests := []struct {
+		name             string
+		fuel             FuelUse
+		wantTTW, wantWTW float64
+		wantShare        float64
+	}{
+		// 10 t x 300 km = 3000 tkm, whole trip: 100 l x 2.5 = 250 TTW, x 3.0 = 300 WTW
+		{"dedicated trip", FuelUse{Fuel: "diesel", Amount: 100}, 250, 300, 1},
+		// shared trip of 12000 tkm -> share 0.25
+		{"shared trip", FuelUse{Fuel: "diesel", Amount: 100, VehicleTonneKm: 12000}, 62.5, 75, 0.25},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fu := tt.fuel
+			r, err := c.Calculate(context.Background(), Shipment{WeightKg: 10_000, Legs: []Leg{
+				{ID: "l1", Mode: Road, DistanceKm: 300, Fuel: &fu},
+			}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			l := r.Legs[0]
+			if l.Method != MethodFuel || !approx(l.TTWKg, tt.wantTTW) || !approx(l.WTWKg, tt.wantWTW) ||
+				!approx(l.AllocationShare, tt.wantShare) || !approx(r.TonneKm, 3000) {
+				t.Errorf("got %+v", l)
+			}
+		})
+	}
+}
+
+func TestCalculate_FuelErrors(t *testing.T) {
+	c := Calculator{Factors: testFactors}
+	cases := map[string]FuelUse{
+		"negative amount": {Fuel: "diesel", Amount: -1},
+		"share above one": {Fuel: "diesel", Amount: 1, VehicleTonneKm: 10},
+		"unknown fuel":    {Fuel: "unobtainium", Amount: 1},
+	}
+	for name, fu := range cases {
+		fu := fu
+		_, err := c.Calculate(context.Background(), Shipment{WeightKg: 1000, Legs: []Leg{
+			{ID: "l", Mode: Road, DistanceKm: 100, Fuel: &fu},
+		}})
+		if err == nil {
+			t.Errorf("%s: want error", name)
+		}
+	}
 }
 
 const eps = 1e-9

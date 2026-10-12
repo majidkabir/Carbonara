@@ -36,3 +36,16 @@ func TestParse_Rejects(t *testing.T) {
 		}
 	}
 }
+
+func TestEmbeddedSample_Fuel(t *testing.T) {
+	d, err := Embedded("sample")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.FuelFactor("diesel"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.FuelFactor("unobtainium"); err == nil {
+		t.Error("want error for unknown fuel")
+	}
+}
