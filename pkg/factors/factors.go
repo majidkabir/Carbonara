@@ -322,7 +322,13 @@ func (d *Dataset) LegFactor(m calc.Mode, vt string) (calc.Factor, error) {
 	if f, ok := d.legIdx[legKey(m, vt)]; ok {
 		return f, nil
 	}
-	return calc.Factor{}, fmt.Errorf("no factor for %s/%s in dataset %q", m, vt, d.Name)
+	for _, f := range d.Legs {
+		if f.Mode == m {
+			return calc.Factor{}, fmt.Errorf("no factor for %s/%s in dataset %q", m, vt, d.Name)
+		}
+	}
+	return calc.Factor{}, fmt.Errorf("dataset %q has no %s factors; add a layer with your own (-factors %s,mine.json) "+
+		"or build one from fuel data with carbonara toc", d.Name, m, d.Name)
 }
 
 // HubFactor implements calc.FactorProvider.

@@ -304,3 +304,14 @@ func TestOpen_Layered(t *testing.T) {
 		t.Error("missing layer: want error")
 	}
 }
+
+func TestLegFactor_MissingModeHint(t *testing.T) {
+	ds, _ := Open(Default)
+	_, err := ds.LegFactor(calc.InlandWaterway, "barge")
+	if err == nil || !strings.Contains(err.Error(), "has no inland_waterway factors") || !strings.Contains(err.Error(), "carbonara toc") {
+		t.Errorf("err = %v", err)
+	}
+	if _, err := ds.LegFactor(calc.Road, "unicycle"); err == nil || strings.Contains(err.Error(), "has no road factors") {
+		t.Errorf("road has factors, want plain not-found error, got %v", err)
+	}
+}

@@ -201,6 +201,7 @@ Road aliases use DESNZ's "average laden" factors.
 
 **Notes on DESNZ data:**
 - Air freight comes `with_rf` and `without_rf` (radiative forcing). ISO 14083 reports without RF.
+- No inland waterway factors. Use `carbonara toc` with a barge operator's fuel data, or add factors as a layer from a source you're licensed to use. The Dutch [CO2emissiefactoren.nl](https://www.co2emissiefactoren.nl/) list covers inland shipping; check its terms before redistributing.
 - No hub factors are included, and none ship by default: the openly published averages we found (Fraunhofer IML's [logistics site values](https://reff.iml.fhg.de/), e.g. per tonne for transhipment and warehousing) carry no reuse licence. Add your own as a layer:
 
   ```json
@@ -261,6 +262,7 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 - [x] Streaming, parallel batch
 - [x] Transport and hub operation categories from your own data
 - [x] Package docs and runnable examples
+- [ ] Bundled inland waterway factors (needs an openly licensed source)
 - [ ] Cargo-type presets (needs licensed values, e.g. EcoTransIT with permission)
 
 ## Releasing
