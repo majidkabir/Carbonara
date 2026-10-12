@@ -1,6 +1,7 @@
 package factors
 
 import (
+	"math"
 	"strings"
 	"testing"
 
@@ -133,5 +134,67 @@ func TestContainerLoads(t *testing.T) {
 	}
 	if _, err := Parse(strings.NewReader(`{"container_loads":{"x":0}}`)); err == nil {
 		t.Error("want error for zero tonnes")
+	}
+}
+
+// The load models are derived from DESNZ per-km rows; at the published
+// load points they must reproduce DESNZ's own per-tonne-km factors.
+func TestLoadModelsReproduceDESNZ(t *testing.T) {
+	ds, err := Open(Default)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ds.LoadModels) < 16 {
+		t.Fatalf("got %d load models", len(ds.LoadModels))
+	}
+	worst := 0.0
+	for _, m := range ds.LoadModels {
+		for _, p := range []struct {
+			lf     float64
+			suffix string
+		}{{1, "100pct_laden"}, {0.5, "50pct_laden"}} {
+			want, err := ds.LegFactor(m.Mode, m.VehicleType+"/"+p.suffix)
+			if err != nil {
+				t.Fatal(err)
+			}
+			ttw, wtt, err := m.PerTonneKm(p.lf, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// TTW and WTW must match DESNZ within rounding. WTT alone may
+			// differ by up to ~3.6%: DESNZ's own WTT per-km and per-tonne-km
+			// rows imply payloads that differ by that much, and the model
+			// follows the per-km rows (WTT proportional to TTW, ratio ~0.234).
+			checks := []struct {
+				name      string
+				got, want float64
+				tol       float64
+			}{
+				{"TTW", ttw, want.TTW, 0.01},
+				{"WTW", ttw + wtt, want.WTW(), 0.01},
+				{"WTT", wtt, want.WTT, 0.04},
+			}
+			for _, c := range checks {
+				rel := math.Abs(c.got/c.want - 1)
+				if c.name == "WTW" {
+					worst = math.Max(worst, rel)
+				}
+				if rel > c.tol {
+					t.Errorf("%s %s at %v: model %.3f vs DESNZ %.3f (%.2f%%)", m.VehicleType, c.name, p.lf, c.got, c.want, rel*100)
+				}
+			}
+		}
+	}
+	t.Logf("worst WTW deviation from DESNZ: %.3f%%", worst*100)
+
+	// Alias and full ids find the class model.
+	for _, vt := range []string{"hgv", "hgv_non_refrigerated_all_diesel/average_non_refrigerated_hgvs/average_laden",
+		"hgv_non_refrigerated_all_diesel/average_non_refrigerated_hgvs"} {
+		if m, err := ds.LoadModel(calc.Road, vt); err != nil || m.VehicleType != "hgv_non_refrigerated_all_diesel/average_non_refrigerated_hgvs" {
+			t.Errorf("LoadModel(%q) = %q, %v", vt, m.VehicleType, err)
+		}
+	}
+	if _, err := ds.LoadModel(calc.Road, "van"); err == nil {
+		t.Error("vans have no laden rows in DESNZ, want no load model")
 	}
 }

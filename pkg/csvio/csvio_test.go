@@ -108,3 +108,13 @@ func TestRead_TEU(t *testing.T) {
 		t.Error("C2: want conflicting container_load error")
 	}
 }
+
+func TestRead_LoadFactor(t *testing.T) {
+	items, err := Read(strings.NewReader("shipment_id,weight_kg,mode,vehicle_type,distance_km,load_factor,empty_trip_factor\nS,1000,road,hgv,10,0.8,0.25\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if l := items[0].Shipment.Legs[0]; items[0].Err != nil || l.LoadFactor != 0.8 || l.EmptyTripFactor != 0.25 {
+		t.Errorf("leg = %+v, %v", l, items[0].Err)
+	}
+}

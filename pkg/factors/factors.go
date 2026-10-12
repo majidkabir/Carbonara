@@ -41,8 +41,11 @@ type Dataset struct {
 	// ContainerLoads maps profile names (e.g. "average") to net cargo
 	// tonnes per TEU, for shipments given in TEU.
 	ContainerLoads map[string]float64 `json:"container_loads,omitempty"`
+	// LoadModels give load-dependent emissions per vehicle class.
+	LoadModels []calc.LoadModel `json:"load_models,omitempty"`
 
 	legIdx  map[string]calc.Factor
+	loadIdx map[string]calc.LoadModel
 	hubIdx  map[string]calc.HubFactor
 	fuelIdx map[string]calc.FuelFactor
 }
@@ -150,6 +153,17 @@ func Parse(r io.Reader) (*Dataset, error) {
 		}
 		d.legIdx[k] = target
 	}
+	d.loadIdx = make(map[string]calc.LoadModel, len(d.LoadModels))
+	for _, m := range d.LoadModels {
+		if err := m.Validate(); err != nil {
+			return nil, err
+		}
+		k := legKey(m.Mode, m.VehicleType)
+		if _, dup := d.loadIdx[k]; dup {
+			return nil, fmt.Errorf("duplicate load model for %s", k)
+		}
+		d.loadIdx[k] = m
+	}
 	for name, t := range d.ContainerLoads {
 		if t <= 0 {
 			return nil, fmt.Errorf("container load %q must be > 0 tonnes per TEU", name)
@@ -194,6 +208,23 @@ func (d *Dataset) FuelFactor(fuel string) (calc.FuelFactor, error) {
 	return calc.FuelFactor{}, fmt.Errorf("no fuel factor for %s in dataset %q", fuel, d.Name)
 }
 
+// LoadModel implements calc.LoadModelProvider. vt can be the model's class
+// id, or any vehicle type or alias of that class (e.g. "hgv", or a DESNZ id
+// ending in "/average_laden"): the load suffix is dropped to find the class.
+func (d *Dataset) LoadModel(m calc.Mode, vt string) (calc.LoadModel, error) {
+	if lm, ok := d.loadIdx[legKey(m, vt)]; ok {
+		return lm, nil
+	}
+	if f, ok := d.legIdx[legKey(m, vt)]; ok {
+		if i := strings.LastIndex(f.VehicleType, "/"); i > 0 && strings.HasSuffix(f.VehicleType, "laden") {
+			if lm, ok := d.loadIdx[legKey(m, f.VehicleType[:i])]; ok {
+				return lm, nil
+			}
+		}
+	}
+	return calc.LoadModel{}, fmt.Errorf("no load model for %s/%s in dataset %q", m, vt, d.Name)
+}
+
 // ContainerLoad implements calc.ContainerLoadProvider.
 func (d *Dataset) ContainerLoad(name string) (float64, error) {
 	if t, ok := d.ContainerLoads[name]; ok {
@@ -211,4 +242,5 @@ func (d *Dataset) Distances() distance.GreatCircle {
 var (
 	_ calc.FactorProvider        = (*Dataset)(nil)
 	_ calc.ContainerLoadProvider = (*Dataset)(nil)
+	_ calc.LoadModelProvider     = (*Dataset)(nil)
 )

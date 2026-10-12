@@ -126,6 +126,15 @@ components:
           type: number
           description: Overrides computed distance when > 0
         fuel: { $ref: "#/components/schemas/FuelUse" }
+        load_factor:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 1
+          description: Share of payload capacity used; switches the leg to the dataset's load model
+        empty_trip_factor:
+          type: number
+          minimum: 0
+          description: Empty km per loaded km (needs load_factor)
     HubStop:
       type: object
       required: [hub_type]
@@ -186,7 +195,10 @@ components:
         tonne_km: { type: number }
         ttw_kg: { type: number }
         wtw_kg: { type: number }
-        method: { type: string, enum: [intensity, fuel] }
+        method: { type: string, enum: [intensity, fuel, load_model] }
+        load_factor: { type: number }
+        empty_trip_factor: { type: number }
+        payload_t: { type: number }
         factor: { $ref: "#/components/schemas/Factor" }
         fuel_factor: { $ref: "#/components/schemas/FuelFactor" }
         allocation_share: { type: number }

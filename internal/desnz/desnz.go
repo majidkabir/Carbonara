@@ -17,6 +17,7 @@ package desnz
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"sort"
 	"strconv"
@@ -55,7 +56,7 @@ func Parse(rows [][]string) (Result, error) {
 	var res Result
 	warn := func(format string, a ...any) { res.Warnings = append(res.Warnings, fmt.Sprintf(format, a...)) }
 
-	var freight, freightWTT, fuel, fuelWTT []row
+	var freight, freightWTT, fuel, fuelWTT, freightKm, freightWTTKm []row
 	for i := hdr + 1; i < len(rows); i++ {
 		get := func(c string) string {
 			idx := cols[c]
@@ -74,6 +75,10 @@ func Parse(rows [][]string) (Result, error) {
 			dst = &freight
 		case strings.HasPrefix(l1, "wtt") && strings.Contains(l1, "freight") && uom == "tonne.km":
 			dst = &freightWTT
+		case l1 == "freightinggoods" && uom == "km":
+			dst = &freightKm
+		case strings.HasPrefix(l1, "wtt") && strings.Contains(l1, "freight") && uom == "km":
+			dst = &freightWTTKm
 		case l1 == "fuels", l1 == "bioenergy":
 			dst = &fuel
 		case strings.HasPrefix(l1, "wtt") && (strings.Contains(l1, "fuel") || strings.Contains(l1, "bioenergy")):
@@ -159,6 +164,7 @@ func Parse(rows [][]string) (Result, error) {
 	// Unmatched fuel WTT rows are normal (WTT covers fuels with no direct
 	// emissions factor in some units), so they are not reported.
 	addAliases(ds, warn)
+	ds.LoadModels = loadModels(freight, freightKm, freightWTTKm, year, warn)
 	return res, nil
 }
 
@@ -290,4 +296,81 @@ func grams(kg float64) float64 { return clean(kg * 1000) }
 func clean(v float64) float64 {
 	r, _ := strconv.ParseFloat(strconv.FormatFloat(v, 'g', 12, 64), 64)
 	return r
+}
+
+// loadModels builds per-class load models from the per-km rows at 0%, 50%
+// and 100% laden. Payload capacity is implied by the 100% laden rows:
+// (kg per vehicle-km) / (kg per tonne-km) = tonnes carried.
+func loadModels(freight, perKm, wttKm []row, year int, warn func(string, ...any)) []calc.LoadModel {
+	loads := map[string]float64{"0pct_laden": 0, "50pct_laden": 0.5, "100pct_laden": 1}
+	type class struct {
+		mode    calc.Mode
+		id, lbl string
+		ttw     map[float64]float64
+		wtt     map[float64]float64
+		tkm100  float64
+		line    int
+	}
+	classes := map[string]*class{}
+	var order []string
+	get := func(r row) (*class, float64, bool) {
+		lf, ok := loads[slug(r.text)]
+		if !ok {
+			return nil, 0, false
+		}
+		mode, ok := modeOf(r.level2)
+		if !ok {
+			return nil, 0, false
+		}
+		k := key(row{level2: r.level2, level3: r.level3, level4: r.level4})
+		c := classes[k]
+		if c == nil {
+			c = &class{mode: mode, id: slugPath(r.level2, r.level3, r.level4),
+				lbl: labelPath(r.level2, r.level3, r.level4), ttw: map[float64]float64{}, wtt: map[float64]float64{}, line: r.line}
+			classes[k] = c
+			order = append(order, k)
+		}
+		return c, lf, true
+	}
+	for _, r := range perKm {
+		if c, lf, ok := get(r); ok {
+			c.ttw[lf] = grams(r.value)
+		}
+	}
+	for _, r := range wttKm {
+		k := key(row{level2: r.level2, level3: r.level3, level4: r.level4})
+		if c := classes[k]; c != nil {
+			if lf, ok := loads[slug(r.text)]; ok {
+				c.wtt[lf] = grams(r.value)
+			}
+		}
+	}
+	for _, r := range freight {
+		if slug(r.text) == "100pct_laden" {
+			if c := classes[key(row{level2: r.level2, level3: r.level3, level4: r.level4})]; c != nil {
+				c.tkm100 = grams(r.value)
+			}
+		}
+	}
+
+	var out []calc.LoadModel
+	for _, k := range order {
+		c := classes[k]
+		if len(c.ttw) != 3 || len(c.wtt) != 3 || c.tkm100 <= 0 {
+			warn("line %d: load model %s incomplete (needs 0/50/100%% laden per km, WTT and 100%% per tonne.km), skipped", c.line, c.id)
+			continue
+		}
+		m := calc.LoadModel{
+			Mode: c.mode, VehicleType: c.id, PayloadT: clean(c.ttw[1] / c.tkm100), Year: year,
+			Source: fmt.Sprintf("DESNZ %d: Freighting goods > %s (per km at 0/50/100%% laden; payload from 100%% laden per tonne.km)", year, c.lbl),
+		}
+		for _, lf := range []float64{0, 0.5, 1} {
+			m.Points = append(m.Points, calc.LoadPoint{Load: lf, TTW: c.ttw[lf], WTT: c.wtt[lf]})
+		}
+		if mid := (c.ttw[0] + c.ttw[1]) / 2; math.Abs(c.ttw[0.5]-mid)/mid > 0.02 {
+			warn("load model %s: 50%% laden is %.1f%% off linear; interpolating through it", c.id, (c.ttw[0.5]/mid-1)*100)
+		}
+		out = append(out, m)
+	}
+	return out
 }

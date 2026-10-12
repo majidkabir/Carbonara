@@ -25,7 +25,7 @@ curl -X POST localhost:8080/v1/calculate --data @examples/cph-rotterdam.json
 
 ## Calculation
 
-Two methods per leg, as in ISO 14083:
+Three methods per leg:
 
 **Intensity (modelled data)** — the default:
 ```
@@ -40,6 +40,13 @@ share  = shipment tonne-km / vehicle_tonne_km   (1 if not given)
 TTW kg = fuel_amount × TTW kg/unit × share
 WTW kg = fuel_amount × (TTW + WTT) kg/unit × share
 ```
+
+**Load model** — when a leg has `load_factor` (and optionally `empty_trip_factor`), for truck classes:
+```
+E(load)  = emissions per vehicle-km at that load (linear between 0%, 50%, 100% laden)
+g/tkm    = (E(load) + empty_trip_factor × E(empty)) / (payload_t × load_factor)
+```
+This is the capacity-utilisation approach EcoTransIT World and GLEC use, built entirely from DESNZ data: per-km factors at 0/50/100% laden give the load curve, and per-km ÷ per-tonne-km at 100% laden gives each class's payload (e.g. 17.9 t for an artic over 33 t). It reproduces DESNZ's per-tonne-km factors at 50% and 100% load within 0.82% WTW. (DESNZ's own well-to-tank rows per km and per tonne-km disagree by up to 3.6%; the model follows the per-km rows.) Works with aliases like `hgv`, or class ids like `hgv_non_refrigerated_all_diesel/articulated_33t`. Vans have no load data in DESNZ, so no model. Cargo-type presets (bulk/average/volume load and empty-trip values) aren't included: EcoTransIT's values need their permission to reuse.
 
 **Hubs** add `weight_t × hub g/t / 1000` (WTW) to the total. Intensity (g/tkm) covers transport only.
 
@@ -95,6 +102,7 @@ carbonara calc -osrm http://localhost:5000 examples/cph-rotterdam.json
 | `leg_id`, `mode`, `vehicle_type`, `distance_km` | leg |
 | `from_lat`, `from_lon`, `to_lat`, `to_lon` | leg, when `distance_km` is empty |
 | `fuel`, `fuel_amount`, `vehicle_tonne_km` | leg, fuel method |
+| `load_factor`, `empty_trip_factor` | leg, load model |
 | `hub_id`, `hub_type` | hub stop (row is a hub when `hub_type` is set) |
 
 A bad row fails only its shipment; the rest still calculate.
@@ -118,7 +126,7 @@ A bad row fails only its shipment; the rest still calculate.
 | `desnz-2026` (default) | UK government GHG conversion factors 2026, imported from the official flat file |
 | `sample` | Placeholder values, for tests only |
 
-A dataset is JSON with `legs` (g CO2e/tkm), `hubs` (g CO2e/t), `fuels` (kg CO2e/unit) and optional `distance_adjustments`, `vehicle_aliases`, `fuel_aliases` and `container_loads`, each factor with a TTW/WTT split, source and year. See [`sample.json`](pkg/factors/data/sample.json) for the shape.
+A dataset is JSON with `legs` (g CO2e/tkm), `hubs` (g CO2e/t), `fuels` (kg CO2e/unit) and optional `load_models`, `distance_adjustments`, `vehicle_aliases`, `fuel_aliases` and `container_loads`, each factor with a TTW/WTT split, source and year. See [`sample.json`](pkg/factors/data/sample.json) for the shape.
 
 **Vehicle types and fuel ids** follow the source's labels, e.g. `hgv_refrigerated_all_diesel/articulated_33t/100pct_laden` or `liquid_fuels/marine_gas_oil/tonnes`. Run `carbonara factors` to list them. Common ones have short aliases; results always show the full id used:
 

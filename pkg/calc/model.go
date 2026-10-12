@@ -32,6 +32,10 @@ type Leg struct {
 	DistanceKm float64 `json:"distance_km,omitempty"`
 	// Fuel, when set, switches the leg to the fuel-based (primary data) method.
 	Fuel *FuelUse `json:"fuel,omitempty"`
+	// LoadFactor (0..1] switches the leg to the dataset's load model for the
+	// vehicle, with EmptyTripFactor empty km per loaded km.
+	LoadFactor      float64 `json:"load_factor,omitempty"`
+	EmptyTripFactor float64 `json:"empty_trip_factor,omitempty"`
 }
 
 // FuelUse is measured fuel for the vehicle trip a leg is part of.
@@ -61,6 +65,7 @@ func (f FuelFactor) WTW() float64 { return f.TTW + f.WTT }
 const (
 	MethodIntensity = "intensity"
 	MethodFuel      = "fuel"
+	MethodLoadModel = "load_model"
 )
 
 // HubStop is a transshipment or warehouse activity between legs.
@@ -120,6 +125,10 @@ type LegResult struct {
 	Factor          *Factor     `json:"factor,omitempty"`
 	FuelFactor      *FuelFactor `json:"fuel_factor,omitempty"`
 	AllocationShare float64     `json:"allocation_share,omitempty"`
+	// Set for the load model method: the inputs used.
+	LoadFactor      float64 `json:"load_factor,omitempty"`
+	EmptyTripFactor float64 `json:"empty_trip_factor,omitempty"`
+	PayloadT        float64 `json:"payload_t,omitempty"`
 }
 
 // HubResult is the outcome for one hub stop.

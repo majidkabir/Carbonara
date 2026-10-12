@@ -143,8 +143,17 @@ func (c Calculator) leg(ctx context.Context, tonnes float64, leg Leg) (LegResult
 	tkm := tonnes * dist
 	lr := LegResult{LegID: leg.ID, DistanceKm: dist, DistanceMethod: method, TonneKm: tkm}
 
+	if leg.EmptyTripFactor != 0 && leg.LoadFactor == 0 {
+		return LegResult{}, fmt.Errorf("%w: empty_trip_factor needs load_factor", ErrInvalidLoad)
+	}
 	if leg.Fuel != nil {
+		if leg.LoadFactor != 0 {
+			return LegResult{}, fmt.Errorf("%w: give fuel or load_factor, not both", ErrInvalidLoad)
+		}
 		return c.fuelLeg(lr, *leg.Fuel)
+	}
+	if leg.LoadFactor != 0 {
+		return c.loadLeg(lr, leg)
 	}
 
 	f, err := c.Factors.LegFactor(leg.Mode, leg.VehicleType)
@@ -179,6 +188,32 @@ func (c Calculator) fuelLeg(lr LegResult, fu FuelUse) (LegResult, error) {
 	lr.AllocationShare = share
 	lr.TTWKg = fu.Amount * ff.TTW * share
 	lr.WTWKg = fu.Amount * ff.WTW() * share
+	return lr, nil
+}
+
+func (c Calculator) loadLeg(lr LegResult, leg Leg) (LegResult, error) {
+	lmp, ok := c.Factors.(LoadModelProvider)
+	if !ok {
+		return LegResult{}, fmt.Errorf("%w: dataset has no load models", ErrInvalidLoad)
+	}
+	m, err := lmp.LoadModel(leg.Mode, leg.VehicleType)
+	if err != nil {
+		return LegResult{}, err
+	}
+	ttw, wtt, err := m.PerTonneKm(leg.LoadFactor, leg.EmptyTripFactor)
+	if err != nil {
+		return LegResult{}, err
+	}
+	f := Factor{
+		Mode: m.Mode, VehicleType: m.VehicleType, TTW: ttw, WTT: wtt, Year: m.Year,
+		Source: fmt.Sprintf("load model (load factor %g, empty trip factor %g, payload %g t) from %s",
+			leg.LoadFactor, leg.EmptyTripFactor, m.PayloadT, m.Source),
+	}
+	lr.Method = MethodLoadModel
+	lr.Factor = &f
+	lr.LoadFactor, lr.EmptyTripFactor, lr.PayloadT = leg.LoadFactor, leg.EmptyTripFactor, m.PayloadT
+	lr.TTWKg = lr.TonneKm * ttw / 1000
+	lr.WTWKg = lr.TonneKm * f.WTW() / 1000
 	return lr, nil
 }
 
