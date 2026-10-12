@@ -1,0 +1,22 @@
+{
+  "id": "example-1",
+  "weight_kg": 12000,
+  "legs": [
+    {
+      "id": "truck-to-port",
+      "mode": "road",
+      "vehicle_type": "truck_40t",
+      "from": { "name": "Copenhagen", "lat": 55.6761, "lon": 12.5683 },
+      "to": { "name": "Hamburg", "lat": 53.5511, "lon": 9.9937 }
+    },
+    {
+      "id": "feeder",
+      "mode": "sea",
+      "vehicle_type": "container",
+      "from": { "name": "Hamburg", "lat": 53.5511, "lon": 9.9937 },
+      "to": { "name": "Rotterdam", "lat": 51.9244, "lon": 4.4777 },
+      "distance_km": 560
+    }
+  ],
+  "hubs": [{ "id": "hamburg-terminal", "hub_type": "container_terminal" }]
+}

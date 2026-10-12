@@ -1,0 +1,16 @@
+{
+  "name": "sample",
+  "note": "ILLUSTRATIVE PLACEHOLDER VALUES for development and tests only. Replace with GLEC Framework default factors or UK DEFRA conversion factors before real use.",
+  "legs": [
+    { "mode": "road", "vehicle_type": "truck_40t", "ttw_g_per_tkm": 60, "wtt_g_per_tkm": 15, "source": "placeholder", "year": 2026 },
+    { "mode": "road", "vehicle_type": "van_3_5t", "ttw_g_per_tkm": 400, "wtt_g_per_tkm": 100, "source": "placeholder", "year": 2026 },
+    { "mode": "rail", "vehicle_type": "electric", "ttw_g_per_tkm": 0, "wtt_g_per_tkm": 10, "source": "placeholder", "year": 2026 },
+    { "mode": "rail", "vehicle_type": "diesel", "ttw_g_per_tkm": 20, "wtt_g_per_tkm": 5, "source": "placeholder", "year": 2026 },
+    { "mode": "sea", "vehicle_type": "container", "ttw_g_per_tkm": 8, "wtt_g_per_tkm": 2, "source": "placeholder", "year": 2026 },
+    { "mode": "air", "vehicle_type": "freighter", "ttw_g_per_tkm": 600, "wtt_g_per_tkm": 130, "source": "placeholder", "year": 2026 }
+  ],
+  "hubs": [
+    { "hub_type": "container_terminal", "wtw_g_per_tonne": 1000, "source": "placeholder", "year": 2026 },
+    { "hub_type": "warehouse_ambient", "wtw_g_per_tonne": 2000, "source": "placeholder", "year": 2026 }
+  ]
+}
