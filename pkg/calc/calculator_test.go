@@ -252,3 +252,37 @@ func TestCalculate_TEU(t *testing.T) {
 		t.Errorf("want ErrInvalidTEU without profiles, got %v", err)
 	}
 }
+
+func TestCalculate_ReportFields(t *testing.T) {
+	c := Calculator{Factors: testFactors}
+	fu := FuelUse{Fuel: "diesel", Amount: 100} // 300 kg WTW (2.5 + 0.5 kg/l)
+	// intensity leg: 10 t x 100 km = 1000 tkm x 75 g = 75 kg WTW (60 TTW, 15 WTT)
+	// hub: 10 t x 1000 g/t = 10 kg WTW
+	r, err := c.Calculate(context.Background(), Shipment{WeightKg: 10_000,
+		Legs: []Leg{
+			{ID: "measured", Mode: Road, DistanceKm: 300, Fuel: &fu},
+			{ID: "default", Mode: Road, VehicleType: "truck_40t", DistanceKm: 100},
+		},
+		Hubs: []HubStop{{ID: "h", HubType: "container_terminal"}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, d := r.Legs[0], r.Legs[1]
+	if m.DataType != DataPrimary || d.DataType != DataDefault || r.Hubs[0].DataType != DataDefault {
+		t.Errorf("data types: %q %q %q", m.DataType, d.DataType, r.Hubs[0].DataType)
+	}
+	if !approx(m.WTTKg, 50) || !approx(d.WTTKg, 15) || !approx(d.IntensityG, 75) || !approx(m.IntensityG, 100) {
+		t.Errorf("leg WTT/intensity: %+v / %+v", m, d)
+	}
+	// totals: TTW 250+60, WTW 300+75+10, WTT excludes the WTW-only hub
+	if !approx(r.TTWKg, 310) || !approx(r.WTWKg, 385) || !approx(r.WTTKg, 65) {
+		t.Errorf("totals TTW %v WTT %v WTW %v", r.TTWKg, r.WTTKg, r.WTWKg)
+	}
+	if !approx(r.PrimaryDataShare, 300.0/385) {
+		t.Errorf("primary share = %v, want %v", r.PrimaryDataShare, 300.0/385)
+	}
+	if r.Hubs[0].HubType != "container_terminal" {
+		t.Errorf("hub = %+v", r.Hubs[0])
+	}
+}

@@ -265,6 +265,9 @@ func (d *Dataset) LoadModel(m calc.Mode, vt string) (calc.LoadModel, error) {
 	return calc.LoadModel{}, fmt.Errorf("no load model for %s/%s in dataset %q", m, vt, d.Name)
 }
 
+// DatasetName implements calc.DatasetNamer.
+func (d *Dataset) DatasetName() string { return d.Name }
+
 // Grid implements calc.GridProvider. country is ISO 3166-1 alpha-3.
 func (d *Dataset) Grid(country string) (calc.GridFactor, error) {
 	if g, ok := d.gridIdx[strings.ToUpper(strings.TrimSpace(country))]; ok {
@@ -316,4 +319,5 @@ var (
 	_ calc.ContainerLoadProvider = (*Dataset)(nil)
 	_ calc.LoadModelProvider     = (*Dataset)(nil)
 	_ calc.GridProvider          = (*Dataset)(nil)
+	_ calc.DatasetNamer          = (*Dataset)(nil)
 )

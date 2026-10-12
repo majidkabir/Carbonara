@@ -74,12 +74,20 @@ func (c Calculator) Calculate(ctx context.Context, s Shipment) (Result, error) {
 	}
 	tonnes := weightKg / 1000
 	res := Result{ShipmentID: s.ID, WeightKg: weightKg, WeightBasis: basis}
+	if n, ok := c.Factors.(DatasetNamer); ok {
+		res.Dataset = n.DatasetName()
+	}
 
 	for _, leg := range s.Legs {
 		lr, err := c.leg(ctx, tonnes, leg)
 		if err != nil {
 			return Result{}, fmt.Errorf("leg %q: %w", leg.ID, err)
 		}
+		lr.WTTKg = lr.WTWKg - lr.TTWKg
+		if lr.TonneKm > 0 {
+			lr.IntensityG = lr.WTWKg * 1000 / lr.TonneKm
+		}
+		lr.DataType = dataType(lr.Method)
 		res.Legs = append(res.Legs, lr)
 		res.TonneKm += lr.TonneKm
 		res.TTWKg += lr.TTWKg
@@ -95,11 +103,41 @@ func (c Calculator) Calculate(ctx context.Context, s Shipment) (Result, error) {
 		if err != nil {
 			return Result{}, fmt.Errorf("hub %q: %w", h.ID, err)
 		}
-		hr := HubResult{HubID: h.ID, WTWKg: tonnes * hf.WTWPerTonneG / 1000}
+		hr := HubResult{HubID: h.ID, HubType: h.HubType, WTWKg: tonnes * hf.WTWPerTonneG / 1000,
+			DataType: DataDefault, Source: hf.Source}
 		res.Hubs = append(res.Hubs, hr)
 		res.WTWKg += hr.WTWKg
 	}
+	// Hub factors are WTW only, so hubs add to WTW and, for lack of a
+	// split, are not attributed to TTW or WTT.
+	res.WTTKg = res.WTWKg - res.TTWKg
+	for _, h := range res.Hubs {
+		res.WTTKg -= h.WTWKg
+	}
+	var primary float64
+	for _, l := range res.Legs {
+		if l.DataType == DataPrimary {
+			primary += l.WTWKg
+		}
+	}
+	if res.WTWKg > 0 {
+		res.PrimaryDataShare = primary / res.WTWKg
+	}
 	return res, nil
+}
+
+// dataType labels a leg by how its emissions were obtained: measured fuel is
+// primary data; the load and energy methods model the operation from
+// shipment-specific inputs; the intensity method uses published defaults.
+func dataType(method string) string {
+	switch method {
+	case MethodFuel:
+		return DataPrimary
+	case MethodLoadModel, MethodEnergy:
+		return DataModelled
+	default:
+		return DataDefault
+	}
 }
 
 // weight returns the cargo weight in kg and how it was determined.

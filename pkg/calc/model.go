@@ -122,8 +122,13 @@ type LegResult struct {
 	DistanceMethod string  `json:"distance_method,omitempty"`
 	TonneKm        float64 `json:"tonne_km"`
 	TTWKg          float64 `json:"ttw_kg"`
+	WTTKg          float64 `json:"wtt_kg"`
 	WTWKg          float64 `json:"wtw_kg"`
-	Method         string  `json:"method"`
+	// IntensityG is WTW g CO2e per tonne-km for this leg.
+	IntensityG float64 `json:"intensity_g_per_tkm"`
+	Method     string  `json:"method"`
+	// DataType is primary, modelled or default (see Data* constants).
+	DataType string `json:"data_type"`
 	// Factor is set for the intensity method, FuelFactor and
 	// AllocationShare for the fuel method.
 	Factor          *Factor     `json:"factor,omitempty"`
@@ -140,9 +145,21 @@ type LegResult struct {
 
 // HubResult is the outcome for one hub stop.
 type HubResult struct {
-	HubID string  `json:"hub_id"`
-	WTWKg float64 `json:"wtw_kg"`
+	HubID    string  `json:"hub_id"`
+	HubType  string  `json:"hub_type"`
+	WTWKg    float64 `json:"wtw_kg"`
+	DataType string  `json:"data_type"`
+	Source   string  `json:"source"`
 }
+
+// Data types, as ISO 14083 distinguishes them: measured by the operator
+// (primary), calculated from a model of the operation (modelled), or taken
+// from a published default value (default).
+const (
+	DataPrimary  = "primary"
+	DataModelled = "modelled"
+	DataDefault  = "default"
+)
 
 // Result is the outcome for a whole shipment.
 type Result struct {
@@ -155,7 +172,18 @@ type Result struct {
 	Hubs        []HubResult `json:"hubs,omitempty"`
 	TonneKm     float64     `json:"tonne_km"`
 	TTWKg       float64     `json:"ttw_kg"`
+	WTTKg       float64     `json:"wtt_kg"`
 	WTWKg       float64     `json:"wtw_kg"`
 	// IntensityG is transport WTW intensity in g CO2e per tonne-km (hubs excluded).
 	IntensityG float64 `json:"intensity_g_per_tkm"`
+	// PrimaryDataShare is the share of WTW emissions computed from primary
+	// data (0..1).
+	PrimaryDataShare float64 `json:"primary_data_share"`
+	// Dataset names the factor dataset used, when the provider reports it.
+	Dataset string `json:"dataset,omitempty"`
+}
+
+// DatasetNamer is optionally implemented by a FactorProvider.
+type DatasetNamer interface {
+	DatasetName() string
 }

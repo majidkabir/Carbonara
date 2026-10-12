@@ -92,6 +92,10 @@ components:
             properties:
               error: { type: string }
   schemas:
+    DataType:
+      type: string
+      enum: [primary, modelled, default]
+      description: "primary: measured fuel; modelled: load or energy model from shipment inputs; default: published factor"
     Mode:
       type: string
       enum: [road, rail, sea, air, inland_waterway]
@@ -201,8 +205,11 @@ components:
           enum: [given, great_circle, great_circle_adjusted, osrm, sea_network]
         tonne_km: { type: number }
         ttw_kg: { type: number }
+        wtt_kg: { type: number }
         wtw_kg: { type: number }
+        intensity_g_per_tkm: { type: number, description: WTW g CO2e per tonne-km for this leg }
         method: { type: string, enum: [intensity, fuel, load_model, energy] }
+        data_type: { $ref: "#/components/schemas/DataType" }
         energy_kwh_per_tkm: { type: number }
         country: { type: string }
         load_factor: { type: number }
@@ -226,11 +233,17 @@ components:
             type: object
             properties:
               hub_id: { type: string }
+              hub_type: { type: string }
               wtw_kg: { type: number }
+              data_type: { $ref: "#/components/schemas/DataType" }
+              source: { type: string }
         tonne_km: { type: number }
         ttw_kg: { type: number }
         wtw_kg: { type: number, description: Transport plus hubs }
         intensity_g_per_tkm: { type: number, description: Transport WTW only }
+        wtt_kg: { type: number, description: Transport well-to-tank (hubs are WTW only) }
+        primary_data_share: { type: number, description: Share of WTW emissions from primary data (0-1) }
+        dataset: { type: string }
     Dataset:
       type: object
       properties:

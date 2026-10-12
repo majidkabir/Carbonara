@@ -76,14 +76,15 @@ func TestWriter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_ = w.Write("S1", calc.Result{WeightKg: 10000, TonneKm: 5000, TTWKg: 300, WTWKg: 375, IntensityG: 75}, nil)
+	_ = w.Write("S1", calc.Result{WeightKg: 10000, TonneKm: 5000, TTWKg: 300, WTTKg: 75, WTWKg: 375, IntensityG: 75,
+		PrimaryDataShare: 0.5, Dataset: "d"}, nil)
 	_ = w.Write("S2", calc.Result{}, errors.New("boom"))
 	if err := w.Flush(); err != nil {
 		t.Fatal(err)
 	}
-	want := "shipment_id,weight_kg,tonne_km,ttw_kg,wtw_kg,intensity_g_per_tkm,error\n" +
-		"S1,10000.0000,5000.0000,300.0000,375.0000,75.0000,\n" +
-		"S2,,,,,,boom\n"
+	want := "shipment_id,weight_kg,tonne_km,ttw_kg,wtt_kg,wtw_kg,intensity_g_per_tkm,primary_data_share,dataset,error\n" +
+		"S1,10000.0000,5000.0000,300.0000,75.0000,375.0000,75.0000,0.5000,d,\n" +
+		"S2,,,,,,,,,boom\n"
 	if buf.String() != want {
 		t.Errorf("got\n%s\nwant\n%s", buf.String(), want)
 	}

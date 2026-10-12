@@ -89,6 +89,17 @@ docker run -t -p 5000:5000 -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osr
 carbonara calc -osrm http://localhost:5000 examples/cph-rotterdam.json
 ```
 
+## Reporting
+
+Results are shaped for ISO 14083-style reporting:
+
+- **Per element**: every leg and hub reports its emissions separately.
+- **Three components**: tank-to-wheel (`ttw_kg`), well-to-tank (`wtt_kg`) and well-to-wheel (`wtw_kg`), plus WTW intensity per tonne-km, for each leg and in total. Hub factors are WTW only.
+- **Data type** per element: `primary` (measured fuel), `modelled` (load or energy model from shipment inputs) or `default` (published factor), and `primary_data_share` of total WTW.
+- **Traceability**: each leg carries its factor with source and year, its `distance_method`, and the result names the `dataset`.
+
+Carbonara isn't certified or verified against ISO 14083, and doesn't yet do ISO 14083's transport operation categories (grouping and allocating emissions across many shipments). Treat results as calculations for your own reporting process.
+
 ## Inputs
 
 **Weight or containers.** Give `weight_kg`, or `teu` plus either `teu_net_tonnes` (net cargo tonnes per TEU) or `container_load`, a profile name from the dataset's `container_loads` (e.g. `{"light": 6, "average": 10}`). No profiles ship by default: the common light/average/heavy values come from EcoTransIT's report, which needs their permission to reuse. Results show the `weight_kg` used and its `weight_basis`. Container tare weight is not added.

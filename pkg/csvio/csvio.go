@@ -182,7 +182,8 @@ func (r rowReader) float(name string) (float64, error) {
 }
 
 // ResultHeader is the header row written by Writer.
-var ResultHeader = []string{"shipment_id", "weight_kg", "tonne_km", "ttw_kg", "wtw_kg", "intensity_g_per_tkm", "error"}
+var ResultHeader = []string{"shipment_id", "weight_kg", "tonne_km", "ttw_kg", "wtt_kg", "wtw_kg",
+	"intensity_g_per_tkm", "primary_data_share", "dataset", "error"}
 
 // Writer writes one summary row per shipment.
 type Writer struct{ cw *csv.Writer }
@@ -199,9 +200,10 @@ func NewWriter(w io.Writer) (*Writer, error) {
 // Write writes a result, or the error for that shipment.
 func (w *Writer) Write(id string, r calc.Result, err error) error {
 	if err != nil {
-		return w.cw.Write([]string{id, "", "", "", "", "", err.Error()})
+		return w.cw.Write([]string{id, "", "", "", "", "", "", "", "", err.Error()})
 	}
-	return w.cw.Write([]string{id, num(r.WeightKg), num(r.TonneKm), num(r.TTWKg), num(r.WTWKg), num(r.IntensityG), ""})
+	return w.cw.Write([]string{id, num(r.WeightKg), num(r.TonneKm), num(r.TTWKg), num(r.WTTKg), num(r.WTWKg),
+		num(r.IntensityG), num(r.PrimaryDataShare), r.Dataset, ""})
 }
 
 // Flush flushes buffered rows and reports any write error.
