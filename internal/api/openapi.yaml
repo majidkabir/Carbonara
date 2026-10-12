@@ -1,0 +1,213 @@
+openapi: 3.1.0
+info:
+  title: Carbonara API
+  version: 0.1.0
+  description: >
+    Freight emissions calculator following the GLEC Framework / ISO 14083 approach.
+    Emissions are in kg CO2e. TTW = tank-to-wheel, WTW = well-to-wheel.
+  license:
+    name: Apache-2.0
+    identifier: Apache-2.0
+paths:
+  /healthz:
+    get:
+      summary: Liveness check
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+  /v1/factors:
+    get:
+      summary: The loaded emission factor dataset
+      responses:
+        "200":
+          description: Factor dataset
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Dataset" }
+  /v1/calculate:
+    post:
+      summary: Calculate emissions for one shipment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Shipment" }
+      responses:
+        "200":
+          description: Result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Result" }
+        "400": { $ref: "#/components/responses/Error" }
+        "413": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+  /v1/calculate/batch:
+    post:
+      summary: Calculate emissions for up to 10,000 shipments
+      description: Failures are reported per shipment; the request itself still returns 200.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [shipments]
+              properties:
+                shipments:
+                  type: array
+                  items: { $ref: "#/components/schemas/Shipment" }
+      responses:
+        "200":
+          description: Per-shipment results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  failed: { type: integer }
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        shipment_id: { type: string }
+                        result: { $ref: "#/components/schemas/Result" }
+                        error: { type: string }
+        "400": { $ref: "#/components/responses/Error" }
+        "413": { $ref: "#/components/responses/Error" }
+components:
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string }
+  schemas:
+    Mode:
+      type: string
+      enum: [road, rail, sea, air, inland_waterway]
+    Location:
+      type: object
+      properties:
+        name: { type: string }
+        lat: { type: number }
+        lon: { type: number }
+    FuelUse:
+      type: object
+      required: [fuel, amount]
+      properties:
+        fuel: { type: string, example: diesel }
+        amount: { type: number, description: In the fuel factor's unit }
+        vehicle_tonne_km:
+          type: number
+          description: Total tonne-km on the vehicle trip, for allocation. 0 or absent = whole trip.
+    Leg:
+      type: object
+      required: [mode]
+      properties:
+        id: { type: string }
+        mode: { $ref: "#/components/schemas/Mode" }
+        vehicle_type: { type: string, example: truck_40t }
+        from: { $ref: "#/components/schemas/Location" }
+        to: { $ref: "#/components/schemas/Location" }
+        distance_km:
+          type: number
+          description: Overrides computed distance when > 0
+        fuel: { $ref: "#/components/schemas/FuelUse" }
+    HubStop:
+      type: object
+      required: [hub_type]
+      properties:
+        id: { type: string }
+        hub_type: { type: string, example: container_terminal }
+    Shipment:
+      type: object
+      required: [weight_kg, legs]
+      properties:
+        id: { type: string }
+        weight_kg: { type: number, exclusiveMinimum: 0 }
+        legs:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/Leg" }
+        hubs:
+          type: array
+          items: { $ref: "#/components/schemas/HubStop" }
+    Factor:
+      type: object
+      properties:
+        mode: { $ref: "#/components/schemas/Mode" }
+        vehicle_type: { type: string }
+        ttw_g_per_tkm: { type: number }
+        wtt_g_per_tkm: { type: number }
+        source: { type: string }
+        year: { type: integer }
+    FuelFactor:
+      type: object
+      properties:
+        fuel: { type: string }
+        unit: { type: string }
+        ttw_kg_per_unit: { type: number }
+        wtt_kg_per_unit: { type: number }
+        source: { type: string }
+        year: { type: integer }
+    HubFactor:
+      type: object
+      properties:
+        hub_type: { type: string }
+        wtw_g_per_tonne: { type: number }
+        source: { type: string }
+        year: { type: integer }
+    LegResult:
+      type: object
+      properties:
+        leg_id: { type: string }
+        distance_km: { type: number }
+        tonne_km: { type: number }
+        ttw_kg: { type: number }
+        wtw_kg: { type: number }
+        method: { type: string, enum: [intensity, fuel] }
+        factor: { $ref: "#/components/schemas/Factor" }
+        fuel_factor: { $ref: "#/components/schemas/FuelFactor" }
+        allocation_share: { type: number }
+    Result:
+      type: object
+      properties:
+        shipment_id: { type: string }
+        legs:
+          type: array
+          items: { $ref: "#/components/schemas/LegResult" }
+        hubs:
+          type: array
+          items:
+            type: object
+            properties:
+              hub_id: { type: string }
+              wtw_kg: { type: number }
+        tonne_km: { type: number }
+        ttw_kg: { type: number }
+        wtw_kg: { type: number, description: Transport plus hubs }
+        intensity_g_per_tkm: { type: number, description: Transport WTW only }
+    Dataset:
+      type: object
+      properties:
+        name: { type: string }
+        note: { type: string }
+        legs:
+          type: array
+          items: { $ref: "#/components/schemas/Factor" }
+        hubs:
+          type: array
+          items: { $ref: "#/components/schemas/HubFactor" }
+        fuels:
+          type: array
+          items: { $ref: "#/components/schemas/FuelFactor" }
