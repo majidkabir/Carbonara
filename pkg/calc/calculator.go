@@ -18,6 +18,16 @@ type DistanceProvider interface {
 	Distance(ctx context.Context, mode Mode, from, to Location) (float64, error)
 }
 
+// DistanceMethoder is optionally implemented by a DistanceProvider to name
+// how it obtains distances for a mode (e.g. "osrm", "great_circle"). The
+// name is recorded on each leg result.
+type DistanceMethoder interface {
+	DistanceMethod(mode Mode) string
+}
+
+// DistanceGiven is the method recorded when the input supplied distance_km.
+const DistanceGiven = "given"
+
 // Calculator computes shipment emissions.
 type Calculator struct {
 	Factors   FactorProvider
@@ -85,12 +95,12 @@ func (c Calculator) Calculate(ctx context.Context, s Shipment) (Result, error) {
 }
 
 func (c Calculator) leg(ctx context.Context, tonnes float64, leg Leg) (LegResult, error) {
-	dist, err := c.distance(ctx, leg)
+	dist, method, err := c.distance(ctx, leg)
 	if err != nil {
 		return LegResult{}, err
 	}
 	tkm := tonnes * dist
-	lr := LegResult{LegID: leg.ID, DistanceKm: dist, TonneKm: tkm}
+	lr := LegResult{LegID: leg.ID, DistanceKm: dist, DistanceMethod: method, TonneKm: tkm}
 
 	if leg.Fuel != nil {
 		return c.fuelLeg(lr, *leg.Fuel)
@@ -131,16 +141,20 @@ func (c Calculator) fuelLeg(lr LegResult, fu FuelUse) (LegResult, error) {
 	return lr, nil
 }
 
-func (c Calculator) distance(ctx context.Context, leg Leg) (float64, error) {
+func (c Calculator) distance(ctx context.Context, leg Leg) (float64, string, error) {
 	if leg.DistanceKm > 0 {
-		return leg.DistanceKm, nil
+		return leg.DistanceKm, DistanceGiven, nil
 	}
 	if c.Distances == nil {
-		return 0, errors.New("no distance given and no distance provider")
+		return 0, "", errors.New("no distance given and no distance provider")
 	}
 	d, err := c.Distances.Distance(ctx, leg.Mode, leg.From, leg.To)
 	if err != nil {
-		return 0, fmt.Errorf("distance: %w", err)
+		return 0, "", fmt.Errorf("distance: %w", err)
 	}
-	return d, nil
+	method := ""
+	if dm, ok := c.Distances.(DistanceMethoder); ok {
+		method = dm.DistanceMethod(leg.Mode)
+	}
+	return d, method, nil
 }

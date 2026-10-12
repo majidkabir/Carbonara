@@ -62,6 +62,14 @@ func (g GreatCircle) Distance(_ context.Context, m calc.Mode, from, to calc.Loca
 	return d, nil
 }
 
+// DistanceMethod implements calc.DistanceMethoder.
+func (g GreatCircle) DistanceMethod(m calc.Mode) string {
+	if _, ok := g.Adjust[m]; ok {
+		return "great_circle_adjusted"
+	}
+	return "great_circle"
+}
+
 // Haversine returns the great-circle distance in km.
 func Haversine(a, b calc.Location) float64 {
 	lat1, lat2 := rad(a.Lat), rad(b.Lat)

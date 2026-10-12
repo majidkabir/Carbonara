@@ -43,7 +43,22 @@ WTW kg = fuel_amount × (TTW + WTT) kg/unit × share
 
 **Hubs** add `weight_t × hub g/t / 1000` (WTW) to the total. Intensity (g/tkm) covers transport only.
 
-Distance comes from `distance_km` when given, otherwise great-circle distance between `from` and `to`, adjusted per mode by the dataset's `distance_adjustments` (`gcd × multiplier + add_km`).
+**Distance** comes from `distance_km` when given. Otherwise:
+
+| Mode | Source |
+|---|---|
+| road | an [OSRM](https://project-osrm.org) server when `-osrm URL` (or `CARBONARA_OSRM_URL`) is set |
+| any other case | great-circle between `from` and `to`, adjusted by the dataset's `distance_adjustments` (`gcd × multiplier + add_km`) |
+
+Each leg result records `distance_method` (`given`, `osrm`, `great_circle`, `great_circle_adjusted`) so every number can be traced. Run your own OSRM server for real use; the public demo server isn't meant for production traffic:
+
+```sh
+docker run -t -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osrm-extract -p /opt/car.lua /data/denmark-latest.osm.pbf
+docker run -t -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osrm-partition /data/denmark-latest.osrm
+docker run -t -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osrm-customize /data/denmark-latest.osrm
+docker run -t -p 5000:5000 -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osrm-routed --algorithm mld /data/denmark-latest.osrm
+carbonara calc -osrm http://localhost:5000 examples/cph-rotterdam.json
+```
 
 ## Inputs
 
@@ -113,7 +128,7 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 |---|---|
 | `pkg/calc` | Domain model and calculation. Stdlib only. |
 | `pkg/factors` | Factor datasets, embedded or from file. |
-| `pkg/distance` | Great-circle distance with per-mode adjustment. |
+| `pkg/distance` | Great-circle with per-mode adjustment, OSRM client, per-mode routing. |
 | `pkg/csvio` | CSV batch input and output. |
 | `internal/desnz` | DESNZ flat-file importer. |
 | `internal/xlsx` | Minimal stdlib-only .xlsx reader. |
@@ -133,7 +148,8 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 - [ ] GLEC distance adjustment factors (need a verified primary source)
 - [ ] GLEC worked examples as golden tests
 - [x] Short aliases for common vehicle types and fuels
-- [ ] OSRM road routing, SeaRoute network for sea
+- [x] OSRM road routing
+- [ ] Sea routing on a maritime network
 
 ## Releasing
 

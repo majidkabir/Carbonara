@@ -175,6 +175,10 @@ components:
       properties:
         leg_id: { type: string }
         distance_km: { type: number }
+        distance_method:
+          type: string
+          description: Where the distance came from
+          enum: [given, great_circle, great_circle_adjusted, osrm, sea_network]
         tonne_km: { type: number }
         ttw_kg: { type: number }
         wtw_kg: { type: number }

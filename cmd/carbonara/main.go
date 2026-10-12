@@ -12,6 +12,7 @@ import (
 
 	"github.com/majidkabir/carbonara/pkg/calc"
 	"github.com/majidkabir/carbonara/pkg/csvio"
+	"github.com/majidkabir/carbonara/pkg/distance"
 	"github.com/majidkabir/carbonara/pkg/factors"
 )
 
@@ -28,7 +29,8 @@ Usage:
   carbonara import-desnz [-o out.json] flat-file.xlsx   convert UK DESNZ factors
   carbonara version
 
-Use "-" as the file name to read stdin. The default dataset is UK DESNZ 2026.`
+Use "-" as the file name to read stdin. The default dataset is UK DESNZ 2026.
+calc, batch and serve also take -osrm URL to route road legs on an OSRM server.`
 
 func main() {
 	if len(os.Args) < 2 {
@@ -58,12 +60,14 @@ func main() {
 }
 
 // common holds flags shared by all subcommands.
-type common struct{ factorFile string }
+type common struct{ factorFile, osrmURL string }
 
 func (c *common) register(fs *flag.FlagSet) {
 	fs.StringVar(&c.factorFile, "factors", os.Getenv("CARBONARA_FACTORS"),
 		"embedded dataset name ("+strings.Join(factors.EmbeddedNames(), ", ")+") or a dataset JSON file; "+
 			"also $CARBONARA_FACTORS (default "+factors.Default+")")
+	fs.StringVar(&c.osrmURL, "osrm", os.Getenv("CARBONARA_OSRM_URL"),
+		"OSRM server URL for road distances, also $CARBONARA_OSRM_URL (default: adjusted great-circle)")
 }
 
 func (c *common) dataset() (*factors.Dataset, error) {
@@ -82,7 +86,15 @@ func (c *common) calculator() (calc.Calculator, *factors.Dataset, error) {
 	if err != nil {
 		return calc.Calculator{}, nil, err
 	}
-	return calc.Calculator{Factors: ds, Distances: ds.Distances()}, ds, nil
+	var dist calc.DistanceProvider = ds.Distances()
+	if c.osrmURL != "" {
+		o, err := distance.NewOSRM(c.osrmURL)
+		if err != nil {
+			return calc.Calculator{}, nil, err
+		}
+		dist = distance.ByMode{Providers: map[calc.Mode]calc.DistanceProvider{calc.Road: o}, Fallback: dist}
+	}
+	return calc.Calculator{Factors: ds, Distances: dist}, ds, nil
 }
 
 func open(name string) (io.ReadCloser, error) {

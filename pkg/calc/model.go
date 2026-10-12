@@ -103,10 +103,13 @@ type HubFactor struct {
 type LegResult struct {
 	LegID      string  `json:"leg_id"`
 	DistanceKm float64 `json:"distance_km"`
-	TonneKm    float64 `json:"tonne_km"`
-	TTWKg      float64 `json:"ttw_kg"`
-	WTWKg      float64 `json:"wtw_kg"`
-	Method     string  `json:"method"`
+	// DistanceMethod says where the distance came from: "given" (input),
+	// or the provider's name, e.g. "great_circle", "osrm".
+	DistanceMethod string  `json:"distance_method,omitempty"`
+	TonneKm        float64 `json:"tonne_km"`
+	TTWKg          float64 `json:"ttw_kg"`
+	WTWKg          float64 `json:"wtw_kg"`
+	Method         string  `json:"method"`
 	// Factor is set for the intensity method, FuelFactor and
 	// AllocationShare for the fuel method.
 	Factor          *Factor     `json:"factor,omitempty"`
