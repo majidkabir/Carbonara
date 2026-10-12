@@ -47,4 +47,4 @@ intensity = transport WTW g / tonne-km    (hubs excluded)
 
 ## License
 
-Apache 2.0 (to be added).
+Apache 2.0 — see [LICENSE](LICENSE).
