@@ -2350,6 +2350,13 @@
       "year": 2026
     }
   ],
+  "distance_adjustments": [
+    {
+      "mode": "air",
+      "add_km": 95,
+      "source": "EN 16258 convention: great-circle distance + 95 km for take-off and landing (also used by EcoTransIT World)"
+    }
+  ],
   "vehicle_aliases": [
     {
       "mode": "road",

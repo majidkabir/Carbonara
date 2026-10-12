@@ -2,6 +2,7 @@ package desnz
 
 import (
 	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/carbonara/pkg/distance"
 	"github.com/majidkabir/carbonara/pkg/factors"
 )
 
@@ -38,8 +39,15 @@ var fuelAliases = map[string]string{
 	"jet_fuel":        "liquid_fuels/aviation_turbine_fuel/litres",
 }
 
+// distanceAdjustments are methodology conventions, not DESNZ data: DESNZ
+// publishes no distance rules, so Carbonara adds the standard air rule.
+var distanceAdjustments = []distance.Adjustment{
+	{Mode: calc.Air, AddKm: 95, Source: "EN 16258 convention: great-circle distance + 95 km for take-off and landing (also used by EcoTransIT World)"},
+}
+
 // addAliases attaches the aliases whose targets exist in ds.
 func addAliases(ds *factors.Dataset, warn func(string, ...any)) {
+	ds.DistanceAdjustments = append(ds.DistanceAdjustments, distanceAdjustments...)
 	legs := map[string]bool{}
 	for _, f := range ds.Legs {
 		legs[string(f.Mode)+"/"+f.VehicleType] = true

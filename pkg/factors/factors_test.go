@@ -68,6 +68,9 @@ func TestOpen(t *testing.T) {
 	if err != nil || f.TTW != 25.83 || f.WTT != 6.91 || f.Year != 2026 {
 		t.Errorf("rail freight = %+v, %v", f, err)
 	}
+	if a := ds.Distances().Adjust[calc.Air]; a.AddKm != 95 || a.Multiplier != 0 {
+		t.Errorf("air distance rule = %+v, want great-circle + 95 km", a)
+	}
 	if _, err := Open("testdata-does-not-exist.json"); err == nil {
 		t.Error("want error for missing file")
 	}

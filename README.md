@@ -43,14 +43,34 @@ WTW kg = fuel_amount × (TTW + WTT) kg/unit × share
 
 **Hubs** add `weight_t × hub g/t / 1000` (WTW) to the total. Intensity (g/tkm) covers transport only.
 
-**Distance** comes from `distance_km` when given. Otherwise:
+**Distance** comes from `distance_km` when given. Otherwise, following the same approach as EcoTransIT World:
 
 | Mode | Source |
 |---|---|
-| road | an [OSRM](https://project-osrm.org) server when `-osrm URL` (or `CARBONARA_OSRM_URL`) is set |
-| any other case | great-circle between `from` and `to`, adjusted by the dataset's `distance_adjustments` (`gcd × multiplier + add_km`) |
+| road | an [OSRM](https://project-osrm.org) server, with `-osrm URL` |
+| sea | shortest route on a maritime network, with `-sea-network file.geojson` |
+| air | great-circle + 95 km (EN 16258 convention) |
+| anything else | great-circle, adjusted by the dataset's `distance_adjustments` (`gcd × multiplier + add_km`) |
 
-Each leg result records `distance_method` (`given`, `osrm`, `great_circle`, `great_circle_adjusted`) so every number can be traced. Run your own OSRM server for real use; the public demo server isn't meant for production traffic:
+Each leg result records `distance_method` (`given`, `osrm`, `sea_network`, `great_circle`, `great_circle_adjusted`) so every number can be traced. Plain great-circle badly understates sea distances (Rotterdam–Shanghai: 8,970 km vs 19,696 km routed), so use a sea network for sea legs.
+
+### Sea routing
+
+Uses Eurostat's [SeaRoute](https://github.com/eurostat/searoute) maritime network. It's EUPL-1.2 licensed, so it isn't bundled; convert it once with GDAL:
+
+```sh
+curl -LO https://github.com/eurostat/searoute/raw/master/modules/core/src/main/resources/marnet/marnet_plus_20km.gpkg
+ogr2ogr -f GeoJSON marnet_20km.geojson marnet_plus_20km.gpkg
+carbonara calc -sea-network marnet_20km.geojson shipment.json
+```
+
+Straits and canals can be closed with `-sea-avoid suez,panama`. The Arctic routes (`northwest`, `northeast`) are closed by default; open them with `-sea-open`. Points are snapped to the nearest network node; `-sea-max-snap-km` rejects points too far from the sea.
+
+On the 20 km network, distances are within 0.3% of SeaRoute's own output for 7 of 8 test routes (Rotterdam–Shanghai, Hamburg–New York, Yokohama–Los Angeles, …), and 1.6% for a short Baltic route where endpoint snapping dominates.
+
+### Road routing
+
+Run your own OSRM server; the public demo server isn't meant for production traffic:
 
 ```sh
 docker run -t -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osrm-extract -p /opt/car.lua /data/denmark-latest.osm.pbf
@@ -111,7 +131,7 @@ Road aliases use DESNZ's "average laden" factors.
 
 **Notes on DESNZ data:**
 - Air freight comes `with_rf` and `without_rf` (radiative forcing). ISO 14083 reports without RF.
-- No hub factors and no distance adjustments are included. Add your own (e.g. from GLEC) in a dataset file.
+- No hub factors are included. The only distance adjustment is the air rule above (a convention, not DESNZ data). Add your own (e.g. from GLEC) in a dataset file.
 - GLEC default values can't be bundled: Smart Freight Centre limits them to members and certified tools. If you have access, put them in a dataset file.
 
 **Updating DESNZ** each year: download the "flat file" from [gov.uk](https://www.gov.uk/government/collections/government-conversion-factors-for-company-reporting) and run
@@ -128,7 +148,7 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 |---|---|
 | `pkg/calc` | Domain model and calculation. Stdlib only. |
 | `pkg/factors` | Factor datasets, embedded or from file. |
-| `pkg/distance` | Great-circle with per-mode adjustment, OSRM client, per-mode routing. |
+| `pkg/distance` | Great-circle with per-mode adjustment, OSRM road routing, maritime network routing. |
 | `pkg/csvio` | CSV batch input and output. |
 | `internal/desnz` | DESNZ flat-file importer. |
 | `internal/xlsx` | Minimal stdlib-only .xlsx reader. |
@@ -149,7 +169,7 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 - [ ] GLEC worked examples as golden tests
 - [x] Short aliases for common vehicle types and fuels
 - [x] OSRM road routing
-- [ ] Sea routing on a maritime network
+- [x] Sea routing on a maritime network (SeaRoute), air = great-circle + 95 km
 
 ## Releasing
 

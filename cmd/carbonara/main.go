@@ -30,7 +30,8 @@ Usage:
   carbonara version
 
 Use "-" as the file name to read stdin. The default dataset is UK DESNZ 2026.
-calc, batch and serve also take -osrm URL to route road legs on an OSRM server.`
+calc, batch and serve also take -osrm URL (road routing) and -sea-network
+file.geojson (sea routing); see "carbonara calc -h".`
 
 func main() {
 	if len(os.Args) < 2 {
@@ -60,7 +61,11 @@ func main() {
 }
 
 // common holds flags shared by all subcommands.
-type common struct{ factorFile, osrmURL string }
+type common struct {
+	factorFile, osrmURL           string
+	seaNetwork, seaAvoid, seaOpen string
+	seaMaxSnapKm                  float64
+}
 
 func (c *common) register(fs *flag.FlagSet) {
 	fs.StringVar(&c.factorFile, "factors", os.Getenv("CARBONARA_FACTORS"),
@@ -68,6 +73,12 @@ func (c *common) register(fs *flag.FlagSet) {
 			"also $CARBONARA_FACTORS (default "+factors.Default+")")
 	fs.StringVar(&c.osrmURL, "osrm", os.Getenv("CARBONARA_OSRM_URL"),
 		"OSRM server URL for road distances, also $CARBONARA_OSRM_URL (default: adjusted great-circle)")
+	fs.StringVar(&c.seaNetwork, "sea-network", os.Getenv("CARBONARA_SEA_NETWORK"),
+		"maritime network GeoJSON for sea distances, also $CARBONARA_SEA_NETWORK (default: adjusted great-circle)")
+	fs.StringVar(&c.seaAvoid, "sea-avoid", "", "comma-separated passages to avoid, e.g. suez,panama")
+	fs.StringVar(&c.seaOpen, "sea-open", "", "comma-separated passages to open that are closed by default ("+
+		strings.Join(distance.DefaultAvoid, ",")+")")
+	fs.Float64Var(&c.seaMaxSnapKm, "sea-max-snap-km", 0, "reject sea points farther than this from the network (0 = no limit)")
 }
 
 func (c *common) dataset() (*factors.Dataset, error) {
@@ -86,15 +97,62 @@ func (c *common) calculator() (calc.Calculator, *factors.Dataset, error) {
 	if err != nil {
 		return calc.Calculator{}, nil, err
 	}
-	var dist calc.DistanceProvider = ds.Distances()
+	routed := map[calc.Mode]calc.DistanceProvider{}
 	if c.osrmURL != "" {
 		o, err := distance.NewOSRM(c.osrmURL)
 		if err != nil {
 			return calc.Calculator{}, nil, err
 		}
-		dist = distance.ByMode{Providers: map[calc.Mode]calc.DistanceProvider{calc.Road: o}, Fallback: dist}
+		routed[calc.Road] = o
+	}
+	if c.seaNetwork != "" {
+		n, err := c.loadSea()
+		if err != nil {
+			return calc.Calculator{}, nil, err
+		}
+		routed[calc.Sea] = n
+	}
+	var dist calc.DistanceProvider = ds.Distances()
+	if len(routed) > 0 {
+		dist = distance.ByMode{Providers: routed, Fallback: dist}
 	}
 	return calc.Calculator{Factors: ds, Distances: dist}, ds, nil
+}
+
+func (c *common) loadSea() (*distance.SeaNetwork, error) {
+	f, err := os.Open(c.seaNetwork)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	n, err := distance.LoadSeaNetwork(f)
+	if err != nil {
+		return nil, err
+	}
+	known := map[string]bool{}
+	for _, p := range n.Passes() {
+		known[p] = true
+	}
+	set := func(list string, avoid bool) error {
+		for _, p := range strings.Split(list, ",") {
+			if p = strings.ToLower(strings.TrimSpace(p)); p == "" {
+				continue
+			}
+			if !known[p] {
+				return fmt.Errorf("sea network has no passage %q (has: %s)", p, strings.Join(n.Passes(), ", "))
+			}
+			n.Avoid[p] = avoid
+		}
+		return nil
+	}
+	if err := set(c.seaOpen, false); err != nil {
+		return nil, err
+	}
+	if err := set(c.seaAvoid, true); err != nil {
+		return nil, err
+	}
+	n.MaxSnapKm = c.seaMaxSnapKm
+	return n, nil
 }
 
 func open(name string) (io.ReadCloser, error) {
