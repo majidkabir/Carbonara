@@ -2,7 +2,7 @@
 
 Open-source freight emissions calculator following the GLEC Framework / ISO 14083 approach.
 
-> ⚠️ The embedded `sample` factors are **placeholders**. Load real GLEC or DEFRA factors with `-factors` (or `CARBONARA_FACTORS`) before using results.
+Ships with the **UK DESNZ 2026** conversion factors built in: 127 freight factors (road, rail, sea, air) and 166 fuel factors, each split into tank-to-wheel and well-to-tank.
 
 ## Quick start
 
@@ -12,7 +12,8 @@ go install github.com/majidkabir/carbonara/cmd/carbonara@latest
 carbonara calc examples/cph-rotterdam.json      # one shipment -> JSON
 carbonara batch examples/shipments.csv          # many shipments -> CSV
 carbonara serve -addr :8080                     # HTTP API
-carbonara factors -factors my-factors.json      # inspect a dataset
+carbonara factors                               # list vehicle types and fuels
+carbonara calc -factors my-glec.json shipment.json   # use your own dataset
 ```
 
 Docker:
@@ -42,7 +43,7 @@ WTW kg = fuel_amount × (TTW + WTT) kg/unit × share
 
 **Hubs** add `weight_t × hub g/t / 1000` (WTW) to the total. Intensity (g/tkm) covers transport only.
 
-Distance comes from `distance_km` when given, otherwise great-circle distance between `from` and `to`.
+Distance comes from `distance_km` when given, otherwise great-circle distance between `from` and `to`, adjusted per mode by the dataset's `distance_adjustments` (`gcd × multiplier + add_km`).
 
 ## Inputs
 
@@ -72,7 +73,29 @@ A bad row fails only its shipment; the rest still calculate.
 
 ## Factor datasets
 
-JSON with `legs` (g CO2e/tkm), `hubs` (g CO2e/t) and `fuels` (kg CO2e/unit), each with TTW/WTT split, source and year. See [`pkg/factors/data/sample.json`](pkg/factors/data/sample.json) for the shape.
+`-factors` (or `CARBONARA_FACTORS`) takes an embedded dataset name or a JSON file.
+
+| Dataset | What |
+|---|---|
+| `desnz-2026` (default) | UK government GHG conversion factors 2026, imported from the official flat file |
+| `sample` | Placeholder values, for tests only |
+
+A dataset is JSON with `legs` (g CO2e/tkm), `hubs` (g CO2e/t), `fuels` (kg CO2e/unit) and optional `distance_adjustments`, each factor with a TTW/WTT split, source and year. See [`sample.json`](pkg/factors/data/sample.json) for the shape.
+
+**Vehicle types and fuel ids** follow the source's labels, e.g. `hgv_non_refrigerated_all_diesel/average_non_refrigerated_hgvs/average_laden`, `rail/freight_train`, `liquid_fuels/diesel_average_biofuel_blend/litres`. Run `carbonara factors` to list them.
+
+**Notes on DESNZ data:**
+- Air freight comes `with_rf` and `without_rf` (radiative forcing). ISO 14083 reports without RF.
+- No hub factors and no distance adjustments are included. Add your own (e.g. from GLEC) in a dataset file.
+- GLEC default values can't be bundled: Smart Freight Centre limits them to members and certified tools. If you have access, put them in a dataset file.
+
+**Updating DESNZ** each year: download the "flat file" from [gov.uk](https://www.gov.uk/government/collections/government-conversion-factors-for-company-reporting) and run
+
+```sh
+carbonara import-desnz -o pkg/factors/data/desnz-2027.json ghg-conversion-factors-2027-flat-format.xlsx
+```
+
+It reports how many rows it imported, skipped as blank, or couldn't match to a well-to-tank factor.
 
 ## Layout
 
@@ -82,6 +105,8 @@ JSON with `legs` (g CO2e/tkm), `hubs` (g CO2e/t) and `fuels` (kg CO2e/unit), eac
 | `pkg/factors` | Factor datasets, embedded or from file. |
 | `pkg/distance` | Great-circle distance with per-mode adjustment. |
 | `pkg/csvio` | CSV batch input and output. |
+| `internal/desnz` | DESNZ flat-file importer. |
+| `internal/xlsx` | Minimal stdlib-only .xlsx reader. |
 | `internal/api` | HTTP handlers and OpenAPI spec. |
 | `cmd/carbonara` | CLI. |
 
@@ -93,8 +118,11 @@ JSON with `legs` (g CO2e/tkm), `hubs` (g CO2e/t) and `fuels` (kg CO2e/unit), eac
 - [x] CLI: `calc`, `batch`, `serve`, `factors`
 - [x] HTTP API + OpenAPI
 - [x] CI, GoReleaser, Docker image
-- [ ] Real GLEC/DEFRA datasets + GLEC distance adjustment factors
+- [x] Real dataset: UK DESNZ 2026, with importer for future years
+- [x] Dataset-level distance adjustments
+- [ ] GLEC distance adjustment factors (need a verified primary source)
 - [ ] GLEC worked examples as golden tests
+- [ ] Short aliases for common vehicle types
 - [ ] OSRM road routing, SeaRoute network for sea
 
 ## Releasing
@@ -103,4 +131,6 @@ Push a tag like `v0.1.0`: binaries go to GitHub Releases, the image to `ghcr.io/
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE).
+Code: Apache 2.0, see [LICENSE](LICENSE).
+
+DESNZ data: Crown copyright, contains public sector information licensed under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). See [NOTICE](NOTICE).

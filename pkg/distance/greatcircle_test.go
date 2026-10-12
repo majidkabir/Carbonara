@@ -27,11 +27,37 @@ func TestHaversine(t *testing.T) {
 }
 
 func TestGreatCircle_Adjust(t *testing.T) {
-	g := GreatCircle{Adjust: map[calc.Mode]float64{calc.Road: 1.2}}
+	g, err := NewGreatCircle([]Adjustment{
+		{Mode: calc.Road, Multiplier: 1.2},
+		{Mode: calc.Air, AddKm: 100},
+		{Mode: calc.Rail, Multiplier: 1.1, AddKm: 10},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	base := Haversine(copenhagen, hamburg)
-	road, _ := g.Distance(context.Background(), calc.Road, copenhagen, hamburg)
-	sea, _ := g.Distance(context.Background(), calc.Sea, copenhagen, hamburg)
-	if math.Abs(road-base*1.2) > 1e-9 || sea != base {
-		t.Errorf("road=%v sea=%v base=%v", road, sea, base)
+	want := map[calc.Mode]float64{
+		calc.Road: base * 1.2,
+		calc.Air:  base + 100,
+		calc.Rail: base*1.1 + 10,
+		calc.Sea:  base, // no adjustment configured
+	}
+	for m, w := range want {
+		got, _ := g.Distance(context.Background(), m, copenhagen, hamburg)
+		if math.Abs(got-w) > 1e-9 {
+			t.Errorf("%s = %v, want %v", m, got, w)
+		}
+	}
+}
+
+func TestNewGreatCircle_Invalid(t *testing.T) {
+	cases := map[string][]Adjustment{
+		"negative":  {{Mode: calc.Road, Multiplier: -1}},
+		"duplicate": {{Mode: calc.Road, Multiplier: 1.1}, {Mode: calc.Road, Multiplier: 1.2}},
+	}
+	for name, adjs := range cases {
+		if _, err := NewGreatCircle(adjs); err == nil {
+			t.Errorf("%s: want error", name)
+		}
 	}
 }

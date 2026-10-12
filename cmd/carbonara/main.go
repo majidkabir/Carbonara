@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/majidkabir/carbonara/pkg/calc"
 	"github.com/majidkabir/carbonara/pkg/csvio"
-	"github.com/majidkabir/carbonara/pkg/distance"
 	"github.com/majidkabir/carbonara/pkg/factors"
 )
 
@@ -21,13 +21,14 @@ var version = "dev"
 const usageText = `Carbonara — freight CO2e calculator
 
 Usage:
-  carbonara calc    [-factors file.json] shipment.json   one shipment, JSON result
-  carbonara batch   [-factors file.json] shipments.csv   many shipments, CSV result
-  carbonara serve   [-factors file.json] [-addr :8080]   HTTP API
-  carbonara factors [-factors file.json]                 print the factor dataset
+  carbonara calc    [-factors name|file] shipment.json   one shipment, JSON result
+  carbonara batch   [-factors name|file] shipments.csv   many shipments, CSV result
+  carbonara serve   [-factors name|file] [-addr :8080]   HTTP API
+  carbonara factors [-factors name|file]                 print the factor dataset
+  carbonara import-desnz [-o out.json] flat-file.xlsx   convert UK DESNZ factors
   carbonara version
 
-Use "-" as the file name to read stdin.`
+Use "-" as the file name to read stdin. The default dataset is UK DESNZ 2026.`
 
 func main() {
 	if len(os.Args) < 2 {
@@ -35,11 +36,12 @@ func main() {
 		os.Exit(2)
 	}
 	cmds := map[string]func([]string) error{
-		"calc":    runCalc,
-		"batch":   runBatch,
-		"serve":   runServe,
-		"factors": runFactors,
-		"version": func([]string) error { fmt.Println(version); return nil },
+		"calc":         runCalc,
+		"batch":        runBatch,
+		"serve":        runServe,
+		"factors":      runFactors,
+		"import-desnz": runImportDESNZ,
+		"version":      func([]string) error { fmt.Println(version); return nil },
 	}
 	cmd, ok := cmds[os.Args[1]]
 	if !ok {
@@ -59,15 +61,20 @@ func main() {
 type common struct{ factorFile string }
 
 func (c *common) register(fs *flag.FlagSet) {
-	fs.StringVar(&c.factorFile, "factors", os.Getenv("CARBONARA_FACTORS"), "factor dataset JSON, or $CARBONARA_FACTORS (default: embedded sample)")
+	fs.StringVar(&c.factorFile, "factors", os.Getenv("CARBONARA_FACTORS"),
+		"embedded dataset name ("+strings.Join(factors.EmbeddedNames(), ", ")+") or a dataset JSON file; "+
+			"also $CARBONARA_FACTORS (default "+factors.Default+")")
 }
 
 func (c *common) dataset() (*factors.Dataset, error) {
-	if c.factorFile != "" {
-		return factors.Load(c.factorFile)
+	ds, err := factors.Open(c.factorFile)
+	if err != nil {
+		return nil, err
 	}
-	fmt.Fprintln(os.Stderr, "warning: using embedded sample factors (placeholder values)")
-	return factors.Embedded("sample")
+	if ds.Name == "sample" {
+		fmt.Fprintln(os.Stderr, "warning: using sample factors (placeholder values)")
+	}
+	return ds, nil
 }
 
 func (c *common) calculator() (calc.Calculator, *factors.Dataset, error) {
@@ -75,7 +82,7 @@ func (c *common) calculator() (calc.Calculator, *factors.Dataset, error) {
 	if err != nil {
 		return calc.Calculator{}, nil, err
 	}
-	return calc.Calculator{Factors: ds, Distances: distance.GreatCircle{}}, ds, nil
+	return calc.Calculator{Factors: ds, Distances: ds.Distances()}, ds, nil
 }
 
 func open(name string) (io.ReadCloser, error) {

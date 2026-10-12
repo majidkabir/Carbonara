@@ -1,6 +1,6 @@
-// Package factors provides emission factor datasets. A sample dataset is
-// embedded in the binary; real datasets (GLEC, DEFRA, licensed sets) can be
-// loaded from a file with the same JSON shape.
+// Package factors provides emission factor datasets. Datasets are embedded
+// in the binary (see Embedded and EmbeddedNames) or loaded from a JSON file
+// with the same shape, e.g. one converted from GLEC or a licensed source.
 package factors
 
 import (
@@ -8,10 +8,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
+	"path"
+	"sort"
+	"strings"
 
 	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/carbonara/pkg/distance"
 )
+
+// Default is the embedded dataset used when none is chosen.
+const Default = "desnz-2026"
 
 //go:embed data/*.json
 var embedded embed.FS
@@ -23,6 +31,9 @@ type Dataset struct {
 	Legs  []calc.Factor     `json:"legs"`
 	Hubs  []calc.HubFactor  `json:"hubs"`
 	Fuels []calc.FuelFactor `json:"fuels"`
+	// DistanceAdjustments turn great-circle distances into estimated
+	// actual distances per mode, matching the dataset's methodology.
+	DistanceAdjustments []distance.Adjustment `json:"distance_adjustments,omitempty"`
 
 	legIdx  map[string]calc.Factor
 	hubIdx  map[string]calc.HubFactor
@@ -37,6 +48,31 @@ func Embedded(name string) (*Dataset, error) {
 	}
 	defer f.Close()
 	return Parse(f)
+}
+
+// EmbeddedNames lists the datasets bundled in the binary.
+func EmbeddedNames() []string {
+	entries, _ := fs.ReadDir(embedded, "data")
+	var names []string
+	for _, e := range entries {
+		names = append(names, strings.TrimSuffix(e.Name(), path.Ext(e.Name())))
+	}
+	sort.Strings(names)
+	return names
+}
+
+// Open loads an embedded dataset by name, or a JSON file by path.
+// An empty name opens Default.
+func Open(nameOrPath string) (*Dataset, error) {
+	if nameOrPath == "" {
+		nameOrPath = Default
+	}
+	for _, n := range EmbeddedNames() {
+		if n == nameOrPath {
+			return Embedded(n)
+		}
+	}
+	return Load(nameOrPath)
 }
 
 // Load reads a dataset from a JSON file.
@@ -86,6 +122,9 @@ func Parse(r io.Reader) (*Dataset, error) {
 		}
 		d.fuelIdx[f.Fuel] = f
 	}
+	if _, err := distance.NewGreatCircle(d.DistanceAdjustments); err != nil {
+		return nil, err
+	}
 	return &d, nil
 }
 
@@ -113,6 +152,12 @@ func (d *Dataset) FuelFactor(fuel string) (calc.FuelFactor, error) {
 		return f, nil
 	}
 	return calc.FuelFactor{}, fmt.Errorf("no fuel factor for %s in dataset %q", fuel, d.Name)
+}
+
+// Distances returns a great-circle provider using the dataset's adjustments.
+func (d *Dataset) Distances() distance.GreatCircle {
+	g, _ := distance.NewGreatCircle(d.DistanceAdjustments) // validated in Parse
+	return g
 }
 
 var _ calc.FactorProvider = (*Dataset)(nil)

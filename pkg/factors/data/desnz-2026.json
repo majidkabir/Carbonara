@@ -1,0 +1,2353 @@
+{
+  "name": "desnz-2026",
+  "note": "UK DESNZ GHG conversion factors 2026. Contains public sector information licensed under the Open Government Licence v3.0. Source: UK Department for Energy Security and Net Zero (DESNZ), Greenhouse gas reporting: conversion factors.",
+  "legs": [
+    {
+      "mode": "road",
+      "vehicle_type": "vans/class_i_up_to_1_305_tonnes/diesel",
+      "ttw_g_per_tkm": 879.48,
+      "wtt_g_per_tkm": 208.17,
+      "source": "DESNZ 2026: Freighting goods \u003e Vans \u003e Class I (up to 1.305 tonnes) \u003e Diesel",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "vans/class_i_up_to_1_305_tonnes/petrol",
+      "ttw_g_per_tkm": 1400.2,
+      "wtt_g_per_tkm": 328.47,
+      "source": "DESNZ 2026: Freighting goods \u003e Vans \u003e Class I (up to 1.305 tonnes) \u003e Petrol",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "vans/class_i_up_to_1_305_tonnes/battery_electric_vehicle",
+      "ttw_g_per_tkm": 92.63,
+      "wtt_g_per_tkm": 34.81,
+      "source": "DESNZ 2026: Freighting goods \u003e Vans \u003e Class I (up to 1.305 tonnes) \u003e Battery Electric Vehicle",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "vans/class_ii_1_305_to_1_74_tonnes/diesel",
+      "ttw_g_per_tkm": 629.38,
+      "wtt_g_per_tkm": 149.37,
+      "source": "DESNZ 2026: Freighting goods \u003e Vans \u003e Class II (1.305 to 1.74 tonnes) \u003e Diesel",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "vans/class_ii_1_305_to_1_74_tonnes/petrol",
+      "ttw_g_per_tkm": 798.89,
+      "wtt_g_per_tkm": 231.53,
+      "source": "DESNZ 2026: Freighting goods \u003e Vans \u003e Class II (1.305 to 1.74 tonnes) \u003e Petrol",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "vans/class_ii_1_305_to_1_74_tonnes/battery_electric_vehicle",
+      "ttw_g_per_tkm": 180.27,
+      "wtt_g_per_tkm": 61.9,
+      "source": "DESNZ 2026: Freighting goods \u003e Vans \u003e Class II (1.305 to 1.74 tonnes) \u003e Battery Electric Vehicle",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "vans/class_iii_1_74_to_3_5_tonnes/diesel",
+      "ttw_g_per_tkm": 632.29,
+      "wtt_g_per_tkm": 150.37,
+      "source": "DESNZ 2026: Freighting goods \u003e Vans \u003e Class III (1.74 to 3.5 tonnes) \u003e Diesel",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "vans/class_iii_1_74_to_3_5_tonnes/petrol",
+      "ttw_g_per_tkm": 819.04,
+      "wtt_g_per_tkm": 241.64,
+      "source": "DESNZ 2026: Freighting goods \u003e Vans \u003e Class III (1.74 to 3.5 tonnes) \u003e Petrol",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "vans/class_iii_1_74_to_3_5_tonnes/plug_in_hybrid_electric_vehicle",
+      "ttw_g_per_tkm": 397.38,
+      "wtt_g_per_tkm": 94.58,
+      "source": "DESNZ 2026: Freighting goods \u003e Vans \u003e Class III (1.74 to 3.5 tonnes) \u003e Plug-in Hybrid Electric Vehicle",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "vans/class_iii_1_74_to_3_5_tonnes/battery_electric_vehicle",
+      "ttw_g_per_tkm": 132.52,
+      "wtt_g_per_tkm": 52.41,
+      "source": "DESNZ 2026: Freighting goods \u003e Vans \u003e Class III (1.74 to 3.5 tonnes) \u003e Battery Electric Vehicle",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "vans/average_up_to_3_5_tonnes/diesel",
+      "ttw_g_per_tkm": 635.11,
+      "wtt_g_per_tkm": 150.95,
+      "source": "DESNZ 2026: Freighting goods \u003e Vans \u003e Average (up to 3.5 tonnes) \u003e Diesel",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "vans/average_up_to_3_5_tonnes/petrol",
+      "ttw_g_per_tkm": 838.1,
+      "wtt_g_per_tkm": 229.43,
+      "source": "DESNZ 2026: Freighting goods \u003e Vans \u003e Average (up to 3.5 tonnes) \u003e Petrol",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "vans/average_up_to_3_5_tonnes/cng",
+      "ttw_g_per_tkm": 625.03,
+      "wtt_g_per_tkm": 128.16,
+      "source": "DESNZ 2026: Freighting goods \u003e Vans \u003e Average (up to 3.5 tonnes) \u003e CNG",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "vans/average_up_to_3_5_tonnes/lpg",
+      "ttw_g_per_tkm": 687.15,
+      "wtt_g_per_tkm": 81.19,
+      "source": "DESNZ 2026: Freighting goods \u003e Vans \u003e Average (up to 3.5 tonnes) \u003e LPG",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "vans/average_up_to_3_5_tonnes/unknown",
+      "ttw_g_per_tkm": 639.4,
+      "wtt_g_per_tkm": 153.35,
+      "source": "DESNZ 2026: Freighting goods \u003e Vans \u003e Average (up to 3.5 tonnes) \u003e Unknown",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "vans/average_up_to_3_5_tonnes/plug_in_hybrid_electric_vehicle",
+      "ttw_g_per_tkm": 397.16,
+      "wtt_g_per_tkm": 94.58,
+      "source": "DESNZ 2026: Freighting goods \u003e Vans \u003e Average (up to 3.5 tonnes) \u003e Plug-in Hybrid Electric Vehicle",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "vans/average_up_to_3_5_tonnes/battery_electric_vehicle",
+      "ttw_g_per_tkm": 146.99,
+      "wtt_g_per_tkm": 56.33,
+      "source": "DESNZ 2026: Freighting goods \u003e Vans \u003e Average (up to 3.5 tonnes) \u003e Battery Electric Vehicle",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/rigid_3_5_7_5_tonnes/50pct_laden",
+      "ttw_g_per_tkm": 449.76,
+      "wtt_g_per_tkm": 106.94,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Rigid (\u003e3.5 - 7.5 tonnes) \u003e 50% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/rigid_3_5_7_5_tonnes/100pct_laden",
+      "ttw_g_per_tkm": 242.68,
+      "wtt_g_per_tkm": 57.75,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Rigid (\u003e3.5 - 7.5 tonnes) \u003e 100% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/rigid_3_5_7_5_tonnes/average_laden",
+      "ttw_g_per_tkm": 540.01,
+      "wtt_g_per_tkm": 122.96,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Rigid (\u003e3.5 - 7.5 tonnes) \u003e Average laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/rigid_7_5_tonnes_17_tonnes/50pct_laden",
+      "ttw_g_per_tkm": 263.5,
+      "wtt_g_per_tkm": 63.73,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Rigid (\u003e7.5 tonnes-17 tonnes) \u003e 50% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/rigid_7_5_tonnes_17_tonnes/100pct_laden",
+      "ttw_g_per_tkm": 148.05,
+      "wtt_g_per_tkm": 35.85,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Rigid (\u003e7.5 tonnes-17 tonnes) \u003e 100% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/rigid_7_5_tonnes_17_tonnes/average_laden",
+      "ttw_g_per_tkm": 430.02,
+      "wtt_g_per_tkm": 92.46,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Rigid (\u003e7.5 tonnes-17 tonnes) \u003e Average laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/rigid_17_tonnes/50pct_laden",
+      "ttw_g_per_tkm": 212.22,
+      "wtt_g_per_tkm": 48.78,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Rigid (\u003e17 tonnes) \u003e 50% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/rigid_17_tonnes/100pct_laden",
+      "ttw_g_per_tkm": 124.99,
+      "wtt_g_per_tkm": 28.78,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Rigid (\u003e17 tonnes) \u003e 100% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/rigid_17_tonnes/average_laden",
+      "ttw_g_per_tkm": 172.56,
+      "wtt_g_per_tkm": 37.36,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Rigid (\u003e17 tonnes) \u003e Average laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/average_non_refrigerated_rigids/50pct_laden",
+      "ttw_g_per_tkm": 225.51,
+      "wtt_g_per_tkm": 52.02,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Average non-refrigerated rigids \u003e 50% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/average_non_refrigerated_rigids/100pct_laden",
+      "ttw_g_per_tkm": 131.49,
+      "wtt_g_per_tkm": 30.38,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Average non-refrigerated rigids \u003e 100% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/average_non_refrigerated_rigids/average_laden",
+      "ttw_g_per_tkm": 199.47,
+      "wtt_g_per_tkm": 43.32,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Average non-refrigerated rigids \u003e Average laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/articulated_3_5_33t/50pct_laden",
+      "ttw_g_per_tkm": 120.9,
+      "wtt_g_per_tkm": 27.31,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Articulated (\u003e3.5 - 33t) \u003e 50% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/articulated_3_5_33t/100pct_laden",
+      "ttw_g_per_tkm": 72.34,
+      "wtt_g_per_tkm": 16.39,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Articulated (\u003e3.5 - 33t) \u003e 100% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/articulated_3_5_33t/average_laden",
+      "ttw_g_per_tkm": 122.92,
+      "wtt_g_per_tkm": 27.31,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Articulated (\u003e3.5 - 33t) \u003e Average laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/articulated_33t/50pct_laden",
+      "ttw_g_per_tkm": 96.78,
+      "wtt_g_per_tkm": 22.44,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Articulated (\u003e33t) \u003e 50% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/articulated_33t/100pct_laden",
+      "ttw_g_per_tkm": 60.3,
+      "wtt_g_per_tkm": 14.03,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Articulated (\u003e33t) \u003e 100% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/articulated_33t/average_laden",
+      "ttw_g_per_tkm": 78.35,
+      "wtt_g_per_tkm": 17.99,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Articulated (\u003e33t) \u003e Average laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/average_non_refrigerated_artics/50pct_laden",
+      "ttw_g_per_tkm": 97.28,
+      "wtt_g_per_tkm": 22.57,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Average non-refrigerated artics \u003e 50% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/average_non_refrigerated_artics/100pct_laden",
+      "ttw_g_per_tkm": 60.54,
+      "wtt_g_per_tkm": 14.09,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Average non-refrigerated artics \u003e 100% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/average_non_refrigerated_artics/average_laden",
+      "ttw_g_per_tkm": 79.26,
+      "wtt_g_per_tkm": 18.23,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Average non-refrigerated artics \u003e Average laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/average_non_refrigerated_hgvs/50pct_laden",
+      "ttw_g_per_tkm": 123.2,
+      "wtt_g_per_tkm": 28.86,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Average non-refrigerated HGVs \u003e 50% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/average_non_refrigerated_hgvs/100pct_laden",
+      "ttw_g_per_tkm": 74.88,
+      "wtt_g_per_tkm": 17.57,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Average non-refrigerated HGVs \u003e 100% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_non_refrigerated_all_diesel/average_non_refrigerated_hgvs/average_laden",
+      "ttw_g_per_tkm": 103.56,
+      "wtt_g_per_tkm": 23.59,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (non-refrigerated, all diesel) \u003e Average non-refrigerated HGVs \u003e Average laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/rigid_3_5_7_5_tonnes/50pct_laden",
+      "ttw_g_per_tkm": 535.6,
+      "wtt_g_per_tkm": 127.58,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Rigid (\u003e3.5 - 7.5 tonnes) \u003e 50% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/rigid_3_5_7_5_tonnes/100pct_laden",
+      "ttw_g_per_tkm": 289.04,
+      "wtt_g_per_tkm": 68.89,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Rigid (\u003e3.5 - 7.5 tonnes) \u003e 100% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/rigid_3_5_7_5_tonnes/average_laden",
+      "ttw_g_per_tkm": 643.19,
+      "wtt_g_per_tkm": 146.69,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Rigid (\u003e3.5 - 7.5 tonnes) \u003e Average laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/rigid_7_5_tonnes_17_tonnes/50pct_laden",
+      "ttw_g_per_tkm": 313.86,
+      "wtt_g_per_tkm": 76.03,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Rigid (\u003e7.5 tonnes-17 tonnes) \u003e 50% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/rigid_7_5_tonnes_17_tonnes/100pct_laden",
+      "ttw_g_per_tkm": 176.38,
+      "wtt_g_per_tkm": 42.77,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Rigid (\u003e7.5 tonnes-17 tonnes) \u003e 100% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/rigid_7_5_tonnes_17_tonnes/average_laden",
+      "ttw_g_per_tkm": 512.29,
+      "wtt_g_per_tkm": 110.31,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Rigid (\u003e7.5 tonnes-17 tonnes) \u003e Average laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/rigid_17_tonnes/50pct_laden",
+      "ttw_g_per_tkm": 252.73,
+      "wtt_g_per_tkm": 58.2,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Rigid (\u003e17 tonnes) \u003e 50% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/rigid_17_tonnes/100pct_laden",
+      "ttw_g_per_tkm": 148.89,
+      "wtt_g_per_tkm": 34.34,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Rigid (\u003e17 tonnes) \u003e 100% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/rigid_17_tonnes/average_laden",
+      "ttw_g_per_tkm": 205.47,
+      "wtt_g_per_tkm": 44.57,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Rigid (\u003e17 tonnes) \u003e Average laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/average_refrigerated_rigids/50pct_laden",
+      "ttw_g_per_tkm": 268.55,
+      "wtt_g_per_tkm": 62.06,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Average refrigerated rigids \u003e 50% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/average_refrigerated_rigids/100pct_laden",
+      "ttw_g_per_tkm": 156.63,
+      "wtt_g_per_tkm": 36.24,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Average refrigerated rigids \u003e 100% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/average_refrigerated_rigids/average_laden",
+      "ttw_g_per_tkm": 237.53,
+      "wtt_g_per_tkm": 51.68,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Average refrigerated rigids \u003e Average laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/articulated_3_5_33t/50pct_laden",
+      "ttw_g_per_tkm": 139.82,
+      "wtt_g_per_tkm": 31.67,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Articulated (\u003e3.5 - 33t) \u003e 50% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/articulated_3_5_33t/100pct_laden",
+      "ttw_g_per_tkm": 83.69,
+      "wtt_g_per_tkm": 19,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Articulated (\u003e3.5 - 33t) \u003e 100% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/articulated_3_5_33t/average_laden",
+      "ttw_g_per_tkm": 142.15,
+      "wtt_g_per_tkm": 31.67,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Articulated (\u003e3.5 - 33t) \u003e Average laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/articulated_33t/50pct_laden",
+      "ttw_g_per_tkm": 111.93,
+      "wtt_g_per_tkm": 26.02,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Articulated (\u003e33t) \u003e 50% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/articulated_33t/100pct_laden",
+      "ttw_g_per_tkm": 69.76,
+      "wtt_g_per_tkm": 16.26,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Articulated (\u003e33t) \u003e 100% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/articulated_33t/average_laden",
+      "ttw_g_per_tkm": 90.61,
+      "wtt_g_per_tkm": 20.86,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Articulated (\u003e33t) \u003e Average laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/average_refrigerated_artics/50pct_laden",
+      "ttw_g_per_tkm": 112.5,
+      "wtt_g_per_tkm": 26.17,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Average refrigerated artics \u003e 50% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/average_refrigerated_artics/100pct_laden",
+      "ttw_g_per_tkm": 70.04,
+      "wtt_g_per_tkm": 16.34,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Average refrigerated artics \u003e 100% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/average_refrigerated_artics/average_laden",
+      "ttw_g_per_tkm": 91.66,
+      "wtt_g_per_tkm": 21.14,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Average refrigerated artics \u003e Average laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/average_refrigerated_hgvs/50pct_laden",
+      "ttw_g_per_tkm": 144.21,
+      "wtt_g_per_tkm": 33.87,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Average refrigerated HGVs \u003e 50% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/average_refrigerated_hgvs/100pct_laden",
+      "ttw_g_per_tkm": 87.68,
+      "wtt_g_per_tkm": 20.62,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Average refrigerated HGVs \u003e 100% Laden",
+      "year": 2026
+    },
+    {
+      "mode": "road",
+      "vehicle_type": "hgv_refrigerated_all_diesel/average_refrigerated_hgvs/average_laden",
+      "ttw_g_per_tkm": 121.22,
+      "wtt_g_per_tkm": 27.69,
+      "source": "DESNZ 2026: Freighting goods \u003e HGV (refrigerated, all diesel) \u003e Average refrigerated HGVs \u003e Average laden",
+      "year": 2026
+    },
+    {
+      "mode": "air",
+      "vehicle_type": "freight_flights/domestic_to_from_uk/with_rf",
+      "ttw_g_per_tkm": 4603.97,
+      "wtt_g_per_tkm": 574.29,
+      "source": "DESNZ 2026: Freighting goods \u003e Freight flights \u003e Domestic, to/from UK \u003e With RF",
+      "year": 2026
+    },
+    {
+      "mode": "air",
+      "vehicle_type": "freight_flights/domestic_to_from_uk/without_rf",
+      "ttw_g_per_tkm": 2719.31,
+      "wtt_g_per_tkm": 574.29,
+      "source": "DESNZ 2026: Freighting goods \u003e Freight flights \u003e Domestic, to/from UK \u003e Without RF",
+      "year": 2026
+    },
+    {
+      "mode": "air",
+      "vehicle_type": "freight_flights/short_haul_to_from_uk/with_rf",
+      "ttw_g_per_tkm": 1278.35,
+      "wtt_g_per_tkm": 205.15,
+      "source": "DESNZ 2026: Freighting goods \u003e Freight flights \u003e Short-haul, to/from UK \u003e With RF",
+      "year": 2026
+    },
+    {
+      "mode": "air",
+      "vehicle_type": "freight_flights/short_haul_to_from_uk/without_rf",
+      "ttw_g_per_tkm": 755.39,
+      "wtt_g_per_tkm": 205.15,
+      "source": "DESNZ 2026: Freighting goods \u003e Freight flights \u003e Short-haul, to/from UK \u003e Without RF",
+      "year": 2026
+    },
+    {
+      "mode": "air",
+      "vehicle_type": "freight_flights/long_haul_to_from_uk/with_rf",
+      "ttw_g_per_tkm": 899.39,
+      "wtt_g_per_tkm": 135.16,
+      "source": "DESNZ 2026: Freighting goods \u003e Freight flights \u003e Long-haul, to/from UK \u003e With RF",
+      "year": 2026
+    },
+    {
+      "mode": "air",
+      "vehicle_type": "freight_flights/long_haul_to_from_uk/without_rf",
+      "ttw_g_per_tkm": 531.3,
+      "wtt_g_per_tkm": 135.16,
+      "source": "DESNZ 2026: Freighting goods \u003e Freight flights \u003e Long-haul, to/from UK \u003e Without RF",
+      "year": 2026
+    },
+    {
+      "mode": "air",
+      "vehicle_type": "freight_flights/international_to_from_non_uk/with_rf",
+      "ttw_g_per_tkm": 899.39,
+      "wtt_g_per_tkm": 135.16,
+      "source": "DESNZ 2026: Freighting goods \u003e Freight flights \u003e International, to/from non-UK \u003e With RF",
+      "year": 2026
+    },
+    {
+      "mode": "air",
+      "vehicle_type": "freight_flights/international_to_from_non_uk/without_rf",
+      "ttw_g_per_tkm": 531.3,
+      "wtt_g_per_tkm": 135.16,
+      "source": "DESNZ 2026: Freighting goods \u003e Freight flights \u003e International, to/from non-UK \u003e Without RF",
+      "year": 2026
+    },
+    {
+      "mode": "rail",
+      "vehicle_type": "rail/freight_train",
+      "ttw_g_per_tkm": 25.83,
+      "wtt_g_per_tkm": 6.91,
+      "source": "DESNZ 2026: Freighting goods \u003e Rail \u003e Freight train",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/crude_tanker/200_000_dwt",
+      "ttw_g_per_tkm": 2.94,
+      "wtt_g_per_tkm": 0.67,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e Crude tanker \u003e 200,000+ dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/crude_tanker/120_000_199_999_dwt",
+      "ttw_g_per_tkm": 4.45,
+      "wtt_g_per_tkm": 1.01,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e Crude tanker \u003e 120,000–199,999 dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/crude_tanker/80_000_119_999_dwt",
+      "ttw_g_per_tkm": 5.97,
+      "wtt_g_per_tkm": 1.35,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e Crude tanker \u003e 80,000–119,999 dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/crude_tanker/60_000_79_999_dwt",
+      "ttw_g_per_tkm": 7.59,
+      "wtt_g_per_tkm": 1.72,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e Crude tanker \u003e 60,000–79,999 dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/crude_tanker/10_000_59_999_dwt",
+      "ttw_g_per_tkm": 9.21,
+      "wtt_g_per_tkm": 2.09,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e Crude tanker \u003e 10,000–59,999 dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/crude_tanker/0_9999_dwt",
+      "ttw_g_per_tkm": 33.71,
+      "wtt_g_per_tkm": 7.64,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e Crude tanker \u003e 0–9999 dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/crude_tanker/average",
+      "ttw_g_per_tkm": 4.57,
+      "wtt_g_per_tkm": 1.04,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e Crude tanker \u003e Average",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/products_tanker/60_000_dwt",
+      "ttw_g_per_tkm": 5.77,
+      "wtt_g_per_tkm": 1.31,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e Products tanker \u003e 60,000+ dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/products_tanker/20_000_59_999_dwt",
+      "ttw_g_per_tkm": 10.43,
+      "wtt_g_per_tkm": 2.36,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e Products tanker \u003e 20,000–59,999 dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/products_tanker/10_000_19_999_dwt",
+      "ttw_g_per_tkm": 18.93,
+      "wtt_g_per_tkm": 4.29,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e Products tanker \u003e 10,000–19,999 dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/products_tanker/5000_9999_dwt",
+      "ttw_g_per_tkm": 29.56,
+      "wtt_g_per_tkm": 6.7,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e Products tanker \u003e 5000–9999 dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/products_tanker/0_4999_dwt",
+      "ttw_g_per_tkm": 45.56,
+      "wtt_g_per_tkm": 10.33,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e Products tanker \u003e 0–4999 dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/products_tanker/average",
+      "ttw_g_per_tkm": 9.02,
+      "wtt_g_per_tkm": 2.05,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e Products tanker \u003e Average",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/chemical_tanker/20_000_dwt",
+      "ttw_g_per_tkm": 8.5,
+      "wtt_g_per_tkm": 1.93,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e Chemical tanker \u003e 20,000+ dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/chemical_tanker/10_000_19_999_dwt",
+      "ttw_g_per_tkm": 10.93,
+      "wtt_g_per_tkm": 2.48,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e Chemical tanker \u003e 10,000–19,999 dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/chemical_tanker/5000_9999_dwt",
+      "ttw_g_per_tkm": 15.29,
+      "wtt_g_per_tkm": 3.47,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e Chemical tanker \u003e 5000–9999 dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/chemical_tanker/0_4999_dwt",
+      "ttw_g_per_tkm": 22.48,
+      "wtt_g_per_tkm": 5.1,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e Chemical tanker \u003e 0–4999 dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/chemical_tanker/average",
+      "ttw_g_per_tkm": 10.31,
+      "wtt_g_per_tkm": 2.34,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e Chemical tanker \u003e Average",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/lng_tanker/200_000_m3",
+      "ttw_g_per_tkm": 9.42,
+      "wtt_g_per_tkm": 2.14,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e LNG tanker \u003e 200,000+ m3",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/lng_tanker/0_199_999_m3",
+      "ttw_g_per_tkm": 14.68,
+      "wtt_g_per_tkm": 3.33,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e LNG tanker \u003e 0–199,999 m3",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/lng_tanker/average",
+      "ttw_g_per_tkm": 11.53,
+      "wtt_g_per_tkm": 2.62,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e LNG tanker \u003e Average",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/lpg_tanker/50_000_m3",
+      "ttw_g_per_tkm": 9.11,
+      "wtt_g_per_tkm": 2.07,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e LPG Tanker \u003e 50,000+ m3",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/lpg_tanker/0_49_999_m3",
+      "ttw_g_per_tkm": 44.04,
+      "wtt_g_per_tkm": 9.99,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e LPG Tanker \u003e 0–49,999 m3",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "sea_tanker/lpg_tanker/average",
+      "ttw_g_per_tkm": 10.37,
+      "wtt_g_per_tkm": 2.35,
+      "source": "DESNZ 2026: Freighting goods \u003e Sea tanker \u003e LPG Tanker \u003e Average",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/bulk_carrier/200_000_dwt",
+      "ttw_g_per_tkm": 2.53,
+      "wtt_g_per_tkm": 0.57,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e Bulk carrier \u003e 200,000+ dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/bulk_carrier/100_000_199_999_dwt",
+      "ttw_g_per_tkm": 3.04,
+      "wtt_g_per_tkm": 0.69,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e Bulk carrier \u003e 100,000–199,999 dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/bulk_carrier/60_000_99_999_dwt",
+      "ttw_g_per_tkm": 4.15,
+      "wtt_g_per_tkm": 0.94,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e Bulk carrier \u003e 60,000–99,999 dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/bulk_carrier/35_000_59_999_dwt",
+      "ttw_g_per_tkm": 5.77,
+      "wtt_g_per_tkm": 1.31,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e Bulk carrier \u003e 35,000–59,999 dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/bulk_carrier/10_000_34_999_dwt",
+      "ttw_g_per_tkm": 8,
+      "wtt_g_per_tkm": 1.81,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e Bulk carrier \u003e 10,000–34,999 dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/bulk_carrier/0_9999_dwt",
+      "ttw_g_per_tkm": 29.56,
+      "wtt_g_per_tkm": 6.7,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e Bulk carrier \u003e 0–9999 dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/bulk_carrier/average",
+      "ttw_g_per_tkm": 3.53,
+      "wtt_g_per_tkm": 0.8,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e Bulk carrier \u003e Average",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/general_cargo/10_000_dwt",
+      "ttw_g_per_tkm": 12.05,
+      "wtt_g_per_tkm": 2.73,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e General cargo \u003e 10,000+ dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/general_cargo/5000_9999_dwt",
+      "ttw_g_per_tkm": 16,
+      "wtt_g_per_tkm": 3.63,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e General cargo \u003e 5000–9999 dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/general_cargo/0_4999_dwt",
+      "ttw_g_per_tkm": 14.07,
+      "wtt_g_per_tkm": 3.19,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e General cargo \u003e 0–4999 dwt",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/general_cargo/10_000_dwt_100_teu",
+      "ttw_g_per_tkm": 11.14,
+      "wtt_g_per_tkm": 2.53,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e General cargo \u003e 10,000+ dwt 100+ TEU",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/general_cargo/5000_9999_dwt_100_teu",
+      "ttw_g_per_tkm": 17.72,
+      "wtt_g_per_tkm": 4.02,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e General cargo \u003e 5000–9999 dwt 100+ TEU",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/general_cargo/0_4999_dwt_100_teu",
+      "ttw_g_per_tkm": 20.05,
+      "wtt_g_per_tkm": 4.55,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e General cargo \u003e 0–4999 dwt 100+ TEU",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/general_cargo/average",
+      "ttw_g_per_tkm": 13.21,
+      "wtt_g_per_tkm": 3,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e General cargo \u003e Average",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/container_ship/8000_teu",
+      "ttw_g_per_tkm": 12.66,
+      "wtt_g_per_tkm": 2.87,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e Container ship \u003e 8000+ TEU",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/container_ship/5000_7999_teu",
+      "ttw_g_per_tkm": 16.81,
+      "wtt_g_per_tkm": 3.81,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e Container ship \u003e 5000–7999 TEU",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/container_ship/3000_4999_teu",
+      "ttw_g_per_tkm": 16.81,
+      "wtt_g_per_tkm": 3.81,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e Container ship \u003e 3000–4999 TEU",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/container_ship/2000_2999_teu",
+      "ttw_g_per_tkm": 20.25,
+      "wtt_g_per_tkm": 4.59,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e Container ship \u003e 2000–2999 TEU",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/container_ship/1000_1999_teu",
+      "ttw_g_per_tkm": 32.5,
+      "wtt_g_per_tkm": 7.37,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e Container ship \u003e 1000–1999 TEU",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/container_ship/0_999_teu",
+      "ttw_g_per_tkm": 36.75,
+      "wtt_g_per_tkm": 8.33,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e Container ship \u003e 0–999 TEU",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/container_ship/average",
+      "ttw_g_per_tkm": 16.12,
+      "wtt_g_per_tkm": 3.65,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e Container ship \u003e Average",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/vehicle_transport/4000_ceu",
+      "ttw_g_per_tkm": 32.4,
+      "wtt_g_per_tkm": 7.35,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e Vehicle transport \u003e 4000+ CEU",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/vehicle_transport/0_3999_ceu",
+      "ttw_g_per_tkm": 58.32,
+      "wtt_g_per_tkm": 13.22,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e Vehicle transport \u003e 0–3999 CEU",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/vehicle_transport/average",
+      "ttw_g_per_tkm": 38.52,
+      "wtt_g_per_tkm": 8.73,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e Vehicle transport \u003e Average",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/roro_ferry/2000_lm",
+      "ttw_g_per_tkm": 50.12,
+      "wtt_g_per_tkm": 11.36,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e RoRo-Ferry \u003e 2000+ LM",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/roro_ferry/0_1999_lm",
+      "ttw_g_per_tkm": 61.05,
+      "wtt_g_per_tkm": 13.84,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e RoRo-Ferry \u003e 0–1999 LM",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/roro_ferry/average",
+      "ttw_g_per_tkm": 51.58,
+      "wtt_g_per_tkm": 11.7,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e RoRo-Ferry \u003e Average",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/large_ropax_ferry/average",
+      "ttw_g_per_tkm": 376.12,
+      "wtt_g_per_tkm": 85.28,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e Large RoPax ferry \u003e Average",
+      "year": 2026
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "cargo_ship/refrigerated_cargo/all_dwt",
+      "ttw_g_per_tkm": 13.06,
+      "wtt_g_per_tkm": 2.96,
+      "source": "DESNZ 2026: Freighting goods \u003e Cargo ship \u003e Refrigerated cargo \u003e All dwt",
+      "year": 2026
+    }
+  ],
+  "hubs": null,
+  "fuels": [
+    {
+      "fuel": "gaseous_fuels/butane/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 3033.38067,
+      "wtt_kg_per_unit": 344.30947,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e Butane (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/butane/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 1.74533,
+      "wtt_kg_per_unit": 0.19765,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e Butane (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/butane/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.24107,
+      "wtt_kg_per_unit": 0.02736,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e Butane (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/butane/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.22241,
+      "wtt_kg_per_unit": 0.02524,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e Butane (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/cng/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 2507.72441,
+      "wtt_kg_per_unit": 530.77887,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e CNG (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/cng/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 0.43885,
+      "wtt_kg_per_unit": 0.09289,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e CNG (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/cng/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.20199,
+      "wtt_kg_per_unit": 0.04198,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e CNG (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/cng/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.18231,
+      "wtt_kg_per_unit": 0.03789,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e CNG (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/lng/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 2536.85441,
+      "wtt_kg_per_unit": 912.22817,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e LNG (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/lng/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 1.14791,
+      "wtt_kg_per_unit": 0.41277,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e LNG (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/lng/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.20434,
+      "wtt_kg_per_unit": 0.07214,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e LNG (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/lng/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.18442,
+      "wtt_kg_per_unit": 0.06512,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e LNG (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/lpg/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 2939.36095,
+      "wtt_kg_per_unit": 349.29282,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e LPG (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/lpg/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 1.55713,
+      "wtt_kg_per_unit": 0.18551,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e LPG (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/lpg/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.23032,
+      "wtt_kg_per_unit": 0.02736,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e LPG (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/lpg/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.2145,
+      "wtt_kg_per_unit": 0.02548,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e LPG (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/natural_gas/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 2507.72441,
+      "wtt_kg_per_unit": 423.16368,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e Natural gas (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/natural_gas/cubic_metres",
+      "unit": "cubic metres",
+      "ttw_kg_per_unit": 2.02633,
+      "wtt_kg_per_unit": 0.3366,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e Natural gas (cubic metres)",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/natural_gas/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.20199,
+      "wtt_kg_per_unit": 0.03347,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e Natural gas (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/natural_gas/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.18231,
+      "wtt_kg_per_unit": 0.03021,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e Natural gas (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/natural_gas_100pct_mineral_blend/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 2536.85441,
+      "wtt_kg_per_unit": 423.16368,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e Natural gas (100% mineral blend) (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/natural_gas_100pct_mineral_blend/cubic_metres",
+      "unit": "cubic metres",
+      "ttw_kg_per_unit": 2.04987,
+      "wtt_kg_per_unit": 0.3366,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e Natural gas (100% mineral blend) (cubic metres)",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/natural_gas_100pct_mineral_blend/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.20434,
+      "wtt_kg_per_unit": 0.03347,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e Natural gas (100% mineral blend) (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/natural_gas_100pct_mineral_blend/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.18442,
+      "wtt_kg_per_unit": 0.03021,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e Natural gas (100% mineral blend) (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/other_petroleum_gas/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 2578.24647,
+      "wtt_kg_per_unit": 302.95197,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e Other petroleum gas (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/other_petroleum_gas/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 0.94442,
+      "wtt_kg_per_unit": 0.11097,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e Other petroleum gas (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/other_petroleum_gas/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.19917,
+      "wtt_kg_per_unit": 0.0234,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e Other petroleum gas (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/other_petroleum_gas/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.18323,
+      "wtt_kg_per_unit": 0.02153,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e Other petroleum gas (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/propane/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 2997.63233,
+      "wtt_kg_per_unit": 352.67018,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e Propane (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/propane/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 1.54358,
+      "wtt_kg_per_unit": 0.1817,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e Propane (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/propane/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.23258,
+      "wtt_kg_per_unit": 0.02736,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e Propane (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "gaseous_fuels/propane/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.2141,
+      "wtt_kg_per_unit": 0.02519,
+      "source": "DESNZ 2026: Fuels \u003e Gaseous fuels \u003e Propane (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/aviation_spirit/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 3193.6948,
+      "wtt_kg_per_unit": 813.26357,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Aviation spirit (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/aviation_spirit/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 2.33116,
+      "wtt_kg_per_unit": 0.61425,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Aviation spirit (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/aviation_spirit/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.25666,
+      "wtt_kg_per_unit": 0.06582,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Aviation spirit (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/aviation_spirit/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.24382,
+      "wtt_kg_per_unit": 0.06253,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Aviation spirit (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/aviation_turbine_fuel/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 3178.3652,
+      "wtt_kg_per_unit": 661.79468,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Aviation turbine fuel (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/aviation_turbine_fuel/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 2.54269,
+      "wtt_kg_per_unit": 0.52817,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Aviation turbine fuel (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/aviation_turbine_fuel/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.26061,
+      "wtt_kg_per_unit": 0.05424,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Aviation turbine fuel (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/aviation_turbine_fuel/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.24758,
+      "wtt_kg_per_unit": 0.05153,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Aviation turbine fuel (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/burning_oil/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 3165.04181,
+      "wtt_kg_per_unit": 660.82605,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Burning oil (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/burning_oil/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 2.54016,
+      "wtt_kg_per_unit": 0.53078,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Burning oil (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/burning_oil/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.25975,
+      "wtt_kg_per_unit": 0.05424,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Burning oil (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/burning_oil/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.24677,
+      "wtt_kg_per_unit": 0.05153,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Burning oil (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/diesel_average_biofuel_blend/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 3104.16462,
+      "wtt_kg_per_unit": 733.64436,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Diesel (average biofuel blend) (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/diesel_average_biofuel_blend/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 2.58354,
+      "wtt_kg_per_unit": 0.61101,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Diesel (average biofuel blend) (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/diesel_average_biofuel_blend/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.26071,
+      "wtt_kg_per_unit": 0.06181,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Diesel (average biofuel blend) (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/diesel_average_biofuel_blend/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.2452,
+      "wtt_kg_per_unit": 0.05816,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Diesel (average biofuel blend) (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/diesel_100pct_mineral_diesel/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 3203.91143,
+      "wtt_kg_per_unit": 752.0276,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Diesel (100% mineral diesel) (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/diesel_100pct_mineral_diesel/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 2.66155,
+      "wtt_kg_per_unit": 0.62409,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Diesel (100% mineral diesel) (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/diesel_100pct_mineral_diesel/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.26806,
+      "wtt_kg_per_unit": 0.06291,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Diesel (100% mineral diesel) (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/diesel_100pct_mineral_diesel/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.25197,
+      "wtt_kg_per_unit": 0.05913,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Diesel (100% mineral diesel) (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/fuel_oil/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 3228.89019,
+      "wtt_kg_per_unit": 714.86545,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Fuel oil (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/fuel_oil/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 3.17492,
+      "wtt_kg_per_unit": 0.69539,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Fuel oil (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/fuel_oil/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.28523,
+      "wtt_kg_per_unit": 0.06291,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Fuel oil (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/fuel_oil/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.26813,
+      "wtt_kg_per_unit": 0.05913,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Fuel oil (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/gas_oil/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 3226.57859,
+      "wtt_kg_per_unit": 743.83524,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Gas oil (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/gas_oil/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 2.75541,
+      "wtt_kg_per_unit": 0.62665,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Gas oil (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/gas_oil/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.27288,
+      "wtt_kg_per_unit": 0.06291,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Gas oil (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/gas_oil/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.2565,
+      "wtt_kg_per_unit": 0.05913,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Gas oil (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/lubricants/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 3180.99992,
+      "wtt_kg_per_unit": 1116.83712,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Lubricants (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/lubricants/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 2.74934,
+      "wtt_kg_per_unit": 0,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Lubricants (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/lubricants/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.281,
+      "wtt_kg_per_unit": 0.09828,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Lubricants (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/lubricants/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.26414,
+      "wtt_kg_per_unit": 0.09238,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Lubricants (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/naphtha/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 3142.3789,
+      "wtt_kg_per_unit": 640.41464,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Naphtha (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/naphtha/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 2.11894,
+      "wtt_kg_per_unit": 0,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Naphtha (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/naphtha/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.24891,
+      "wtt_kg_per_unit": 0.05076,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Naphtha (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/naphtha/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.23647,
+      "wtt_kg_per_unit": 0.04822,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Naphtha (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/petrol_average_biofuel_blend/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 2765.46935,
+      "wtt_kg_per_unit": 777.33392,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Petrol (average biofuel blend) (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/petrol_average_biofuel_blend/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 2.075,
+      "wtt_kg_per_unit": 0.58094,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Petrol (average biofuel blend) (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/petrol_average_biofuel_blend/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.23164,
+      "wtt_kg_per_unit": 0.0648,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Petrol (average biofuel blend) (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/petrol_average_biofuel_blend/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.21938,
+      "wtt_kg_per_unit": 0.0614,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Petrol (average biofuel blend) (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/petrol_100pct_mineral_petrol/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 3154.08213,
+      "wtt_kg_per_unit": 815.93523,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Petrol (100% mineral petrol) (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/petrol_100pct_mineral_petrol/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 2.35372,
+      "wtt_kg_per_unit": 0.60664,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Petrol (100% mineral petrol) (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/petrol_100pct_mineral_petrol/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.25464,
+      "wtt_kg_per_unit": 0.06582,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Petrol (100% mineral petrol) (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/petrol_100pct_mineral_petrol/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.24189,
+      "wtt_kg_per_unit": 0.06253,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Petrol (100% mineral petrol) (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/processed_fuel_oils_residual_oil/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 3228.89019,
+      "wtt_kg_per_unit": 1132.08149,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Processed fuel oils - residual oil (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/processed_fuel_oils_residual_oil/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 3.17492,
+      "wtt_kg_per_unit": 1.10125,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Processed fuel oils - residual oil (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/processed_fuel_oils_residual_oil/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.28523,
+      "wtt_kg_per_unit": 0.09962,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Processed fuel oils - residual oil (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/processed_fuel_oils_residual_oil/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.26813,
+      "wtt_kg_per_unit": 0.09364,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Processed fuel oils - residual oil (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/processed_fuel_oils_distillate_oil/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 3226.57859,
+      "wtt_kg_per_unit": 1123.49881,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Processed fuel oils - distillate oil (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/processed_fuel_oils_distillate_oil/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 2.75541,
+      "wtt_kg_per_unit": 0.9465,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Processed fuel oils - distillate oil (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/processed_fuel_oils_distillate_oil/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.27288,
+      "wtt_kg_per_unit": 0.09501,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Processed fuel oils - distillate oil (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/processed_fuel_oils_distillate_oil/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.2565,
+      "wtt_kg_per_unit": 0.08931,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Processed fuel oils - distillate oil (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/refinery_miscellaneous/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 2944.32093,
+      "wtt_kg_per_unit": 348.98258,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Refinery miscellaneous (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/refinery_miscellaneous/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.25961,
+      "wtt_kg_per_unit": 0.03077,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Refinery miscellaneous (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/refinery_miscellaneous/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.24663,
+      "wtt_kg_per_unit": 0.02923,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Refinery miscellaneous (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/waste_oils/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 3219.37916,
+      "wtt_kg_per_unit": 1116.83712,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Waste oils (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/waste_oils/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 2.74924,
+      "wtt_kg_per_unit": 0,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Waste oils (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/waste_oils/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.27459,
+      "wtt_kg_per_unit": 0.09526,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Waste oils (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/waste_oils/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.25641,
+      "wtt_kg_per_unit": 0.08895,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Waste oils (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/marine_gas_oil/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 3245.30441,
+      "wtt_kg_per_unit": 743.83524,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Marine gas oil (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/marine_gas_oil/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 2.77139,
+      "wtt_kg_per_unit": 0.62665,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Marine gas oil (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/marine_gas_oil/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.27445,
+      "wtt_kg_per_unit": 0.06291,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Marine gas oil (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/marine_gas_oil/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.25798,
+      "wtt_kg_per_unit": 0.05913,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Marine gas oil (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/marine_fuel_oil/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 3154.75334,
+      "wtt_kg_per_unit": 714.86545,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Marine fuel oil (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/marine_fuel_oil/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 3.10202,
+      "wtt_kg_per_unit": 0.69539,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Marine fuel oil (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/marine_fuel_oil/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.27869,
+      "wtt_kg_per_unit": 0.06291,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Marine fuel oil (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "liquid_fuels/marine_fuel_oil/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.26197,
+      "wtt_kg_per_unit": 0.05913,
+      "source": "DESNZ 2026: Fuels \u003e Liquid fuels \u003e Marine fuel oil (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "solid_fuels/coal_industrial/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 2415.03994,
+      "wtt_kg_per_unit": 418.14964,
+      "source": "DESNZ 2026: Fuels \u003e Solid fuels \u003e Coal (industrial) (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "solid_fuels/coal_industrial/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.34223,
+      "wtt_kg_per_unit": 0.05925,
+      "source": "DESNZ 2026: Fuels \u003e Solid fuels \u003e Coal (industrial) (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "solid_fuels/coal_industrial/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.32512,
+      "wtt_kg_per_unit": 0.05629,
+      "source": "DESNZ 2026: Fuels \u003e Solid fuels \u003e Coal (industrial) (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "solid_fuels/coal_electricity_generation/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 2230.22448,
+      "wtt_kg_per_unit": 390.06647,
+      "source": "DESNZ 2026: Fuels \u003e Solid fuels \u003e Coal (electricity generation) (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "solid_fuels/coal_electricity_generation/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.33944,
+      "wtt_kg_per_unit": 0.05925,
+      "source": "DESNZ 2026: Fuels \u003e Solid fuels \u003e Coal (electricity generation) (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "solid_fuels/coal_electricity_generation/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.32247,
+      "wtt_kg_per_unit": 0.05629,
+      "source": "DESNZ 2026: Fuels \u003e Solid fuels \u003e Coal (electricity generation) (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "solid_fuels/coal_domestic/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 2904.95234,
+      "wtt_kg_per_unit": 470.95724,
+      "source": "DESNZ 2026: Fuels \u003e Solid fuels \u003e Coal (domestic) (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "solid_fuels/coal_domestic/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.36549,
+      "wtt_kg_per_unit": 0.05925,
+      "source": "DESNZ 2026: Fuels \u003e Solid fuels \u003e Coal (domestic) (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "solid_fuels/coal_domestic/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.34721,
+      "wtt_kg_per_unit": 0.05629,
+      "source": "DESNZ 2026: Fuels \u003e Solid fuels \u003e Coal (domestic) (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "solid_fuels/coking_coal/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 3164.65002,
+      "wtt_kg_per_unit": 497.73658,
+      "source": "DESNZ 2026: Fuels \u003e Solid fuels \u003e Coking coal (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "solid_fuels/coking_coal/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.37675,
+      "wtt_kg_per_unit": 0.05925,
+      "source": "DESNZ 2026: Fuels \u003e Solid fuels \u003e Coking coal (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "solid_fuels/coking_coal/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.3579,
+      "wtt_kg_per_unit": 0.05629,
+      "source": "DESNZ 2026: Fuels \u003e Solid fuels \u003e Coking coal (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "solid_fuels/petroleum_coke/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 3386.57168,
+      "wtt_kg_per_unit": 402.62468,
+      "source": "DESNZ 2026: Fuels \u003e Solid fuels \u003e Petroleum coke (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "solid_fuels/petroleum_coke/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.35887,
+      "wtt_kg_per_unit": 0.04267,
+      "source": "DESNZ 2026: Fuels \u003e Solid fuels \u003e Petroleum coke (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "solid_fuels/petroleum_coke/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.34092,
+      "wtt_kg_per_unit": 0.04053,
+      "source": "DESNZ 2026: Fuels \u003e Solid fuels \u003e Petroleum coke (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "solid_fuels/coal_electricity_generation_home_produced_coal_only/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 2226.7367,
+      "wtt_kg_per_unit": 389.45704,
+      "source": "DESNZ 2026: Fuels \u003e Solid fuels \u003e Coal (electricity generation - home produced coal only) (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "solid_fuels/coal_electricity_generation_home_produced_coal_only/kwh_net_cv",
+      "unit": "kWh (Net CV)",
+      "ttw_kg_per_unit": 0.33944,
+      "wtt_kg_per_unit": 0.05925,
+      "source": "DESNZ 2026: Fuels \u003e Solid fuels \u003e Coal (electricity generation - home produced coal only) (kWh (Net CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "solid_fuels/coal_electricity_generation_home_produced_coal_only/kwh_gross_cv",
+      "unit": "kWh (Gross CV)",
+      "ttw_kg_per_unit": 0.32247,
+      "wtt_kg_per_unit": 0.05629,
+      "source": "DESNZ 2026: Fuels \u003e Solid fuels \u003e Coal (electricity generation - home produced coal only) (kWh (Gross CV))",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/bioethanol/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 0.00901,
+      "wtt_kg_per_unit": 0.61516,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Bioethanol (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/bioethanol/gj",
+      "unit": "GJ",
+      "ttw_kg_per_unit": 0.42339,
+      "wtt_kg_per_unit": 28.909,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Bioethanol (GJ)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/bioethanol/kg",
+      "unit": "kg",
+      "ttw_kg_per_unit": 0.01135,
+      "wtt_kg_per_unit": 0.77476,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Bioethanol (kg)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/biodiesel_me/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 0.16751,
+      "wtt_kg_per_unit": 0.39508,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Biodiesel ME (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/biodiesel_me/gj",
+      "unit": "GJ",
+      "ttw_kg_per_unit": 5.05961,
+      "wtt_kg_per_unit": 11.933,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Biodiesel ME (GJ)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/biodiesel_me/kg",
+      "unit": "kg",
+      "ttw_kg_per_unit": 0.18822,
+      "wtt_kg_per_unit": 0.44391,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Biodiesel ME (kg)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/biomethane_compressed/gj",
+      "unit": "GJ",
+      "ttw_kg_per_unit": 0.10625,
+      "wtt_kg_per_unit": 15.797,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Biomethane (compressed) (GJ)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/biomethane_compressed/kg",
+      "unit": "kg",
+      "ttw_kg_per_unit": 0.00521,
+      "wtt_kg_per_unit": 0.77405,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Biomethane (compressed) (kg)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/biodiesel_me_from_used_cooking_oil/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 0.16751,
+      "wtt_kg_per_unit": 0.3534,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Biodiesel ME (from used cooking oil) (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/biodiesel_me_from_used_cooking_oil/gj",
+      "unit": "GJ",
+      "ttw_kg_per_unit": 5.05961,
+      "wtt_kg_per_unit": 10.6742,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Biodiesel ME (from used cooking oil) (GJ)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/biodiesel_me_from_used_cooking_oil/kg",
+      "unit": "kg",
+      "ttw_kg_per_unit": 0.18822,
+      "wtt_kg_per_unit": 0.39708,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Biodiesel ME (from used cooking oil) (kg)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/biodiesel_me_from_tallow/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 0.16751,
+      "wtt_kg_per_unit": 0.53232,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Biodiesel ME (from tallow) (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/biodiesel_me_from_tallow/gj",
+      "unit": "GJ",
+      "ttw_kg_per_unit": 5.05961,
+      "wtt_kg_per_unit": 16.07836,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Biodiesel ME (from tallow) (GJ)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/biodiesel_me_from_tallow/kg",
+      "unit": "kg",
+      "ttw_kg_per_unit": 0.18822,
+      "wtt_kg_per_unit": 0.59812,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Biodiesel ME (from tallow) (kg)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/biodiesel_hvo/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 0.03558,
+      "wtt_kg_per_unit": 0.56439,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Biodiesel HVO (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/biodiesel_hvo/gj",
+      "unit": "GJ",
+      "ttw_kg_per_unit": 1.03677,
+      "wtt_kg_per_unit": 16.445,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Biodiesel HVO (GJ)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/biodiesel_hvo/kg",
+      "unit": "kg",
+      "ttw_kg_per_unit": 0.04562,
+      "wtt_kg_per_unit": 0.72358,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Biodiesel HVO (kg)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/biopropane/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 0.00214,
+      "wtt_kg_per_unit": 0.15752,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Biopropane (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/biopropane/gj",
+      "unit": "GJ",
+      "ttw_kg_per_unit": 0.08952,
+      "wtt_kg_per_unit": 6.613,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Biopropane (GJ)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/biopropane/kg",
+      "unit": "kg",
+      "ttw_kg_per_unit": 0.00415,
+      "wtt_kg_per_unit": 0.30684,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Biopropane (kg)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/development_diesel/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 0.03705,
+      "wtt_kg_per_unit": 0.83338,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Development diesel (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/development_diesel/gj",
+      "unit": "GJ",
+      "ttw_kg_per_unit": 1.03677,
+      "wtt_kg_per_unit": 23.32,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Development diesel (GJ)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/development_diesel/kg",
+      "unit": "kg",
+      "ttw_kg_per_unit": 0.04461,
+      "wtt_kg_per_unit": 1.0034,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Development diesel (kg)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/development_petrol/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 0.01409,
+      "wtt_kg_per_unit": 0.76505,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Development petrol (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/development_petrol/gj",
+      "unit": "GJ",
+      "ttw_kg_per_unit": 0.42339,
+      "wtt_kg_per_unit": 23.097,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Development petrol (GJ)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/development_petrol/kg",
+      "unit": "kg",
+      "ttw_kg_per_unit": 0.01888,
+      "wtt_kg_per_unit": 1.03129,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Development petrol (kg)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/off_road_biodiesel/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 0.16751,
+      "wtt_kg_per_unit": 0.39508,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Off road biodiesel (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/off_road_biodiesel/gj",
+      "unit": "GJ",
+      "ttw_kg_per_unit": 5.05961,
+      "wtt_kg_per_unit": 11.933,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Off road biodiesel (GJ)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/off_road_biodiesel/kg",
+      "unit": "kg",
+      "ttw_kg_per_unit": 0.18822,
+      "wtt_kg_per_unit": 0.44391,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Off road biodiesel (kg)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/biomethane_liquified/gj",
+      "unit": "GJ",
+      "ttw_kg_per_unit": 0.10625,
+      "wtt_kg_per_unit": 23.903,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Biomethane (liquified) (GJ)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/biomethane_liquified/kg",
+      "unit": "kg",
+      "ttw_kg_per_unit": 0.00521,
+      "wtt_kg_per_unit": 1.17125,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Biomethane (liquified) (kg)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/methanol_bio/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 0.00669,
+      "wtt_kg_per_unit": 0.59414,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Methanol (bio) (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/methanol_bio/gj",
+      "unit": "GJ",
+      "ttw_kg_per_unit": 0.42339,
+      "wtt_kg_per_unit": 37.597,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Methanol (bio) (GJ)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/methanol_bio/kg",
+      "unit": "kg",
+      "ttw_kg_per_unit": 0.00844,
+      "wtt_kg_per_unit": 0.74923,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Methanol (bio) (kg)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/avtur_renewable/litres",
+      "unit": "litres",
+      "ttw_kg_per_unit": 0.02533,
+      "wtt_kg_per_unit": 0.53386,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Avtur (renewable) (litres)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/avtur_renewable/gj",
+      "unit": "GJ",
+      "ttw_kg_per_unit": 0.7234,
+      "wtt_kg_per_unit": 15.256,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Avtur (renewable) (GJ)",
+      "year": 2026
+    },
+    {
+      "fuel": "biofuel/avtur_renewable/kg",
+      "unit": "kg",
+      "ttw_kg_per_unit": 0.03179,
+      "wtt_kg_per_unit": 0.67052,
+      "source": "DESNZ 2026: Bioenergy \u003e Biofuel \u003e Avtur (renewable) (kg)",
+      "year": 2026
+    },
+    {
+      "fuel": "biomass/wood_logs/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 48.73751,
+      "wtt_kg_per_unit": 52.14,
+      "source": "DESNZ 2026: Bioenergy \u003e Biomass \u003e Wood logs (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "biomass/wood_logs/kwh",
+      "unit": "kWh",
+      "ttw_kg_per_unit": 0.01193,
+      "wtt_kg_per_unit": 0.01277,
+      "source": "DESNZ 2026: Bioenergy \u003e Biomass \u003e Wood logs (kWh)",
+      "year": 2026
+    },
+    {
+      "fuel": "biomass/wood_chips/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 45.05983,
+      "wtt_kg_per_unit": 30.4,
+      "source": "DESNZ 2026: Bioenergy \u003e Biomass \u003e Wood chips (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "biomass/wood_chips/kwh",
+      "unit": "kWh",
+      "ttw_kg_per_unit": 0.01193,
+      "wtt_kg_per_unit": 0.00792,
+      "source": "DESNZ 2026: Bioenergy \u003e Biomass \u003e Wood chips (kWh)",
+      "year": 2026
+    },
+    {
+      "fuel": "biomass/wood_pellets/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 57.25249,
+      "wtt_kg_per_unit": 177,
+      "source": "DESNZ 2026: Bioenergy \u003e Biomass \u003e Wood pellets (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "biomass/wood_pellets/kwh",
+      "unit": "kWh",
+      "ttw_kg_per_unit": 0.01193,
+      "wtt_kg_per_unit": 0.03744,
+      "source": "DESNZ 2026: Bioenergy \u003e Biomass \u003e Wood pellets (kWh)",
+      "year": 2026
+    },
+    {
+      "fuel": "biomass/grass_straw/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 46.89059,
+      "wtt_kg_per_unit": 68.65,
+      "source": "DESNZ 2026: Bioenergy \u003e Biomass \u003e Grass/straw (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "biomass/grass_straw/kwh",
+      "unit": "kWh",
+      "ttw_kg_per_unit": 0.0126,
+      "wtt_kg_per_unit": 0.01604,
+      "source": "DESNZ 2026: Bioenergy \u003e Biomass \u003e Grass/straw (kWh)",
+      "year": 2026
+    },
+    {
+      "fuel": "biogas/biogas/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 1.22851,
+      "wtt_kg_per_unit": 102.85714,
+      "source": "DESNZ 2026: Bioenergy \u003e Biogas \u003e Biogas (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "biogas/biogas/kwh",
+      "unit": "kWh",
+      "ttw_kg_per_unit": 0.00022,
+      "wtt_kg_per_unit": 0.01851,
+      "source": "DESNZ 2026: Bioenergy \u003e Biogas \u003e Biogas (kWh)",
+      "year": 2026
+    },
+    {
+      "fuel": "biogas/landfill_gas/tonnes",
+      "unit": "tonnes",
+      "ttw_kg_per_unit": 0.6977,
+      "wtt_kg_per_unit": 0,
+      "source": "DESNZ 2026: Bioenergy \u003e Biogas \u003e Landfill gas (tonnes)",
+      "year": 2026
+    },
+    {
+      "fuel": "biogas/landfill_gas/kwh",
+      "unit": "kWh",
+      "ttw_kg_per_unit": 0.0002,
+      "wtt_kg_per_unit": 0,
+      "source": "DESNZ 2026: Bioenergy \u003e Biogas \u003e Landfill gas (kWh)",
+      "year": 2026
+    }
+  ]
+}

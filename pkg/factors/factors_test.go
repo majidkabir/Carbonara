@@ -49,3 +49,39 @@ func TestEmbeddedSample_Fuel(t *testing.T) {
 		t.Error("want error for unknown fuel")
 	}
 }
+
+func TestOpen(t *testing.T) {
+	names := EmbeddedNames()
+	if strings.Join(names, ",") != "desnz-2026,sample" {
+		t.Errorf("EmbeddedNames = %v", names)
+	}
+	ds, err := Open("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ds.Name != Default || len(ds.Legs) < 100 || len(ds.Fuels) < 100 ||
+		!strings.Contains(ds.Note, "Open Government Licence v3.0") {
+		t.Errorf("default dataset: name=%q legs=%d fuels=%d", ds.Name, len(ds.Legs), len(ds.Fuels))
+	}
+	// Spot-check one published value end to end (DESNZ 2026 flat file).
+	f, err := ds.LegFactor(calc.Rail, "rail/freight_train")
+	if err != nil || f.TTW != 25.83 || f.WTT != 6.91 || f.Year != 2026 {
+		t.Errorf("rail freight = %+v, %v", f, err)
+	}
+	if _, err := Open("testdata-does-not-exist.json"); err == nil {
+		t.Error("want error for missing file")
+	}
+}
+
+func TestParse_DistanceAdjustments(t *testing.T) {
+	ds, err := Parse(strings.NewReader(`{"name":"x","distance_adjustments":[{"mode":"air","add_km":95}]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a := ds.Distances().Adjust[calc.Air]; a.AddKm != 95 {
+		t.Errorf("air adjustment = %+v", a)
+	}
+	if _, err := Parse(strings.NewReader(`{"distance_adjustments":[{"mode":"air","add_km":-1}]}`)); err == nil {
+		t.Error("want error for negative adjustment")
+	}
+}

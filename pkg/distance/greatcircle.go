@@ -3,6 +3,7 @@ package distance
 
 import (
 	"context"
+	"fmt"
 	"math"
 
 	"github.com/majidkabir/carbonara/pkg/calc"
@@ -10,21 +11,53 @@ import (
 
 const earthRadiusKm = 6371.0088 // mean Earth radius (IUGG)
 
-// GreatCircle returns the great-circle (haversine) distance, scaled by a
-// per-mode distance adjustment factor (DAF) to approximate real routes.
-//
-// Adjust defaults to 1.0 (pure great-circle). Configure it with the DAFs from
-// the GLEC Framework before real use; routed providers (OSRM, SeaRoute) will
-// replace this for road and sea.
+// Adjustment converts a great-circle distance into an estimated actual
+// distance for one mode: adjusted = gcd * Multiplier + AddKm.
+// A zero Multiplier means 1. Frameworks express these as distance
+// adjustment factors (multiplicative) or fixed additions (e.g. for air).
+type Adjustment struct {
+	Mode       calc.Mode `json:"mode"`
+	Multiplier float64   `json:"multiplier,omitempty"`
+	AddKm      float64   `json:"add_km,omitempty"`
+	Source     string    `json:"source,omitempty"`
+}
+
+// Apply returns the adjusted distance.
+func (a Adjustment) Apply(gcd float64) float64 {
+	m := a.Multiplier
+	if m == 0 {
+		m = 1
+	}
+	return gcd*m + a.AddKm
+}
+
+// GreatCircle returns the great-circle (haversine) distance, adjusted per
+// mode when an Adjustment is configured. Without one the raw great-circle
+// distance is used.
 type GreatCircle struct {
-	Adjust map[calc.Mode]float64
+	Adjust map[calc.Mode]Adjustment
+}
+
+// NewGreatCircle validates adjustments and returns a provider.
+func NewGreatCircle(adjs []Adjustment) (GreatCircle, error) {
+	g := GreatCircle{Adjust: make(map[calc.Mode]Adjustment, len(adjs))}
+	for _, a := range adjs {
+		if a.Multiplier < 0 || a.AddKm < 0 {
+			return GreatCircle{}, fmt.Errorf("distance adjustment for %s: values must be >= 0", a.Mode)
+		}
+		if _, dup := g.Adjust[a.Mode]; dup {
+			return GreatCircle{}, fmt.Errorf("duplicate distance adjustment for %s", a.Mode)
+		}
+		g.Adjust[a.Mode] = a
+	}
+	return g, nil
 }
 
 // Distance implements calc.DistanceProvider.
 func (g GreatCircle) Distance(_ context.Context, m calc.Mode, from, to calc.Location) (float64, error) {
 	d := Haversine(from, to)
-	if f, ok := g.Adjust[m]; ok && f > 0 {
-		d *= f
+	if a, ok := g.Adjust[m]; ok {
+		d = a.Apply(d)
 	}
 	return d, nil
 }

@@ -105,7 +105,7 @@ components:
       type: object
       required: [fuel, amount]
       properties:
-        fuel: { type: string, example: diesel }
+        fuel: { type: string, example: liquid_fuels/diesel_average_biofuel_blend/litres }
         amount: { type: number, description: In the fuel factor's unit }
         vehicle_tonne_km:
           type: number
@@ -116,7 +116,10 @@ components:
       properties:
         id: { type: string }
         mode: { $ref: "#/components/schemas/Mode" }
-        vehicle_type: { type: string, example: truck_40t }
+        vehicle_type:
+          type: string
+          example: hgv_non_refrigerated_all_diesel/average_non_refrigerated_hgvs/average_laden
+          description: Must exist in the loaded dataset; list them with GET /v1/factors
         from: { $ref: "#/components/schemas/Location" }
         to: { $ref: "#/components/schemas/Location" }
         distance_km:
@@ -211,3 +214,13 @@ components:
         fuels:
           type: array
           items: { $ref: "#/components/schemas/FuelFactor" }
+        distance_adjustments:
+          type: array
+          description: "Great-circle to actual distance, per mode: gcd * multiplier + add_km"
+          items:
+            type: object
+            properties:
+              mode: { $ref: "#/components/schemas/Mode" }
+              multiplier: { type: number }
+              add_km: { type: number }
+              source: { type: string }
