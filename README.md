@@ -195,7 +195,12 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 
 ## Releasing
 
-Push a tag like `v0.1.0`: binaries go to GitHub Releases, the image to `ghcr.io/majidkabir/carbonara`.
+Either:
+
+- **From GitHub** (works on mobile): Actions → Release → Run workflow, enter a version like `v0.1.0`. It runs the tests, creates the tag, then builds.
+- **From a terminal**: `git tag v0.1.0 && git push origin v0.1.0`.
+
+Binaries for Linux, macOS and Windows go to GitHub Releases, the image to `ghcr.io/majidkabir/carbonara`.
 
 ## License
 
