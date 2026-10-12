@@ -15,6 +15,9 @@ import (
 	"github.com/majidkabir/carbonara/pkg/factors"
 )
 
+// version is set at build time with -ldflags "-X main.version=...".
+var version = "dev"
+
 const usageText = `Carbonara — freight CO2e calculator
 
 Usage:
@@ -22,6 +25,7 @@ Usage:
   carbonara batch   [-factors file.json] shipments.csv   many shipments, CSV result
   carbonara serve   [-factors file.json] [-addr :8080]   HTTP API
   carbonara factors [-factors file.json]                 print the factor dataset
+  carbonara version
 
 Use "-" as the file name to read stdin.`
 
@@ -35,6 +39,7 @@ func main() {
 		"batch":   runBatch,
 		"serve":   runServe,
 		"factors": runFactors,
+		"version": func([]string) error { fmt.Println(version); return nil },
 	}
 	cmd, ok := cmds[os.Args[1]]
 	if !ok {

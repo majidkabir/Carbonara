@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: gofmt
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then echo "Not gofmt'ed:"; echo "$unformatted"; exit 1; fi
+      - run: go vet ./...
+      - run: go test -race ./...
+      - name: Fuzz (30s)
+        run: go test ./pkg/calc -run '^$' -fuzz FuzzCalculate_Monotonic -fuzztime 30s
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t carbonara:ci .
+      - name: Smoke test
+        run: |
+          docker run -d --name carbonara -p 8080:8080 carbonara:ci
+          for i in $(seq 1 20); do curl -fs localhost:8080/healthz && break; sleep 0.5; done
+          curl -fs -X POST localhost:8080/v1/calculate --data @examples/cph-rotterdam.json
+          docker rm -f carbonara
