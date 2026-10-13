@@ -9,6 +9,7 @@ on:
     paths:
       - compose.yaml
       - compose.waterway.yaml
+      - compose.rail.yaml
       - deploy/**
       - Dockerfile
       - cmd/**
@@ -18,6 +19,7 @@ on:
     paths:
       - compose.yaml
       - compose.waterway.yaml
+      - compose.rail.yaml
       - deploy/**
       - Dockerfile
   schedule:
@@ -79,18 +81,18 @@ jobs:
         if: always()
         run: docker compose down -v
 
-  waterway:
+  waterway-rail:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       # The Saar is a class Vb federal waterway through Saarland.
       OSRM_PBF_URL: https://download.geofabrik.de/europe/germany/saarland-latest.osm.pbf
       SEA_RESOLUTION_KM: "100"
-      COMPOSE_FILE: compose.yaml:compose.waterway.yaml
+      COMPOSE_FILE: compose.yaml:compose.waterway.yaml:compose.rail.yaml
     steps:
       - uses: actions/checkout@v4
 
-      - name: Start stack with waterway routing
+      - name: Start stack with waterway and rail routing
         run: docker compose up -d --build
 
       - name: Wait for Carbonara
@@ -109,6 +111,17 @@ jobs:
           echo "$out" | jq '.legs[0] | {distance_km, distance_method, distance_type, daf, wtw_kg}'
           echo "$out" | jq -e '.legs[0].distance_method == "osrm_waterway" and .legs[0].distance_type == "sfd"
             and .legs[0].distance_km > 26 and .legs[0].distance_km < 45'
+          echo "barge Saarbruecken-Dillingen: $(echo "$out" | jq '.legs[0].distance_km') km" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Rail leg is routed on the railway
+        run: |
+          # Saarbruecken Hbf to Saarlouis Hbf: about 20 km as the crow flies, more by rail via Voelklingen.
+          out=$(curl -fsS -X POST localhost:8080/v1/calculate -d '{"weight_kg":1000000,"legs":[{"mode":"rail","vehicle_type":"freight_train",
+            "from":{"lat":49.2410,"lon":6.9910},"to":{"lat":49.3260,"lon":6.7450}}]}')
+          echo "$out" | jq '.legs[0] | {distance_km, distance_method, distance_type, wtw_kg}'
+          echo "$out" | jq -e '.legs[0].distance_method == "osrm_rail" and .legs[0].distance_type == "sfd"
+            and .legs[0].distance_km > 20.5 and .legs[0].distance_km < 35'
+          echo "rail Saarbruecken-Saarlouis: $(echo "$out" | jq '.legs[0].distance_km') km" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Points far from a waterway are refused
         run: |

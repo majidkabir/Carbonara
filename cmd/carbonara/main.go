@@ -38,8 +38,9 @@ Usage:
 
 Use "-" as the file name to read stdin. The default datasets are UK DESNZ 2026
 and Dutch inland waterway factors 2026.
-calc, batch and serve also take -osrm URL (road routing) and -sea-network
-file.geojson (sea routing); see "carbonara calc -h".`
+calc, batch, report and serve also take -osrm URL (road routing),
+-osrm-rail URL, -osrm-waterway URL and -sea-network file.geojson (sea
+routing); see "carbonara calc -h".`
 
 func main() {
 	if len(os.Args) < 2 {
@@ -75,9 +76,9 @@ func main() {
 
 // common holds flags shared by all subcommands.
 type common struct {
-	factorFile, osrmURL, waterwayURL string
-	seaNetwork, seaAvoid, seaOpen    string
-	seaMaxSnapKm, waterwayMaxSnapKm  float64
+	factorFile, osrmURL, waterwayURL, railURL      string
+	seaNetwork, seaAvoid, seaOpen                  string
+	seaMaxSnapKm, waterwayMaxSnapKm, railMaxSnapKm float64
 }
 
 func (c *common) register(fs *flag.FlagSet) {
@@ -92,6 +93,10 @@ func (c *common) register(fs *flag.FlagSet) {
 			"(default: none; give distance_km)")
 	fs.Float64Var(&c.waterwayMaxSnapKm, "waterway-max-snap-km", 10,
 		"reject inland waterway points farther than this from a navigable waterway (0 = no limit)")
+	fs.StringVar(&c.railURL, "osrm-rail", os.Getenv("CARBONARA_OSRM_RAIL_URL"),
+		"OSRM server built with deploy/rail.lua for rail distances, also $CARBONARA_OSRM_RAIL_URL (default: great-circle)")
+	fs.Float64Var(&c.railMaxSnapKm, "rail-max-snap-km", 5,
+		"reject rail points farther than this from a railway line (0 = no limit)")
 	fs.StringVar(&c.seaNetwork, "sea-network", os.Getenv("CARBONARA_SEA_NETWORK"),
 		"maritime network GeoJSON for sea distances, also $CARBONARA_SEA_NETWORK (default: adjusted great-circle)")
 	fs.StringVar(&c.seaAvoid, "sea-avoid", "", "comma-separated passages to avoid, e.g. suez,panama")
@@ -131,6 +136,14 @@ func (c *common) calculator() (calc.Calculator, *factors.Dataset, error) {
 		}
 		o.Method, o.MaxSnapKm = "osrm_waterway", c.waterwayMaxSnapKm
 		routed[calc.InlandWaterway] = o
+	}
+	if c.railURL != "" {
+		o, err := distance.NewOSRM(c.railURL)
+		if err != nil {
+			return calc.Calculator{}, nil, err
+		}
+		o.Method, o.MaxSnapKm = "osrm_rail", c.railMaxSnapKm
+		routed[calc.Rail] = o
 	}
 	if c.seaNetwork != "" {
 		n, err := c.loadSea()

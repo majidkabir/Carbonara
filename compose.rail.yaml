@@ -1,0 +1,50 @@
+# Adds rail routing to the stack: a second OSRM built with the rail profile
+# (deploy/rail.lua) on the same map region.
+#
+#   docker compose -f compose.yaml -f compose.rail.yaml up -d
+#
+# Combine with compose.waterway.yaml for both:
+#   docker compose -f compose.yaml -f compose.rail.yaml -f compose.waterway.yaml up -d
+
+services:
+  prepare-osrm-rail:
+    image: ${OSRM_IMAGE:-ghcr.io/project-osrm/osrm-backend:v26.8.0-debian}
+    depends_on:
+      download-map:
+        condition: service_completed_successfully
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        out=/rdata/rail.osrm.mldgr
+        if [ -f "$$out" ] && [ "$$out" -nt /data/region.osm.pbf ] && [ "$$out" -nt /deploy/rail.lua ]; then
+          echo "OSRM rail data up to date"; exit 0
+        fi
+        ln -sf /data/region.osm.pbf /rdata/rail.osm.pbf
+        osrm-extract -p /deploy/rail.lua /rdata/rail.osm.pbf
+        osrm-partition /rdata/rail.osrm
+        osrm-customize /rdata/rail.osrm
+    volumes:
+      - osrm-data:/data:ro
+      - rail-data:/rdata
+      - ./deploy:/deploy:ro
+
+  osrm-rail:
+    image: ${OSRM_IMAGE:-ghcr.io/project-osrm/osrm-backend:v26.8.0-debian}
+    depends_on:
+      prepare-osrm-rail:
+        condition: service_completed_successfully
+    command: ["osrm-routed", "--algorithm", "mld", "/rdata/rail.osrm"]
+    volumes:
+      - rail-data:/rdata:ro
+    restart: unless-stopped
+
+  carbonara:
+    depends_on:
+      osrm-rail:
+        condition: service_started
+    environment:
+      CARBONARA_OSRM_RAIL_URL: http://osrm-rail:5000
+
+volumes:
+  rail-data:

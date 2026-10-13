@@ -272,7 +272,7 @@ components:
         distance_method:
           type: string
           description: Where the distance came from
-          enum: [given, great_circle, great_circle_adjusted, osrm, osrm_waterway, sea_network]
+          enum: [given, great_circle, great_circle_adjusted, osrm, osrm_rail, osrm_waterway, sea_network]
         distance_type: { $ref: "#/components/schemas/DistanceType" }
         daf:
           type: number
