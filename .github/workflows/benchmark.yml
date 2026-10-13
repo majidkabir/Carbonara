@@ -1,0 +1,114 @@
+name: Benchmark
+
+# Measures OSRM road routing (CH and MLD) and Carbonara end to end on one
+# region, with fresh random points per request so nothing is cached.
+# Run by hand: Actions -> Benchmark -> Run workflow. Results appear as
+# annotations and in the job summary.
+#
+# Cores (GitHub's standard runner has 4): OSRM gets cores 0-1, Carbonara
+# core 2, the load generator core 3, so figures are per pinned core.
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: Geofabrik .osm.pbf URL
+        default: https://download.geofabrik.de/europe/netherlands-latest.osm.pbf
+      bbox:
+        description: minLon,minLat,maxLon,maxLat for random points
+        default: "3.4,50.8,7.2,53.5"
+      duration:
+        description: Duration of each run
+        default: 30s
+
+permissions:
+  contents: read
+
+env:
+  OSRM_IMAGE: ghcr.io/project-osrm/osrm-backend:v26.8.0-debian
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      REGION: ${{ inputs.region }}
+      BBOX: ${{ inputs.bbox }}
+      DUR: ${{ inputs.duration }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h / | tail -1; nproc; free -g | head -2
+
+      - name: Build tools
+        run: |
+          go build -o bin/carbonara ./cmd/carbonara
+          go build -o bin/osrmbench ./tools/osrmbench
+          go build -o bin/loadtest ./tools/loadtest
+
+      - name: Download map
+        run: |
+          mkdir -p data
+          curl -fsSL -o data/region.osm.pbf "$REGION"
+          size=$(du -h data/region.osm.pbf | cut -f1)
+          echo "::notice title=Map::$REGION ($size)"
+
+      - name: Prepare (extract, CH, MLD)
+        run: |
+          docker pull -q "$OSRM_IMAGE"
+          step() { # name, command: run in OSRM's image, report time and peak memory
+            local t0=$(date +%s)
+            peak=$(docker run --rm -v "$PWD/data:/data" "$OSRM_IMAGE" sh -c "$2 >/dev/null 2>/tmp/err || { cat /tmp/err; exit 1; }; cat /sys/fs/cgroup/memory.peak")
+            local t=$(( $(date +%s) - t0 ))
+            echo "::notice title=Prepare $1::${t}s, peak memory $(( peak / 1024 / 1024 )) MiB"
+            echo "| $1 | ${t}s | $(( peak / 1024 / 1024 )) MiB |" >> prep.md
+          }
+          step extract   "osrm-extract -p /opt/car.lua /data/region.osm.pbf"
+          step contract  "osrm-contract /data/region.osrm"
+          step partition "osrm-partition /data/region.osrm"
+          step customize "osrm-customize /data/region.osrm"
+          echo "::notice title=Prepared files::$(du -ch data/region.osrm* | tail -1 | cut -f1) on disk"
+
+      - name: Benchmark OSRM
+        run: |
+          for algo in ch mld; do
+            docker run -d --name osrm-$algo --cpuset-cpus 0,1 -p 5000:5000 -v "$PWD/data:/data" "$OSRM_IMAGE" \
+              osrm-routed --algorithm $algo --threads 2 --max-table-size 1000 /data/region.osrm
+            for i in $(seq 1 120); do curl -fs "localhost:5000/route/v1/driving/5,52;5.1,52.1?overview=false" >/dev/null && break; sleep 1; done
+            mem=$(docker stats --no-stream --format '{{.MemUsage}}' osrm-$algo | cut -d/ -f1)
+            echo "::notice title=OSRM $algo memory::$mem while serving"
+            for c in 1 8; do
+              line=$(taskset -c 3 bin/osrmbench -url http://localhost:5000 -mode route -c $c -d "$DUR" -bbox "$BBOX" -label "$algo")
+              echo "$line"; echo "::notice title=OSRM $algo route c=$c (2 cores)::$line"; echo "- $line" >> results.md
+            done
+            line=$(taskset -c 3 bin/osrmbench -url http://localhost:5000 -mode table -n 25 -c 4 -d "$DUR" -bbox "$BBOX" -label "$algo")
+            echo "$line"; echo "::notice title=OSRM $algo table 25x25 (2 cores)::$line"; echo "- $line" >> results.md
+            docker rm -f osrm-$algo >/dev/null
+          done
+
+      - name: Benchmark Carbonara with OSRM (CH)
+        run: |
+          docker run -d --name osrm-ch --cpuset-cpus 0,1 -p 5000:5000 -v "$PWD/data:/data" "$OSRM_IMAGE" \
+            osrm-routed --algorithm ch --threads 2 /data/region.osrm
+          for i in $(seq 1 120); do curl -fs "localhost:5000/route/v1/driving/5,52;5.1,52.1?overview=false" >/dev/null && break; sleep 1; done
+          taskset -c 2 bin/carbonara serve -addr 127.0.0.1:8080 -osrm http://localhost:5000 -max-concurrent 64 > serve.log 2>&1 &
+          for i in $(seq 1 30); do curl -fs localhost:8080/healthz >/dev/null && break; sleep 1; done
+          for args in "-kind calc -c 16" "-kind batch -batch 100 -c 4"; do
+            line=$(taskset -c 3 bin/loadtest -url http://127.0.0.1:8080 $args -d "$DUR" -fresh -road-only -bbox "$BBOX")
+            echo "$line"; echo "::notice title=Carbonara + OSRM CH ($args)::$line"; echo "- carbonara $line" >> results.md
+          done
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## Benchmark: $REGION"
+            echo "Runner: $(nproc) cores, $(free -g | awk '/Mem/{print $2}') GB. OSRM pinned to 2 cores, Carbonara to 1, load to 1."
+            echo; echo "| Prepare | Time | Peak memory |"; echo "|---|---|---|"; cat prep.md 2>/dev/null
+            echo; cat results.md 2>/dev/null
+          } >> "$GITHUB_STEP_SUMMARY"

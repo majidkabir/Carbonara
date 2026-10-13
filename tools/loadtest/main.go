@@ -21,6 +21,8 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -44,15 +46,22 @@ type shipment struct {
 	Legs     []leg   `json:"legs"`
 }
 
+// bbox is where random points fall: minLon, minLat, maxLon, maxLat.
+var bbox = [4]float64{-2, 43, 20, 55}
+
 func randLoc(r *rand.Rand) loc {
-	return loc{Lat: 43 + r.Float64()*12, Lon: -2 + r.Float64()*22}
+	return loc{Lat: bbox[1] + r.Float64()*(bbox[3]-bbox[1]), Lon: bbox[0] + r.Float64()*(bbox[2]-bbox[0])}
 }
 
+var roadOnly bool
+
 func randShipment(r *rand.Rand, i int) shipment {
-	return shipment{ID: fmt.Sprintf("S%d", i), WeightKg: 500 + r.Float64()*20_000, Legs: []leg{
-		{Mode: "road", VehicleType: "hgv", From: randLoc(r), To: randLoc(r)},
-		{Mode: "sea", VehicleType: "container_ship", From: randLoc(r), To: randLoc(r)},
-	}}
+	s := shipment{ID: fmt.Sprintf("S%d", i), WeightKg: 500 + r.Float64()*20_000, Legs: []leg{
+		{Mode: "road", VehicleType: "hgv", From: randLoc(r), To: randLoc(r)}}}
+	if !roadOnly {
+		s.Legs = append(s.Legs, leg{Mode: "sea", VehicleType: "container_ship", From: randLoc(r), To: randLoc(r)})
+	}
+	return s
 }
 
 func main() {
@@ -62,7 +71,25 @@ func main() {
 	dur := flag.Duration("d", 15*time.Second, "test duration")
 	batch := flag.Int("batch", 100, "shipments per batch or report request")
 	seed := flag.Int64("seed", 1, "random seed")
+	bboxS := flag.String("bbox", "", "minLon,minLat,maxLon,maxLat for random points (default much of Europe)")
+	fresh := flag.Bool("fresh", false, "new random points for every request, so nothing is served from a cache")
+	flag.BoolVar(&roadOnly, "road-only", false, "one road leg per shipment, no sea leg")
 	flag.Parse()
+	if *bboxS != "" {
+		parts := strings.Split(*bboxS, ",")
+		if len(parts) != 4 {
+			fmt.Fprintln(os.Stderr, "bad -bbox")
+			os.Exit(2)
+		}
+		for i, p := range parts {
+			v, err := strconv.ParseFloat(strings.TrimSpace(p), 64)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "bad -bbox:", err)
+				os.Exit(2)
+			}
+			bbox[i] = v
+		}
+	}
 
 	path, perReq := "/v1/calculate", 1
 	switch *kind {
@@ -76,10 +103,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	// Pre-build 256 request bodies so encoding doesn't load the client.
-	r := rand.New(rand.NewSource(*seed))
-	bodies := make([][]byte, 256)
-	for i := range bodies {
+	makeBody := func(r *rand.Rand, i int) []byte {
 		var v any
 		if perReq == 1 {
 			v = randShipment(r, i)
@@ -91,7 +115,14 @@ func main() {
 			v = map[string]any{"shipments": ss}
 		}
 		b, _ := json.Marshal(v)
-		bodies[i] = b
+		return b
+	}
+	// Pre-build 256 request bodies so encoding doesn't load the client; with
+	// -fresh every request gets its own.
+	r := rand.New(rand.NewSource(*seed))
+	bodies := make([][]byte, 256)
+	for i := range bodies {
+		bodies[i] = makeBody(r, i)
 	}
 
 	client := &http.Client{Transport: &http.Transport{MaxIdleConnsPerHost: *conc, MaxConnsPerHost: *conc}, Timeout: time.Minute}
@@ -111,9 +142,14 @@ func main() {
 		go func(w int) {
 			defer wg.Done()
 			var local []time.Duration
+			wr := rand.New(rand.NewSource(*seed + int64(w) + 1000))
 			for i := w; ctx.Err() == nil; i += *conc {
+				body := bodies[i%len(bodies)]
+				if *fresh {
+					body = makeBody(wr, i)
+				}
 				t0 := time.Now()
-				resp, err := client.Post(*base+path, "application/json", bytes.NewReader(bodies[i%len(bodies)]))
+				resp, err := client.Post(*base+path, "application/json", bytes.NewReader(body))
 				if err != nil {
 					if ctx.Err() == nil {
 						errN.Add(1)
