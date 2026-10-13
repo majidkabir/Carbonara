@@ -130,11 +130,12 @@ func main() {
 	defer cancel()
 
 	var (
-		mu        sync.Mutex
-		latencies []time.Duration
-		okN, errN atomic.Int64
-		statuses  sync.Map
-		wg        sync.WaitGroup
+		mu         sync.Mutex
+		latencies  []time.Duration
+		okN, errN  atomic.Int64
+		shipFailed atomic.Int64
+		statuses   sync.Map
+		wg         sync.WaitGroup
 	)
 	start := time.Now()
 	for w := 0; w < *conc; w++ {
@@ -156,8 +157,19 @@ func main() {
 					}
 					continue
 				}
+				var failed struct {
+					Failed   int `json:"failed"`
+					Coverage struct {
+						Failed int `json:"failed"`
+					} `json:"coverage"`
+				}
+				_ = json.NewDecoder(resp.Body).Decode(&failed)
 				_, _ = io.Copy(io.Discard, resp.Body)
 				resp.Body.Close()
+				if n := failed.Failed + failed.Coverage.Failed; resp.StatusCode == http.StatusOK && n > 0 {
+					// The request worked but shipments inside it failed.
+					shipFailed.Add(int64(n))
+				}
 				if resp.StatusCode == http.StatusOK {
 					okN.Add(1)
 					local = append(local, time.Since(t0))
@@ -183,9 +195,9 @@ func main() {
 		return latencies[int(p*float64(len(latencies)-1))]
 	}
 	reqs := float64(okN.Load()) / elapsed
-	fmt.Printf("%s, %d concurrent, %.0fs: %.0f requests/s (%.0f shipments/s), p50 %v, p95 %v, p99 %v, %d errors\n",
+	fmt.Printf("%s, %d concurrent, %.0fs: %.0f requests/s (%.0f shipments/s), p50 %v, p95 %v, p99 %v, %d errors, %d shipments failed\n",
 		*kind, *conc, elapsed, reqs, reqs*float64(perReq),
-		q(.50).Round(10*time.Microsecond), q(.95).Round(10*time.Microsecond), q(.99).Round(10*time.Microsecond), errN.Load())
+		q(.50).Round(10*time.Microsecond), q(.95).Round(10*time.Microsecond), q(.99).Round(10*time.Microsecond), errN.Load(), shipFailed.Load())
 	statuses.Range(func(k, v any) bool {
 		fmt.Printf("  HTTP %v: %d\n", k, v.(*atomic.Int64).Load())
 		return true

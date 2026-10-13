@@ -68,18 +68,25 @@ jobs:
             echo "::notice title=Prepare $1::${t}s, peak memory $(( peak / 1024 / 1024 )) MiB"
             echo "| $1 | ${t}s | $(( peak / 1024 / 1024 )) MiB |" >> prep.md
           }
+          # MLD first: osrm-partition renumbers the graph, which would
+          # invalidate a CH built before it. Contracting afterwards serves both.
           step extract   "osrm-extract -p /opt/car.lua /data/region.osm.pbf"
-          step contract  "osrm-contract /data/region.osrm"
           step partition "osrm-partition /data/region.osrm"
           step customize "osrm-customize /data/region.osrm"
+          step contract  "osrm-contract /data/region.osrm"
           echo "::notice title=Prepared files::$(du -ch data/region.osrm* | tail -1 | cut -f1) on disk"
 
       - name: Benchmark OSRM
         run: |
+          ready() { # waits for OSRM to answer a route
+            for i in $(seq 1 120); do
+              curl -fs "localhost:5000/route/v1/driving/5,52;5.1,52.1?overview=false" >/dev/null && return 0; sleep 1
+            done; return 1
+          }
           for algo in ch mld; do
             docker run -d --name osrm-$algo --cpuset-cpus 0,1 -p 5000:5000 -v "$PWD/data:/data" "$OSRM_IMAGE" \
               osrm-routed --algorithm $algo --threads 2 --max-table-size 1000 /data/region.osrm
-            for i in $(seq 1 120); do curl -fs "localhost:5000/route/v1/driving/5,52;5.1,52.1?overview=false" >/dev/null && break; sleep 1; done
+            ready || { docker logs osrm-$algo; exit 1; }
             mem=$(docker stats --no-stream --format '{{.MemUsage}}' osrm-$algo | cut -d/ -f1)
             echo "::notice title=OSRM $algo memory::$mem while serving"
             for c in 1 8; do
@@ -93,11 +100,19 @@ jobs:
 
       - name: Benchmark Carbonara with OSRM (CH)
         run: |
+          ready() {
+            for i in $(seq 1 120); do
+              curl -fs "localhost:5000/route/v1/driving/5,52;5.1,52.1?overview=false" >/dev/null && return 0; sleep 1
+            done; return 1
+          }
           docker run -d --name osrm-ch --cpuset-cpus 0,1 -p 5000:5000 -v "$PWD/data:/data" "$OSRM_IMAGE" \
             osrm-routed --algorithm ch --threads 2 /data/region.osrm
-          for i in $(seq 1 120); do curl -fs "localhost:5000/route/v1/driving/5,52;5.1,52.1?overview=false" >/dev/null && break; sleep 1; done
+          ready || { docker logs osrm-ch; exit 1; }
           taskset -c 2 bin/carbonara serve -addr 127.0.0.1:8080 -osrm http://localhost:5000 -max-concurrent 64 > serve.log 2>&1 &
           for i in $(seq 1 30); do curl -fs localhost:8080/healthz >/dev/null && break; sleep 1; done
+          # One routed shipment must succeed before measuring.
+          curl -fsS -X POST localhost:8080/v1/calculate -d '{"weight_kg":1000,"legs":[{"mode":"road","vehicle_type":"hgv",
+            "from":{"lat":52.37,"lon":4.90},"to":{"lat":51.92,"lon":4.48}}]}' | grep -q '"distance_method":"osrm"' || { cat serve.log; exit 1; }
           for args in "-kind calc -c 16" "-kind batch -batch 100 -c 4"; do
             line=$(taskset -c 3 bin/loadtest -url http://127.0.0.1:8080 $args -d "$DUR" -fresh -road-only -bbox "$BBOX")
             echo "$line"; echo "::notice title=Carbonara + OSRM CH ($args)::$line"; echo "- carbonara $line" >> results.md
