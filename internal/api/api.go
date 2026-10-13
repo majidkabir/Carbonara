@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"runtime"
 	"runtime/debug"
+	"sync"
 	"time"
 
 	"github.com/majidkabir/carbonara/pkg/calc"
@@ -43,6 +44,10 @@ type Server struct {
 
 // Limits protect the server from overload. Zero values use the defaults.
 type Limits struct {
+	// BatchWorkers is how many shipments of one batch or report request
+	// are calculated at once (default 4 x CPUs; routed legs wait on the
+	// router, so more workers than CPUs pays off).
+	BatchWorkers int
 	// MaxConcurrent is how many calculation requests run at once; more get
 	// 503 with Retry-After. Default 4 x GOMAXPROCS.
 	MaxConcurrent int
@@ -54,6 +59,9 @@ type Limits struct {
 }
 
 func (l Limits) withDefaults() Limits {
+	if l.BatchWorkers <= 0 {
+		l.BatchWorkers = 4 * runtime.GOMAXPROCS(0)
+	}
 	if l.MaxConcurrent <= 0 {
 		l.MaxConcurrent = 4 * runtime.GOMAXPROCS(0)
 	}
@@ -237,8 +245,10 @@ func (s *Server) calculateBatch(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// each calculates shipments in order, passing each result or error to fn.
-// It writes an error response and returns false if the batch is too big or
+// each calculates shipments, passing each result or error to fn in input
+// order. Distances for the batch's lanes are fetched first in bulk where
+// the distance provider can, then shipments run on parallel workers. It
+// writes an error response and returns false if the batch is too big or
 // the request times out or is cancelled; a shipment that merely fails is
 // passed to fn.
 func (s *Server) each(w http.ResponseWriter, r *http.Request, shipments []calc.Shipment, fn func(string, calc.Result, error)) bool {
@@ -247,23 +257,60 @@ func (s *Server) each(w http.ResponseWriter, r *http.Request, shipments []calc.S
 			fmt.Errorf("batch has %d shipments, max is %d", len(shipments), maxBatchItems))
 		return false
 	}
-	stop := func(done int, err error) bool {
+	ctx := r.Context()
+	type out struct {
+		res  calc.Result
+		err  error
+		done bool // calculated, without being cut off by the request's end
+	}
+	results := make([]out, len(shipments))
+	var valid []calc.Shipment
+	for i, sh := range shipments {
+		if err := s.checkSize(sh); err != nil {
+			results[i].err = err
+			continue
+		}
+		valid = append(valid, sh)
+	}
+	s.Calc.Prefetch(ctx, valid)
+
+	workers := s.Limits.BatchWorkers
+	next := make(chan int)
+	var wg sync.WaitGroup
+	for range min(workers, len(shipments)) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := range next {
+				if results[i].err == nil {
+					results[i].res, results[i].err = s.Calc.Calculate(ctx, shipments[i])
+				}
+				results[i].done = ctx.Err() == nil
+			}
+		}()
+	}
+feed:
+	for i := range shipments {
+		select {
+		case next <- i:
+		case <-ctx.Done():
+			break feed
+		}
+	}
+	close(next)
+	wg.Wait()
+	if err := ctx.Err(); err != nil { // timed out or client left: don't blame shipments
+		done := 0
+		for _, o := range results {
+			if o.done {
+				done++
+			}
+		}
 		writeError(w, calcStatus(err), fmt.Errorf("batch stopped after %d of %d shipments: %w", done, len(shipments), err))
 		return false
 	}
-	for i, sh := range shipments {
-		if err := r.Context().Err(); err != nil {
-			return stop(i, err)
-		}
-		if err := s.checkSize(sh); err != nil {
-			fn(sh.ID, calc.Result{}, err)
-			continue
-		}
-		res, err := s.Calc.Calculate(r.Context(), sh)
-		if err != nil && r.Context().Err() != nil { // timed out or client left: stop, don't blame the shipment
-			return stop(i, r.Context().Err())
-		}
-		fn(sh.ID, res, err)
+	for i, o := range results {
+		fn(shipments[i].ID, o.res, o.err)
 	}
 	return true
 }

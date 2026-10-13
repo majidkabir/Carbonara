@@ -95,3 +95,44 @@ func (c Calculator) electricPart(tonnes, km float64, leg Leg) (LegPart, error) {
 		TTWKg: lr.TTWKg, WTTKg: lr.WTWKg - lr.TTWKg, WTWKg: lr.WTWKg, Method: MethodEnergy,
 		DataType: DataModelled, Factor: lr.Factor, Country: lr.Country, EnergyKWhPerTkm: lr.EnergyKWhPerTkm}, nil
 }
+
+// Lane is an origin-destination pair for one mode.
+type Lane struct {
+	Mode     Mode
+	From, To Location
+}
+
+// Prefetcher is optionally implemented by a DistanceProvider that can
+// fetch many distances at once more cheaply than one by one (e.g. an OSRM
+// distance table). It fills its own cache; lanes it can't answer are left
+// for Distance or Route.
+type Prefetcher interface {
+	Prefetch(ctx context.Context, lanes []Lane)
+}
+
+// Prefetch asks the distance provider, if it is a Prefetcher, for the
+// distinct lanes of shipments whose legs have no distance given. It is a
+// best-effort speed-up before calculating a batch.
+func (c Calculator) Prefetch(ctx context.Context, shipments []Shipment) {
+	p, ok := c.Distances.(Prefetcher)
+	if !ok {
+		return
+	}
+	seen := map[Lane]bool{}
+	var lanes []Lane
+	for _, s := range shipments {
+		for _, l := range s.Legs {
+			if l.DistanceKm > 0 || l.From == (Location{}) || l.To == (Location{}) {
+				continue
+			}
+			ln := Lane{Mode: l.Mode, From: Location{Lat: l.From.Lat, Lon: l.From.Lon}, To: Location{Lat: l.To.Lat, Lon: l.To.Lon}}
+			if !seen[ln] {
+				seen[ln] = true
+				lanes = append(lanes, ln)
+			}
+		}
+	}
+	if len(lanes) > 0 {
+		p.Prefetch(ctx, lanes)
+	}
+}

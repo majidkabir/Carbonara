@@ -83,7 +83,7 @@ const (
 
 // Route implements calc.Router.
 func (o *OSRM) Route(ctx context.Context, _ calc.Mode, from, to calc.Location) (calc.Route, error) {
-	key := fmt.Sprintf("%.5f,%.5f;%.5f,%.5f", from.Lon, from.Lat, to.Lon, to.Lat)
+	key := cacheKey(from, to)
 	o.mu.Lock()
 	if r, ok := o.cache[key]; ok {
 		o.mu.Unlock()
