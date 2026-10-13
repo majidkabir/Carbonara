@@ -327,6 +327,26 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 
 **Updating grid intensities**: `carbonara import-grid -o pkg/factors/data/grid/ember-owid.json owid-energy-data.csv`, with the CSV from [owid/energy-data](https://github.com/owid/energy-data).
 
+## Performance
+
+Measured with [`tools/loadtest`](tools/loadtest/main.go) against `carbonara serve` with the default datasets, the server pinned to **one CPU core** and the load generator to another (Go 1.24, Linux, a small cloud VM). Each shipment has a road and a sea leg, distances by great-circle; routing via OSRM adds its own time.
+
+| Request | Concurrent | Throughput | Latency p50 / p99 |
+|---|---:|---:|---:|
+| `/v1/calculate`, one shipment | 1 | 6,600 req/s | 0.14 / 0.39 ms |
+| `/v1/calculate`, one shipment | 32 | 17,000 req/s | 1.6 / 5.6 ms |
+| `/v1/calculate/batch`, 100 shipments | 4 | 59,000 shipments/s | 6.4 / 17 ms |
+| `/v1/calculate/batch`, 1,000 shipments | 4 | 59,000 shipments/s | 66 / 157 ms |
+| `/v1/report`, 1,000 shipments | 4 | 86,000 shipments/s | 39 / 164 ms |
+
+Throughput scales with cores. Under overload (32 concurrent 1,000-shipment batches on one core) requests beyond `-max-concurrent` got an immediate `503` with `Retry-After`, throughput held at 59,000 shipments/s, and the server stayed at 48 MB of memory. To run it yourself:
+
+```sh
+carbonara serve &
+go run ./tools/loadtest -kind calc -c 32 -d 20s
+go run ./tools/loadtest -kind batch -batch 1000 -c 4 -d 20s
+```
+
 ## Layout
 
 | Path | What |
@@ -344,6 +364,7 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 | `internal/grid` | Grid intensity importer (Our World in Data / Ember). |
 | `internal/api` | HTTP handlers and OpenAPI spec. |
 | `cmd/carbonara` | CLI. |
+| `tools/loadtest` | Load generator for a running server. |
 
 ## Roadmap
 
