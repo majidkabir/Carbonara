@@ -6,8 +6,8 @@ info:
     Freight emissions calculator following the GLEC Framework / ISO 14083 approach.
     Emissions are in kg CO2e. TTW = tank-to-wheel, WTW = well-to-wheel.
   license:
-    name: Apache-2.0
-    identifier: Apache-2.0
+    name: PolyForm Noncommercial 1.0.0
+    identifier: PolyForm-Noncommercial-1.0.0
 paths:
   /healthz:
     get:

@@ -1,6 +1,6 @@
 # Carbonara 🍝
 
-Open-source freight emissions calculator following the GLEC Framework / ISO 14083 approach.
+Source-available freight emissions calculator following the GLEC Framework / ISO 14083 approach. Free for non-commercial use; see [License](#license).
 
 Ships with the **UK DESNZ 2026** conversion factors built in: 127 freight factors (road, rail, sea, air) and 166 fuel factors, each split into tank-to-wheel and well-to-tank.
 
@@ -312,6 +312,8 @@ Binaries for Linux, macOS and Windows go to GitHub Releases, the image to `ghcr.
 
 ## License
 
-Code: Apache 2.0, see [LICENSE](LICENSE).
+Code: [PolyForm Noncommercial 1.0.0](LICENSE). Free for personal, educational, research, non-profit and government use; commercial use needs a separate licence from the author. This matches the terms of the GLEC Framework, which Carbonara follows. Versions up to and including v0.1.0 were released under Apache 2.0 and stay available under it.
+
+Required Notice: Copyright 2026 majidkabir (https://github.com/majidkabir/carbonara)
 
 DESNZ data: Crown copyright, contains public sector information licensed under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). Grid intensities: Ember via Our World in Data, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). See [NOTICE](NOTICE).
