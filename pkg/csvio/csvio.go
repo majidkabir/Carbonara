@@ -31,6 +31,9 @@ import (
 type Item struct {
 	Shipment calc.Shipment
 	Err      error
+	// Line is the input line where the shipment starts (1 is the first
+	// line of the file, including any header).
+	Line int
 }
 
 // Read parses all shipments from r into memory. Row-level problems are
@@ -62,7 +65,7 @@ func Read(r io.Reader) ([]Item, error) {
 		}
 		it, ok := byID[id]
 		if !ok {
-			it = &Item{Shipment: calc.Shipment{ID: id}}
+			it = &Item{Shipment: calc.Shipment{ID: id}, Line: line}
 			byID[id] = it
 			items = append(items, it)
 		}
@@ -172,7 +175,7 @@ func (r *Reader) Next() (Item, error) {
 			return it, nil
 		}
 		if r.cur == nil {
-			r.cur = &Item{Shipment: calc.Shipment{ID: id}}
+			r.cur = &Item{Shipment: calc.Shipment{ID: id}, Line: r.line}
 			h := fnv.New64a()
 			_, _ = h.Write([]byte(id))
 			if first, dup := r.seen[h.Sum64()]; dup {

@@ -26,6 +26,7 @@ const usageText = `Carbonara — freight CO2e calculator
 Usage:
   carbonara calc    [-factors name|file] shipment.json   one shipment, JSON result
   carbonara batch   [-factors name|file] shipments.csv   many shipments, CSV result
+  carbonara stream  [-factors name|file] [file]          one shipment JSON per line in, one result per line out
   carbonara serve   [-factors name|file] [-addr :8080]   HTTP API
   carbonara factors [-factors name|file]                 print the factor dataset
   carbonara import-desnz [-o out.json] flat-file.xlsx   convert UK DESNZ factors
@@ -45,6 +46,7 @@ func main() {
 	cmds := map[string]func([]string) error{
 		"calc":         runCalc,
 		"batch":        runBatch,
+		"stream":       runStream,
 		"serve":        runServe,
 		"factors":      runFactors,
 		"import-desnz": runImportDESNZ,
