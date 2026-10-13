@@ -2,6 +2,7 @@ package factors
 
 import (
 	"context"
+	"errors"
 	"math"
 	"os"
 	"strings"
@@ -55,14 +56,14 @@ func TestEmbeddedSample_Fuel(t *testing.T) {
 
 func TestOpen(t *testing.T) {
 	names := EmbeddedNames()
-	if strings.Join(names, ",") != "desnz-2026,sample" {
+	if strings.Join(names, ",") != "desnz-2026,nl-iww-2026,sample" {
 		t.Errorf("EmbeddedNames = %v", names)
 	}
 	ds, err := Open("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ds.Name != Default || len(ds.Legs) < 100 || len(ds.Fuels) < 100 ||
+	if ds.Name != "desnz-2026+nl-iww-2026" || len(ds.Legs) < 100 || len(ds.Fuels) < 100 ||
 		!strings.Contains(ds.Note, "Open Government Licence v3.0") {
 		t.Errorf("default dataset: name=%q legs=%d fuels=%d", ds.Name, len(ds.Legs), len(ds.Fuels))
 	}
@@ -274,7 +275,7 @@ func TestOpen_Layered(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ds.Name != "desnz-2026+my-hubs" || !strings.Contains(ds.Note, "own measurements") || !strings.Contains(ds.Note, "Open Government Licence") {
+	if ds.Name != "desnz-2026+nl-iww-2026+my-hubs" || !strings.Contains(ds.Note, "own measurements") || !strings.Contains(ds.Note, "Open Government Licence") {
 		t.Errorf("name=%q note=%q", ds.Name, ds.Note)
 	}
 	if h, err := ds.HubFactor("transhipment"); err != nil || h.WTWPerTonneG != 1300 {
@@ -317,7 +318,7 @@ func TestOpen_Layered(t *testing.T) {
 }
 
 func TestLegFactor_MissingModeHint(t *testing.T) {
-	ds, _ := Open(Default)
+	ds, _ := Open("desnz-2026") // DESNZ alone has no inland waterway factors
 	_, err := ds.LegFactor(calc.InlandWaterway, "barge")
 	if err == nil || !strings.Contains(err.Error(), "has no inland_waterway factors") || !strings.Contains(err.Error(), "carbonara toc") {
 		t.Errorf("err = %v", err)
@@ -348,5 +349,53 @@ func TestParse_DAFs(t *testing.T) {
 		if _, err := Parse(strings.NewReader(in)); err == nil {
 			t.Errorf("%s: want error", name)
 		}
+	}
+}
+
+// Inland waterway factors from www.co2emissiefactoren.nl 2026 (CE Delft
+// STREAM 2020 v2), checked row by row against the published list.
+func TestInlandWaterway_NL2026(t *testing.T) {
+	ds, err := Open(Default)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for vt, want := range map[string][2]float64{
+		"barge_bulk_small":       {31, 10},
+		"barge_bulk_medium":      {23, 8},
+		"barge_bulk_large":       {16, 5},
+		"barge_container_40teu":  {41, 13},
+		"barge_container_96teu":  {39, 13},
+		"barge_container_208teu": {24, 8},
+		"barge_container_348teu": {20, 7},
+		"barge":                  {23, 8},
+		"container_barge":        {24, 8},
+	} {
+		f, err := ds.LegFactor(calc.InlandWaterway, vt)
+		if err != nil || f.TTW != want[0] || f.WTT != want[1] || f.DistanceBasis != calc.DistActual {
+			t.Errorf("%s = %+v, %v", vt, f, err)
+		}
+	}
+
+	c := calc.Calculator{Factors: ds, Distances: ds.Distances()}
+	ctx := context.Background()
+	// Rotterdam-Duisburg, 220 km by river: 1000 t x 220 km x 31 g = 6.82 t.
+	r, err := c.Calculate(ctx, calc.Shipment{WeightKg: 1_000_000,
+		Legs: []calc.Leg{{Mode: calc.InlandWaterway, VehicleType: "barge", DistanceKm: 220}}})
+	if err != nil || math.Abs(r.WTWKg-6820) > 1e-6 {
+		t.Errorf("given distance: %v kg, %v", r.WTWKg, err)
+	}
+	// A shortest feasible distance needs no DAF on inland waterways (GLEC).
+	r, err = c.Calculate(ctx, calc.Shipment{WeightKg: 1_000_000,
+		Legs: []calc.Leg{{Mode: calc.InlandWaterway, VehicleType: "barge", DistanceKm: 220, DistanceType: calc.DistSFD}}})
+	if err != nil || math.Abs(r.WTWKg-6820) > 1e-6 {
+		t.Errorf("sfd distance: %v kg, %v", r.WTWKg, err)
+	}
+	// Straight-line distance from coordinates would undercount a river
+	// route, and there is no default DAF for it, so it is refused.
+	_, err = c.Calculate(ctx, calc.Shipment{WeightKg: 1000,
+		Legs: []calc.Leg{{Mode: calc.InlandWaterway, VehicleType: "barge",
+			From: calc.Location{Lat: 51.95, Lon: 4.05}, To: calc.Location{Lat: 51.45, Lon: 6.73}}}})
+	if !errors.Is(err, calc.ErrNoDAF) {
+		t.Errorf("coordinates only: want ErrNoDAF, got %v", err)
 	}
 }

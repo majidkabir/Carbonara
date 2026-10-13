@@ -37,7 +37,7 @@ open http://localhost:8080
 | `OSRM_PBF_URL` | Denmark from Geofabrik | any `.osm.pbf`; preparing needs roughly 5–10× its size in RAM |
 | `SEA_RESOLUTION_KM` | `20` | `5`, `10`, `20`, `50` or `100` |
 | `CARBONARA_PORT` | `8080` | |
-| `CARBONARA_FACTORS` | `desnz-2026` | as `-factors` |
+| `CARBONARA_FACTORS` | `desnz-2026,nl-iww-2026` | as `-factors` |
 
 Prepared data is kept in volumes and reused; changing the region re-prepares it. The maritime network (EUPL-1.2) is downloaded on your machine from a pinned SeaRoute commit and checked by SHA-256. A weekly CI job brings the whole stack up on a small region and checks that road and sea legs are actually routed.
 
@@ -231,7 +231,10 @@ Protections for running it on a network: at most `-max-concurrent` calculation r
 
 | Dataset | What |
 |---|---|
-| `desnz-2026` (default) | UK government GHG conversion factors 2026, imported from the official flat file |
+| `desnz-2026` | UK government GHG conversion factors 2026, imported from the official flat file |
+| `nl-iww-2026` | Inland waterway factors from the Dutch [CO2 emission factor list](https://www.co2emissiefactoren.nl/) 2026 (CE Delft STREAM 2020) |
+
+The default is `desnz-2026,nl-iww-2026`.
 | `sample` | Placeholder values, for tests only |
 
 A dataset is JSON with `legs` (g CO2e/tkm), `hubs` (g CO2e/t), `fuels` (kg CO2e/unit) and optional `load_models`, `dafs`, `distance_adjustments`, `vehicle_aliases`, `fuel_aliases` and `container_loads`, each factor with a TTW/WTT split, source and year. See [`sample.json`](pkg/factors/data/sample.json) for the shape.
@@ -244,13 +247,15 @@ A dataset is JSON with `legs` (g CO2e/tkm), `hubs` (g CO2e/t), `fuels` (kg CO2e/
 | rail | `freight_train` |
 | sea | `container_ship`, `bulk_carrier`, `general_cargo`, `roro`, `ropax` |
 | air | `air_freight` (international, without radiative forcing) |
+| inland_waterway | `barge` (1500–3000 t, the Dutch list's average), `container_barge` (208 TEU, likewise) |
 | fuel (per litre) | `diesel`, `diesel_mineral`, `petrol`, `hvo`, `marine_gas_oil`, `marine_fuel_oil`, `jet_fuel` |
 
 Road aliases use DESNZ's "average laden" factors.
 
+**Inland waterways** (`nl-iww-2026`): three bulk vessel classes (`barge_bulk_small`/`medium`/`large`, 300 t to 11,000 t) and four container vessels (`barge_container_40teu`, `96teu`, `208teu`, `348teu`). Factors are per *actual* tonne-km and include sailing empty. Give the river distance as `distance_km`; a shortest feasible distance (`distance_type: sfd`) is accepted as is, since GLEC needs no DAF for inland waterways. A leg with only coordinates is refused: a straight line would undercount a river route, and there's no default correction for it. Source: www.co2emissiefactoren.nl, free to use with attribution.
+
 **Notes on DESNZ data:**
 - Air freight comes `with_rf` and `without_rf` (radiative forcing). ISO 14083 reports without RF.
-- No inland waterway factors. Use `carbonara toc` with a barge operator's fuel data, or add factors as a layer from a source you're licensed to use. The Dutch [CO2emissiefactoren.nl](https://www.co2emissiefactoren.nl/) list covers inland shipping; check its terms before redistributing.
 - No hub factors are included, and none ship by default: the openly published averages we found (Fraunhofer IML's [logistics site values](https://reff.iml.fhg.de/), e.g. per tonne for transhipment and warehousing) carry no reuse licence. Add your own as a layer:
 
   ```json
@@ -315,7 +320,8 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 - [x] Docker Compose with OSRM and the sea network
 - [x] Transport and hub operation categories from your own data
 - [x] Package docs and runnable examples
-- [ ] Bundled inland waterway factors (needs an openly licensed source)
+- [x] Bundled inland waterway factors (Dutch CO2 emission factor list)
+- [ ] Inland waterway routing (a river network, like the sea one)
 - [ ] Cargo-type presets (needs licensed values, e.g. EcoTransIT with permission)
 
 ## Releasing

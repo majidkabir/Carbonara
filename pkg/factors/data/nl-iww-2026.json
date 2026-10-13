@@ -1,0 +1,28 @@
+{
+  "name": "nl-iww-2026",
+  "note": "Inland waterway factors from the Dutch CO2 emission factor list 2026 (www.co2emissiefactoren.nl), based on CE Delft (2021), STREAM Goederenvervoer 2020, versie 2. Per actual tonne-km, well-to-wheel, kg CO2e; include sailing empty (omvaren), exclude pre- and on-carriage.",
+  "legs": [
+    { "mode": "inland_waterway", "vehicle_type": "barge_bulk_small", "ttw_g_per_tkm": 31, "wtt_g_per_tkm": 10, "distance_basis": "actual", "year": 2026,
+      "source": "www.co2emissiefactoren.nl 2026: Binnenvaart Klein, 300-600 ton (Spits-Kempenaar), bulk and general cargo; CE Delft 2021, STREAM Goederenvervoer 2020 v2, tabel 2 + 24" },
+    { "mode": "inland_waterway", "vehicle_type": "barge_bulk_medium", "ttw_g_per_tkm": 23, "wtt_g_per_tkm": 8, "distance_basis": "actual", "year": 2026,
+      "source": "www.co2emissiefactoren.nl 2026: Binnenvaart Gemiddeld, 1500-3000 ton (RHK-groot Rijnschip), bulk and general cargo; CE Delft 2021, STREAM Goederenvervoer 2020 v2, tabel 2 + 24" },
+    { "mode": "inland_waterway", "vehicle_type": "barge_bulk_large", "ttw_g_per_tkm": 16, "wtt_g_per_tkm": 5, "distance_basis": "actual", "year": 2026,
+      "source": "www.co2emissiefactoren.nl 2026: Binnenvaart Groot, 5000-11000 ton (koppelverband-duwbak), bulk and general cargo; CE Delft 2021, STREAM Goederenvervoer 2020 v2, tabel 2 + 24" },
+    { "mode": "inland_waterway", "vehicle_type": "barge_container_40teu", "ttw_g_per_tkm": 41, "wtt_g_per_tkm": 13, "distance_basis": "actual", "year": 2026,
+      "source": "www.co2emissiefactoren.nl 2026: Binnenvaart 40 TEU (Neo Kemp), containers incl. empty containers; CE Delft 2021, STREAM Goederenvervoer 2020 v2" },
+    { "mode": "inland_waterway", "vehicle_type": "barge_container_96teu", "ttw_g_per_tkm": 39, "wtt_g_per_tkm": 13, "distance_basis": "actual", "year": 2026,
+      "source": "www.co2emissiefactoren.nl 2026: Binnenvaart 96 TEU (Rijn Herne Kanaal), containers incl. empty containers; CE Delft 2021, STREAM Goederenvervoer 2020 v2" },
+    { "mode": "inland_waterway", "vehicle_type": "barge_container_208teu", "ttw_g_per_tkm": 24, "wtt_g_per_tkm": 8, "distance_basis": "actual", "year": 2026,
+      "source": "www.co2emissiefactoren.nl 2026: Binnenvaart (gemiddelde) 208 TEU (Groot Rijnschip), containers; CE Delft 2021, STREAM Goederenvervoer 2020 v2, tabel 25" },
+    { "mode": "inland_waterway", "vehicle_type": "barge_container_348teu", "ttw_g_per_tkm": 20, "wtt_g_per_tkm": 7, "distance_basis": "actual", "year": 2026,
+      "source": "www.co2emissiefactoren.nl 2026: Binnenvaart 348 TEU (koppelverband), containers; CE Delft 2021, STREAM Goederenvervoer 2020 v2, tabel 25" }
+  ],
+  "vehicle_aliases": [
+    { "mode": "inland_waterway", "alias": "barge", "vehicle_type": "barge_bulk_medium" },
+    { "mode": "inland_waterway", "alias": "container_barge", "vehicle_type": "barge_container_208teu" }
+  ],
+  "dafs": [
+    { "mode": "inland_waterway", "from": "sfd", "to": "actual", "multiplier": 1,
+      "source": "GLEC Framework v3.2, Section 1 Chapter 4 (inland waterways): the network leaves little room for deviation between actual distance and SFD, so no DAF is needed" }
+  ]
+}

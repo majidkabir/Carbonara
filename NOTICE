@@ -15,3 +15,9 @@ This product includes electricity carbon intensity data
 (pkg/factors/data/grid/ember-owid.json) from Ember, Yearly Electricity Data,
 processed by Our World in Data (https://github.com/owid/energy-data).
 Licensed under CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
+
+This product includes inland waterway emission factors
+(pkg/factors/data/nl-iww-2026.json) from the Dutch CO2 emission factor list,
+www.co2emissiefactoren.nl (2026), based on CE Delft (2021), STREAM
+Goederenvervoer, Emissies van modaliteiten in het goederenvervoer 2020,
+versie 2. Source: www.co2emissiefactoren.nl

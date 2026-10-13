@@ -19,8 +19,9 @@ import (
 	"github.com/majidkabir/carbonara/pkg/distance"
 )
 
-// Default is the embedded dataset used when none is chosen.
-const Default = "desnz-2026"
+// Default is the embedded dataset used when none is chosen: UK DESNZ for
+// road, rail, sea, air and hubs, layered with Dutch inland waterway factors.
+const Default = "desnz-2026,nl-iww-2026"
 
 //go:embed data/*.json data/grid/*.json
 var embedded embed.FS
