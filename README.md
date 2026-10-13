@@ -135,6 +135,13 @@ docker run -t -p 5000:5000 -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osr
 carbonara calc -osrm http://localhost:5000 examples/cph-rotterdam.json
 ```
 
+## Verified against GLEC
+
+[`pkg/toc/glec_test.go`](pkg/toc/glec_test.go) reproduces the worked examples in the GLEC Framework v3.2 (Section 3, Module 4) end to end through Carbonara: fuel and activity data → TOC/HOC intensities → shipment emissions. Road (p.116), air (p.128), bulk sea with hubs (p.131–132) and a two-intensity container terminal (p.134–135) all match GLEC's published figures to the precision printed. Two notes from doing this:
+
+- GLEC sometimes rounds an intensity before applying it (air: 1.244 kg/tkm; hub: 0.218 kg/t), so a few published results differ from the unrounded calculation in the last digit. The tests check both.
+- In the bulk sea example, the final chain total (3,687,546 kg) only adds up with 1.3 kg CO₂e/t at the terminals, while the example states 1.2 kg/t; with 1.2 it matches GLEC's own sum of TCE emissions (3,679,673 kg), which is what Carbonara gives.
+
 ## Reporting
 
 Results are shaped for ISO 14083-style reporting:
@@ -291,7 +298,7 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 - [x] CI, GoReleaser, Docker image
 - [x] Real dataset: UK DESNZ 2026, with importer for future years
 - [x] Dataset-level distance adjustments
-- [ ] GLEC worked examples as golden tests (Module 4)
+- [x] GLEC v3.2 worked examples as golden tests (Module 4: road, air, bulk sea, hub)
 - [x] Short aliases for common vehicle types and fuels
 - [x] OSRM road routing
 - [x] Sea routing on a maritime network (SeaRoute)
