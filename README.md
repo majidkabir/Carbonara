@@ -23,6 +23,24 @@ docker run -p 8080:8080 ghcr.io/majidkabir/carbonara
 curl -X POST localhost:8080/v1/calculate --data @examples/cph-rotterdam.json
 ```
 
+### Everything, with real routing
+
+[`compose.yaml`](compose.yaml) runs Carbonara with an OSRM road router and Eurostat's maritime network:
+
+```sh
+docker compose up -d            # first start downloads and prepares the data
+open http://localhost:8080
+```
+
+| Setting | Default | |
+|---|---|---|
+| `OSRM_PBF_URL` | Denmark from Geofabrik | any `.osm.pbf`; preparing needs roughly 5–10× its size in RAM |
+| `SEA_RESOLUTION_KM` | `20` | `5`, `10`, `20`, `50` or `100` |
+| `CARBONARA_PORT` | `8080` | |
+| `CARBONARA_FACTORS` | `desnz-2026` | as `-factors` |
+
+Prepared data is kept in volumes and reused; changing the region re-prepares it. The maritime network (EUPL-1.2) is downloaded on your machine from a pinned SeaRoute commit and checked by SHA-256. A weekly CI job brings the whole stack up on a small region and checks that road and sea legs are actually routed.
+
 ## As a Go library
 
 ```sh
@@ -277,6 +295,7 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 - [x] Streaming, parallel batch
 - [x] NDJSON stream mode for pipes and Kafka
 - [x] Input validation, fuzzing of every parser in CI, API limits
+- [x] Docker Compose with OSRM and the sea network
 - [x] Transport and hub operation categories from your own data
 - [x] Package docs and runnable examples
 - [ ] Bundled inland waterway factors (needs an openly licensed source)

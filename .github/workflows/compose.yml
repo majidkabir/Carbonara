@@ -1,0 +1,77 @@
+name: Compose
+
+# Brings up the full stack (OSRM + sea network + Carbonara) on a tiny
+# region and checks that road and sea legs are really routed.
+on:
+  push:
+    branches: [main]
+    paths:
+      - compose.yaml
+      - deploy/**
+      - Dockerfile
+      - cmd/**
+      - pkg/distance/**
+      - .github/workflows/compose.yml
+  pull_request:
+    paths:
+      - compose.yaml
+      - deploy/**
+      - Dockerfile
+  schedule:
+    - cron: "17 4 * * 1" # weekly, to catch upstream image or data changes
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      OSRM_PBF_URL: https://download.geofabrik.de/europe/monaco-latest.osm.pbf
+      SEA_RESOLUTION_KM: "100"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start stack
+        run: docker compose up -d --build
+
+      - name: Wait for Carbonara
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fs localhost:8080/healthz; then exit 0; fi
+            sleep 5
+          done
+          echo "Carbonara did not become healthy"; exit 1
+
+      - name: Road leg is routed by OSRM
+        run: |
+          # Monte Carlo casino to Stade Louis II: about 1.7 km as the crow flies.
+          out=$(curl -fsS -X POST localhost:8080/v1/calculate -d '{"weight_kg":1000,"legs":[{"mode":"road","vehicle_type":"hgv",
+            "from":{"lat":43.7396,"lon":7.4277},"to":{"lat":43.7275,"lon":7.4155}}]}')
+          echo "$out" | jq '.legs[0] | {distance_km, distance_method}'
+          echo "$out" | jq -e '.legs[0].distance_method == "osrm" and .legs[0].distance_km > 1.5 and .legs[0].distance_km < 10'
+
+      - name: Sea leg is routed on the maritime network
+        run: |
+          out=$(curl -fsS -X POST localhost:8080/v1/calculate -d '{"weight_kg":10000,"legs":[{"mode":"sea","vehicle_type":"container_ship",
+            "from":{"lat":51.95,"lon":4.05},"to":{"lat":31.23,"lon":121.9}}]}')
+          echo "$out" | jq '.legs[0] | {distance_km, distance_method}'
+          # Rotterdam-Shanghai via Suez is about 19,700 km (great-circle would be about 9,000).
+          echo "$out" | jq -e '.legs[0].distance_method == "sea_network" and .legs[0].distance_km > 18000 and .legs[0].distance_km < 21500'
+
+      - name: Restart reuses prepared data
+        run: |
+          docker compose up -d
+          for s in download-map prepare-osrm prepare-sea; do
+            docker compose logs "$s" | grep -q "up to date" || { echo "$s redid its work"; exit 1; }
+          done
+
+      - name: Logs
+        if: failure()
+        run: docker compose logs
+
+      - name: Stop
+        if: always()
+        run: docker compose down -v

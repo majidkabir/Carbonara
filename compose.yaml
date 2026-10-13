@@ -1,0 +1,87 @@
+# Carbonara with real road and sea routing, in one command:
+#
+#   docker compose up -d
+#   open http://localhost:8080
+#
+# First start downloads the map for OSRM_PBF_URL (default: Denmark) and
+# Eurostat's maritime network, and prepares them; later starts reuse the
+# volumes. Change the region with OSRM_PBF_URL (any Geofabrik .osm.pbf).
+# OSRM needs roughly 5-10x the .pbf size in RAM to prepare a region.
+
+x-osrm-image: &osrm-image ${OSRM_IMAGE:-ghcr.io/project-osrm/osrm-backend:v26.8.0-debian}
+x-python-image: &python-image python:3.12-alpine
+
+name: carbonara
+
+services:
+  download-map:
+    image: *python-image
+    command: ["python", "-I", "/deploy/download.py",
+              "${OSRM_PBF_URL:-https://download.geofabrik.de/europe/denmark-latest.osm.pbf}", "/data/region.osm.pbf"]
+    volumes:
+      - osrm-data:/data
+      - ./deploy:/deploy:ro
+
+  prepare-osrm:
+    image: *osrm-image
+    depends_on:
+      download-map:
+        condition: service_completed_successfully
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        if [ -f /data/region.osrm.mldgr ] && [ /data/region.osrm.mldgr -nt /data/region.osm.pbf ]; then
+          echo "OSRM data up to date"; exit 0
+        fi
+        osrm-extract -p /opt/car.lua /data/region.osm.pbf
+        osrm-partition /data/region.osrm
+        osrm-customize /data/region.osrm
+    volumes:
+      - osrm-data:/data
+
+  osrm:
+    image: *osrm-image
+    depends_on:
+      prepare-osrm:
+        condition: service_completed_successfully
+    command: ["osrm-routed", "--algorithm", "mld", "/data/region.osrm"]
+    volumes:
+      - osrm-data:/data:ro
+    restart: unless-stopped
+
+  prepare-sea:
+    image: *python-image
+    command: ["python", "-I", "/deploy/prepare_sea.py", "${SEA_RESOLUTION_KM:-20}", "/data/marnet.geojson"]
+    volumes:
+      - sea-data:/data
+      - ./deploy:/deploy:ro
+
+  carbonara:
+    build: .
+    image: carbonara:local
+    command: ["serve"]
+    depends_on:
+      osrm:
+        condition: service_started
+      prepare-sea:
+        condition: service_completed_successfully
+    environment:
+      CARBONARA_OSRM_URL: http://osrm:5000
+      CARBONARA_SEA_NETWORK: /sea/marnet.geojson
+      CARBONARA_FACTORS: ${CARBONARA_FACTORS:-desnz-2026}
+    volumes:
+      - sea-data:/sea:ro
+    ports:
+      - "${CARBONARA_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "/carbonara", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  osrm-data:
+  sea-data:
