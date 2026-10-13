@@ -152,7 +152,7 @@ func TestCalculate_Golden(t *testing.T) {
 func TestCalculate_UsesDistanceProvider(t *testing.T) {
 	c := Calculator{Factors: testFactors, Distances: fixedDistance(250)}
 	r, err := c.Calculate(context.Background(), Shipment{WeightKg: 1000, Legs: []Leg{
-		{ID: "l1", Mode: Road, VehicleType: "truck_40t"},
+		{ID: "l1", Mode: Road, VehicleType: "truck_40t", From: Location{Lat: 55, Lon: 12}, To: Location{Lat: 53, Lon: 10}},
 	}})
 	if err != nil {
 		t.Fatal(err)
@@ -165,7 +165,7 @@ func TestCalculate_UsesDistanceProvider(t *testing.T) {
 func TestCalculate_Errors(t *testing.T) {
 	c := Calculator{Factors: testFactors}
 	ctx := context.Background()
-	if _, err := c.Calculate(ctx, Shipment{WeightKg: 0, Legs: []Leg{{}}}); !errors.Is(err, ErrInvalidWeight) {
+	if _, err := c.Calculate(ctx, Shipment{WeightKg: 0, Legs: []Leg{{DistanceKm: 1}}}); !errors.Is(err, ErrInvalidWeight) {
 		t.Errorf("want ErrInvalidWeight, got %v", err)
 	}
 	if _, err := c.Calculate(ctx, Shipment{WeightKg: 1}); !errors.Is(err, ErrNoLegs) {
@@ -174,8 +174,47 @@ func TestCalculate_Errors(t *testing.T) {
 	if _, err := c.Calculate(ctx, Shipment{WeightKg: 1, Legs: []Leg{{ID: "x", Mode: Air, DistanceKm: 1}}}); err == nil {
 		t.Error("want error for missing factor")
 	}
-	if _, err := c.Calculate(ctx, Shipment{WeightKg: 1, Legs: []Leg{{ID: "x", Mode: Road, VehicleType: "truck_40t"}}}); err == nil {
-		t.Error("want error for missing distance")
+	// Coordinates but no distance provider.
+	if _, err := c.Calculate(ctx, Shipment{WeightKg: 1, Legs: []Leg{{ID: "x", Mode: Road, VehicleType: "truck_40t",
+		From: Location{Lat: 55, Lon: 12}, To: Location{Lat: 53, Lon: 10}}}}); err == nil {
+		t.Error("want error for missing distance provider")
+	}
+}
+
+func TestCalculate_InvalidInput(t *testing.T) {
+	c := Calculator{Factors: testFactors, Distances: fixedDistance(100)}
+	ctx := context.Background()
+	nan, inf := math.NaN(), math.Inf(1)
+	cph, ham := Location{Lat: 55.7, Lon: 12.6}, Location{Lat: 53.6, Lon: 10}
+	leg := func(mod func(*Leg)) Leg {
+		l := Leg{ID: "l", Mode: Road, VehicleType: "truck_40t", DistanceKm: 100}
+		mod(&l)
+		return l
+	}
+	cases := map[string]Shipment{
+		"NaN weight":            {WeightKg: nan, Legs: []Leg{leg(func(*Leg) {})}},
+		"Inf weight":            {WeightKg: inf, Legs: []Leg{leg(func(*Leg) {})}},
+		"negative weight":       {WeightKg: -5, Legs: []Leg{leg(func(*Leg) {})}},
+		"NaN teu":               {TEU: nan, TEUNetTonnes: 10, Legs: []Leg{leg(func(*Leg) {})}},
+		"negative distance":     {WeightKg: 1, Legs: []Leg{leg(func(l *Leg) { l.DistanceKm = -50 })}},
+		"NaN distance":          {WeightKg: 1, Legs: []Leg{leg(func(l *Leg) { l.DistanceKm = nan })}},
+		"NaN load factor":       {WeightKg: 1, Legs: []Leg{leg(func(l *Leg) { l.LoadFactor = nan })}},
+		"Inf energy":            {WeightKg: 1, Legs: []Leg{leg(func(l *Leg) { l.EnergyKWhPerTkm = inf; l.Country = "DNK" })}},
+		"NaN fuel":              {WeightKg: 1, Legs: []Leg{leg(func(l *Leg) { l.Fuel = &FuelUse{Fuel: "diesel", Amount: nan} })}},
+		"no distance or coords": {WeightKg: 1, Legs: []Leg{leg(func(l *Leg) { l.DistanceKm = 0 })}},
+		"only from":             {WeightKg: 1, Legs: []Leg{leg(func(l *Leg) { l.DistanceKm = 0; l.From = cph })}},
+		"lat 500":               {WeightKg: 1, Legs: []Leg{leg(func(l *Leg) { l.DistanceKm = 0; l.From = Location{Lat: 500, Lon: 1}; l.To = ham })}},
+		"lon -200":              {WeightKg: 1, Legs: []Leg{leg(func(l *Leg) { l.From = Location{Lat: 1, Lon: -200} })}},
+		"overflow":              {WeightKg: 1e308, Legs: []Leg{leg(func(l *Leg) { l.DistanceKm = 1e308 })}},
+	}
+	for name, s := range cases {
+		if _, err := c.Calculate(ctx, s); !errors.Is(err, ErrInvalidInput) {
+			t.Errorf("%s: want ErrInvalidInput, got %v", name, err)
+		}
+	}
+	// Coordinates without distance are fine.
+	if _, err := c.Calculate(ctx, Shipment{WeightKg: 1, Legs: []Leg{leg(func(l *Leg) { l.DistanceKm = 0; l.From, l.To = cph, ham })}}); err != nil {
+		t.Errorf("coordinates only: %v", err)
 	}
 }
 

@@ -54,7 +54,8 @@ func (s *source) Next() (csvio.Item, error) {
 	if v := atomic.AddInt64(s.inflight, 1); v > atomic.LoadInt64(s.max) {
 		atomic.StoreInt64(s.max, v)
 	}
-	it := csvio.Item{Shipment: calc.Shipment{ID: id, WeightKg: 1000, Legs: []calc.Leg{{Mode: calc.Road, VehicleType: "x"}}}}
+	it := csvio.Item{Shipment: calc.Shipment{ID: id, WeightKg: 1000, Legs: []calc.Leg{{Mode: calc.Road, VehicleType: "x",
+		From: calc.Location{Lat: 55, Lon: 12}, To: calc.Location{Lat: 56, Lon: 10}}}}}
 	if s.i%7 == 0 {
 		it.Err = errors.New("bad row")
 	}

@@ -67,6 +67,9 @@ var (
 //
 //	hub kg   = (weight_kg / 1000) * hub g/t / 1000
 func (c Calculator) Calculate(ctx context.Context, s Shipment) (Result, error) {
+	if err := validate(s); err != nil {
+		return Result{}, err
+	}
 	weightKg, basis, err := c.weight(s)
 	if err != nil {
 		return Result{}, err
@@ -135,6 +138,9 @@ func (c Calculator) Calculate(ctx context.Context, s Shipment) (Result, error) {
 	}
 	if res.WTWKg > 0 {
 		res.PrimaryDataShare = primary / res.WTWKg
+	}
+	if err := checkResult(res); err != nil {
+		return Result{}, err
 	}
 	return res, nil
 }
