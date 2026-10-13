@@ -127,3 +127,22 @@ func (fakeFactors) LegFactor(m calc.Mode, vt string) (calc.Factor, error) {
 }
 func (fakeFactors) HubFactor(string) (calc.HubFactor, error)   { return calc.HubFactor{}, nil }
 func (fakeFactors) FuelFactor(string) (calc.FuelFactor, error) { return calc.FuelFactor{}, nil }
+
+func TestOSRM_Waterway(t *testing.T) {
+	var calls int32
+	var path string
+	srv := fakeOSRM(t, `{"code":"Ok","routes":[{"distance":220000}],"waypoints":[{"distance":800},{"distance":15500}]}`, 200, &calls, &path)
+	o, _ := NewOSRM(srv.URL)
+	o.Method, o.MaxSnapKm = "osrm_waterway", 10
+	_, err := o.Distance(context.Background(), calc.InlandWaterway, copenhagen, hamburg)
+	if err == nil || !strings.Contains(err.Error(), "destination is 15.5 km from the nearest osrm_waterway network") {
+		t.Errorf("want snap error, got %v", err)
+	}
+	o.MaxSnapKm = 20
+	if d, err := o.Distance(context.Background(), calc.InlandWaterway, copenhagen, hamburg); err != nil || d != 220 {
+		t.Errorf("d = %v, %v", d, err)
+	}
+	if o.DistanceMethod(calc.InlandWaterway) != "osrm_waterway" || o.DistanceType(calc.InlandWaterway) != calc.DistSFD {
+		t.Error("method or type")
+	}
+}

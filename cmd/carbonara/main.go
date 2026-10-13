@@ -26,6 +26,7 @@ const usageText = `Carbonara — freight CO2e calculator
 Usage:
   carbonara calc    [-factors name|file] shipment.json   one shipment, JSON result
   carbonara batch   [-factors name|file] shipments.csv   many shipments, CSV result
+  carbonara report  [-factors name|file] [-from -to -org] shipments.csv   ISO 14083 style report (Markdown or JSON)
   carbonara stream  [-factors name|file] [file]          one shipment JSON per line in, one result per line out
   carbonara serve   [-factors name|file] [-addr :8080]   HTTP API
   carbonara factors [-factors name|file]                 print the factor dataset
@@ -35,7 +36,8 @@ Usage:
   carbonara health  [-addr :8080]                        check a running server (for healthchecks)
   carbonara version
 
-Use "-" as the file name to read stdin. The default dataset is UK DESNZ 2026.
+Use "-" as the file name to read stdin. The default datasets are UK DESNZ 2026
+and Dutch inland waterway factors 2026.
 calc, batch and serve also take -osrm URL (road routing) and -sea-network
 file.geojson (sea routing); see "carbonara calc -h".`
 
@@ -47,6 +49,7 @@ func main() {
 	cmds := map[string]func([]string) error{
 		"calc":         runCalc,
 		"batch":        runBatch,
+		"report":       runReport,
 		"stream":       runStream,
 		"serve":        runServe,
 		"factors":      runFactors,
@@ -72,9 +75,9 @@ func main() {
 
 // common holds flags shared by all subcommands.
 type common struct {
-	factorFile, osrmURL           string
-	seaNetwork, seaAvoid, seaOpen string
-	seaMaxSnapKm                  float64
+	factorFile, osrmURL, waterwayURL string
+	seaNetwork, seaAvoid, seaOpen    string
+	seaMaxSnapKm, waterwayMaxSnapKm  float64
 }
 
 func (c *common) register(fs *flag.FlagSet) {
@@ -84,6 +87,11 @@ func (c *common) register(fs *flag.FlagSet) {
 			"also $CARBONARA_FACTORS (default "+factors.Default+")")
 	fs.StringVar(&c.osrmURL, "osrm", os.Getenv("CARBONARA_OSRM_URL"),
 		"OSRM server URL for road distances, also $CARBONARA_OSRM_URL (default: adjusted great-circle)")
+	fs.StringVar(&c.waterwayURL, "osrm-waterway", os.Getenv("CARBONARA_OSRM_WATERWAY_URL"),
+		"OSRM server built with deploy/barge.lua for inland waterway distances, also $CARBONARA_OSRM_WATERWAY_URL "+
+			"(default: none; give distance_km)")
+	fs.Float64Var(&c.waterwayMaxSnapKm, "waterway-max-snap-km", 10,
+		"reject inland waterway points farther than this from a navigable waterway (0 = no limit)")
 	fs.StringVar(&c.seaNetwork, "sea-network", os.Getenv("CARBONARA_SEA_NETWORK"),
 		"maritime network GeoJSON for sea distances, also $CARBONARA_SEA_NETWORK (default: adjusted great-circle)")
 	fs.StringVar(&c.seaAvoid, "sea-avoid", "", "comma-separated passages to avoid, e.g. suez,panama")
@@ -115,6 +123,14 @@ func (c *common) calculator() (calc.Calculator, *factors.Dataset, error) {
 			return calc.Calculator{}, nil, err
 		}
 		routed[calc.Road] = o
+	}
+	if c.waterwayURL != "" {
+		o, err := distance.NewOSRM(c.waterwayURL)
+		if err != nil {
+			return calc.Calculator{}, nil, err
+		}
+		o.Method, o.MaxSnapKm = "osrm_waterway", c.waterwayMaxSnapKm
+		routed[calc.InlandWaterway] = o
 	}
 	if c.seaNetwork != "" {
 		n, err := c.loadSea()

@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -109,5 +110,43 @@ func TestGetEndpoints(t *testing.T) {
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusMethodNotAllowed {
 		t.Errorf("GET /v1/calculate: status %d, want 405", resp.StatusCode)
+	}
+}
+
+func TestReport(t *testing.T) {
+	srv := newTestServer(t)
+	body := `{"organisation":"Acme","period_from":"2026-01-01","period_to":"2026-03-31","shipments":[
+		{"id":"ok","weight_kg":10000,"legs":[{"mode":"road","vehicle_type":"truck_40t","distance_km":500}]},
+		{"id":"bad","weight_kg":0,"legs":[{"mode":"road"}]}]}`
+	resp, out := post(t, srv.URL+"/v1/report", body)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status %d: %v", resp.StatusCode, out)
+	}
+	total := out["total"].(map[string]any)
+	cov := out["coverage"].(map[string]any)
+	if total["wtw_kg"].(float64) != 375 || cov["failed"].(float64) != 1 || out["organisation"] != "Acme" {
+		t.Errorf("got total %v coverage %v", total, cov)
+	}
+
+	r, err := http.Post(srv.URL+"/v1/report?format=md", "application/json", strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Body.Close()
+	var md strings.Builder
+	_, _ = io.Copy(&md, r.Body)
+	if r.StatusCode != http.StatusOK || !strings.HasPrefix(r.Header.Get("Content-Type"), "text/markdown") ||
+		!strings.Contains(md.String(), "**375.0**") {
+		t.Errorf("markdown %d %q:\n%s", r.StatusCode, r.Header.Get("Content-Type"), md.String())
+	}
+
+	for name, bad := range map[string]string{
+		"bad date":  `{"period_from":"1 Jan","shipments":[]}`,
+		"long text": `{"title":"` + strings.Repeat("x", maxMetaLen+1) + `","shipments":[]}`,
+		"unknown":   `{"tittle":"x","shipments":[]}`,
+	} {
+		if resp, _ := post(t, srv.URL+"/v1/report", bad); resp.StatusCode != http.StatusBadRequest {
+			t.Errorf("%s: status %d", name, resp.StatusCode)
+		}
 	}
 }

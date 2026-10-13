@@ -124,8 +124,11 @@ type HubFactor struct {
 
 // LegResult is the outcome for one leg.
 type LegResult struct {
-	LegID      string  `json:"leg_id"`
-	DistanceKm float64 `json:"distance_km"`
+	LegID string `json:"leg_id"`
+	// Mode and VehicleType are the leg's, as given.
+	Mode        Mode    `json:"mode"`
+	VehicleType string  `json:"vehicle_type,omitempty"`
+	DistanceKm  float64 `json:"distance_km"`
 	// DistanceMethod says where the distance came from: "given" (input),
 	// or the provider's name, e.g. "great_circle", "osrm".
 	DistanceMethod string `json:"distance_method,omitempty"`

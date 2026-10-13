@@ -94,7 +94,8 @@ This is the capacity-utilisation approach EcoTransIT World and GLEC use, built e
 |---|---|---|
 | road | an [OSRM](https://project-osrm.org) server, with `-osrm URL` | shortest feasible (`sfd`) |
 | sea | shortest route on a maritime network, with `-sea-network file.geojson` | shortest feasible (`sfd`) |
-| air and anything else | great-circle | great-circle (`gcd`) |
+| inland waterway | an OSRM server built with the barge profile, with `-osrm-waterway URL` | shortest feasible (`sfd`) |
+| air, rail, and inland waterway without a server | great-circle | great-circle (`gcd`) |
 
 A dataset may also define `distance_adjustments` (`gcd × multiplier + add_km`) to estimate route distance from great-circle for a mode; the result then has no known type.
 
@@ -135,6 +136,19 @@ docker run -t -p 5000:5000 -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osr
 carbonara calc -osrm http://localhost:5000 examples/cph-rotterdam.json
 ```
 
+### Inland waterway routing
+
+[`deploy/barge.lua`](deploy/barge.lua) is an OSRM profile that routes along OpenStreetMap waterways a freight barge can use: CEMT class I or higher, `ship=yes`, canals with `usage=transportation`, and fairways. Routes are the shortest such path, so they're shortest feasible distances, and the inland waterway factors need no DAF on them (GLEC). Points more than `-waterway-max-snap-km` (default 10 km) from a navigable waterway are refused.
+
+With Docker Compose, add the override file and pick a region with navigable waterways:
+
+```sh
+OSRM_PBF_URL=https://download.geofabrik.de/europe/netherlands-latest.osm.pbf \
+  docker compose -f compose.yaml -f compose.waterway.yaml up -d
+```
+
+Or by hand, as for roads, with `osrm-extract -p barge.lua`, then `carbonara calc -osrm-waterway http://localhost:5001 ...`. CI routes a barge along the Saar on Saarland's map each week. Routes follow OSM's tagging, so check a few known distances for your region.
+
 ## Verified against GLEC
 
 [`pkg/toc/glec_test.go`](pkg/toc/glec_test.go) reproduces the worked examples in the GLEC Framework v3.2 (Section 3, Module 4) end to end through Carbonara: fuel and activity data → TOC/HOC intensities → shipment emissions. Road (p.116), air (p.128), bulk sea with hubs (p.131–132) and a two-intensity container terminal (p.134–135) all match GLEC's published figures to the precision printed. Two notes from doing this:
@@ -152,6 +166,23 @@ Results are shaped for ISO 14083-style reporting:
 - **Traceability**: each leg carries its factor with source and year, its `distance_method`, and the result names the `dataset`.
 
 Carbonara isn't certified or verified against ISO 14083. Treat results as calculations for your own reporting process.
+
+### Report over many shipments
+
+`carbonara report` (or `POST /v1/report`) turns a set of shipments into a report with the basic content ISO 14083 asks for at the level of transport or hub services (GLEC v3.2, Section 2, Chapter 1):
+
+- what's covered: period, shipments, legs, hub stops, and the shipments that failed (excluded and listed);
+- total emissions, split into operational (TTW) and energy provision (WTT), and the emission intensity with the types of distance used;
+- the same per mode of transport and per hub type, and a breakdown by energy carrier;
+- data quality: shares of primary, modelled and default data, the sources of default values, and each model with its parameters;
+- distance adjustment factors applied, notes on omissions and deviations, and where supporting information is.
+
+```sh
+carbonara report -org "Acme Logistics" -from 2026-01-01 -to 2026-03-31 shipments.csv > q1.md
+carbonara report -format json shipments.csv > q1.json
+```
+
+It reads the same CSV as `batch`, streaming, so any size works. The ISO sentence "These calculation results have been established in accordance with ISO 14083:2023" is added only with `-declare-iso` (`"declare_iso": true` in the API): conformity depends on your data collection and boundaries, which only you can vouch for.
 
 ### Your own operational data (TOCs and HOCs)
 
@@ -218,6 +249,7 @@ Each output line is `{"line": n, "shipment_id": "...", "result": {...}}`, or `{"
 |---|---|---|
 | `POST` | `/v1/calculate` | one shipment |
 | `POST` | `/v1/calculate/batch` | `{"shipments": [...]}`, up to 10,000 |
+| `POST` | `/v1/report` | `{"organisation", "period_from", "period_to", "shipments": [...]}`, JSON or `?format=md` |
 | `GET` | `/v1/factors` | loaded dataset |
 | `GET` | `/openapi.yaml` | spec |
 | `GET` | `/healthz` | liveness |
@@ -252,7 +284,7 @@ A dataset is JSON with `legs` (g CO2e/tkm), `hubs` (g CO2e/t), `fuels` (kg CO2e/
 
 Road aliases use DESNZ's "average laden" factors.
 
-**Inland waterways** (`nl-iww-2026`): three bulk vessel classes (`barge_bulk_small`/`medium`/`large`, 300 t to 11,000 t) and four container vessels (`barge_container_40teu`, `96teu`, `208teu`, `348teu`). Factors are per *actual* tonne-km and include sailing empty. Give the river distance as `distance_km`; a shortest feasible distance (`distance_type: sfd`) is accepted as is, since GLEC needs no DAF for inland waterways. A leg with only coordinates is refused: a straight line would undercount a river route, and there's no default correction for it. Source: www.co2emissiefactoren.nl, free to use with attribution.
+**Inland waterways** (`nl-iww-2026`): three bulk vessel classes (`barge_bulk_small`/`medium`/`large`, 300 t to 11,000 t) and four container vessels (`barge_container_40teu`, `96teu`, `208teu`, `348teu`). Factors are per *actual* tonne-km and include sailing empty. Give coordinates with [waterway routing](#inland-waterway-routing) set up, or the river distance as `distance_km`; a shortest feasible distance (`distance_type: sfd`) is used as is, since GLEC needs no DAF for inland waterways. Without routing, a leg with only coordinates is refused: a straight line would undercount a river route, and there's no default correction for it. Source: www.co2emissiefactoren.nl, free to use with attribution.
 
 **Notes on DESNZ data:**
 - Air freight comes `with_rf` and `without_rf` (radiative forcing). ISO 14083 reports without RF.
@@ -282,7 +314,8 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 |---|---|
 | `pkg/calc` | Domain model and calculation. Stdlib only. |
 | `pkg/factors` | Factor datasets, embedded or from file. |
-| `pkg/distance` | Great-circle with per-mode adjustment, OSRM road routing, maritime network routing. |
+| `pkg/distance` | Great-circle with per-mode adjustment, OSRM road and waterway routing, maritime network routing. |
+| `pkg/report` | ISO 14083 style reports over many shipments. |
 | `pkg/csvio` | CSV input (in-memory or streaming) and output. |
 | `pkg/batch` | Parallel, ordered, bounded-memory batch processing. |
 | `pkg/ndjson` | Newline-delimited JSON input and output for streaming. |
@@ -321,7 +354,8 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 - [x] Transport and hub operation categories from your own data
 - [x] Package docs and runnable examples
 - [x] Bundled inland waterway factors (Dutch CO2 emission factor list)
-- [ ] Inland waterway routing (a river network, like the sea one)
+- [x] Inland waterway routing (OSRM barge profile on OpenStreetMap)
+- [x] ISO 14083 style reports (`carbonara report`, `/v1/report`)
 - [ ] Cargo-type presets (needs licensed values, e.g. EcoTransIT with permission)
 
 ## Releasing

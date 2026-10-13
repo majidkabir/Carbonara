@@ -15,8 +15,10 @@ import (
 	"github.com/majidkabir/carbonara/pkg/calc"
 )
 
-// OSRM gets road distances from an OSRM server's route service
-// (http://project-osrm.org/docs/v5.24.0/api/#route-service).
+// OSRM gets distances from an OSRM server's route service
+// (http://project-osrm.org/docs/v5.24.0/api/#route-service): road
+// distances from a car profile, or inland waterway distances from the
+// barge profile in deploy/barge.lua.
 //
 // Point it at your own server: the public demo server is not meant for
 // production traffic.
@@ -24,6 +26,11 @@ type OSRM struct {
 	BaseURL string       // e.g. "http://localhost:5000"
 	Profile string       // default "driving"
 	Client  *http.Client // default: 10s timeout
+	// Method names the distance source in results; default "osrm".
+	Method string
+	// MaxSnapKm rejects points farther than this from the routable network
+	// (0 = no limit). OSRM snaps a point to the nearest edge however far.
+	MaxSnapKm float64
 
 	mu    sync.Mutex
 	cache map[string]float64
@@ -78,6 +85,9 @@ func (o *OSRM) Distance(ctx context.Context, _ calc.Mode, from, to calc.Location
 		Routes  []struct {
 			Distance float64 `json:"distance"` // metres
 		} `json:"routes"`
+		Waypoints []struct {
+			Distance float64 `json:"distance"` // metres from the input point to the network
+		} `json:"waypoints"`
 	}
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&body); err != nil {
 		return 0, fmt.Errorf("osrm: HTTP %d, unreadable response: %w", resp.StatusCode, err)
@@ -87,6 +97,18 @@ func (o *OSRM) Distance(ctx context.Context, _ calc.Mode, from, to calc.Location
 	}
 	if len(body.Routes) == 0 {
 		return 0, errors.New("osrm: no route")
+	}
+	if o.MaxSnapKm > 0 {
+		for i, w := range body.Waypoints {
+			if w.Distance/1000 > o.MaxSnapKm {
+				end := "origin"
+				if i > 0 {
+					end = "destination"
+				}
+				return 0, fmt.Errorf("osrm: %s is %.1f km from the nearest %s network edge (limit %.0f km)",
+					end, w.Distance/1000, o.DistanceMethod(""), o.MaxSnapKm)
+			}
+		}
 	}
 	km := body.Routes[0].Distance / 1000
 
@@ -100,10 +122,15 @@ func (o *OSRM) Distance(ctx context.Context, _ calc.Mode, from, to calc.Location
 }
 
 // DistanceMethod implements calc.DistanceMethoder.
-func (o *OSRM) DistanceMethod(calc.Mode) string { return "osrm" }
+func (o *OSRM) DistanceMethod(calc.Mode) string {
+	if o.Method != "" {
+		return o.Method
+	}
+	return "osrm"
+}
 
-// DistanceType implements calc.DistanceTyper: a routed shortest path on the
-// road network is a shortest feasible distance.
+// DistanceType implements calc.DistanceTyper: a routed shortest path on a
+// road or waterway network is a shortest feasible distance.
 func (o *OSRM) DistanceType(calc.Mode) string { return calc.DistSFD }
 
 // ByMode sends each mode to its own provider, and the rest to Fallback.

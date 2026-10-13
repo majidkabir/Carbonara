@@ -87,6 +87,51 @@ paths:
         "500": { $ref: "#/components/responses/Error" }
         "503": { $ref: "#/components/responses/Busy" }
         "504": { $ref: "#/components/responses/Error" }
+  /v1/report:
+    post:
+      summary: ISO 14083 style report over up to 10,000 shipments
+      description: >
+        Calculates the shipments and aggregates them: totals split into
+        operational (TTW) and energy provision (WTT) emissions, per mode, per
+        hub type and per energy carrier, data quality, DAFs, and notes on
+        omissions. Failed shipments are excluded and listed.
+      parameters:
+        - name: format
+          in: query
+          schema: { type: string, enum: [json, md] }
+          description: md returns Markdown
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [shipments]
+              properties:
+                title: { type: string, maxLength: 1000 }
+                organisation: { type: string, maxLength: 1000 }
+                period_from: { type: string, format: date }
+                period_to: { type: string, format: date }
+                reference: { type: string, maxLength: 1000, description: Where supporting information can be found }
+                declare_iso:
+                  type: boolean
+                  description: Add the ISO 14083:2023 conformity statement. Only the reporter can make this claim.
+                shipments:
+                  type: array
+                  items: { $ref: "#/components/schemas/Shipment" }
+      responses:
+        "200":
+          description: Report
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Report" }
+            text/markdown:
+              schema: { type: string }
+        "400": { $ref: "#/components/responses/Error" }
+        "413": { $ref: "#/components/responses/Error" }
+        "500": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Busy" }
+        "504": { $ref: "#/components/responses/Error" }
 components:
   responses:
     Busy:
@@ -221,11 +266,13 @@ components:
       type: object
       properties:
         leg_id: { type: string }
+        mode: { $ref: "#/components/schemas/Mode" }
+        vehicle_type: { type: string }
         distance_km: { type: number }
         distance_method:
           type: string
           description: Where the distance came from
-          enum: [given, great_circle, great_circle_adjusted, osrm, sea_network]
+          enum: [given, great_circle, great_circle_adjusted, osrm, osrm_waterway, sea_network]
         distance_type: { $ref: "#/components/schemas/DistanceType" }
         daf:
           type: number
@@ -323,3 +370,45 @@ components:
               multiplier: { type: number }
               add_km: { type: number }
               source: { type: string }
+    Report:
+      type: object
+      description: See pkg/report for every field. Emissions in kg CO2e.
+      properties:
+        title: { type: string }
+        organisation: { type: string }
+        period: { type: object, properties: { from: { type: string }, to: { type: string } } }
+        level: { type: string, example: transport_or_hub_services }
+        statement: { type: string }
+        reference: { type: string }
+        datasets: { type: array, items: { type: string } }
+        generated: { type: string, format: date-time }
+        coverage:
+          type: object
+          properties:
+            shipments: { type: integer }
+            calculated: { type: integer }
+            failed: { type: integer }
+            failed_ids: { type: array, items: { type: string }, description: First 100 }
+            legs: { type: integer }
+            hub_stops: { type: integer }
+            weight_t: { type: number }
+        total:
+          type: object
+          properties:
+            wtw_kg: { type: number }
+            transport_wtw_kg: { type: number }
+            ttw_kg: { type: number, description: Operational emissions, transport }
+            wtt_kg: { type: number, description: Energy provision emissions, transport }
+            hub_wtw_kg: { type: number }
+            tonne_km: { type: number }
+            intensity_g_per_tkm: { type: number }
+            distance_types:
+              type: object
+              additionalProperties: { type: number }
+              description: Share of tonne-km per distance type (sfd, gcd, actual, unspecified)
+        modes: { type: array, items: { type: object } }
+        hubs: { type: array, items: { type: object } }
+        energy_carriers: { type: array, items: { type: object } }
+        data_quality: { type: object }
+        distance_adjustments: { type: array, items: { type: object } }
+        notes: { type: array, items: { type: string } }

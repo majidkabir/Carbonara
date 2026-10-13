@@ -198,7 +198,7 @@ func (c Calculator) leg(ctx context.Context, tonnes float64, leg Leg) (LegResult
 		return LegResult{}, err
 	}
 	tkm := tonnes * dist
-	lr := LegResult{LegID: leg.ID, DistanceKm: dist, DistanceMethod: method, DistanceType: dtype, TonneKm: tkm}
+	lr := LegResult{LegID: leg.ID, Mode: leg.Mode, VehicleType: leg.VehicleType, DistanceKm: dist, DistanceMethod: method, DistanceType: dtype, TonneKm: tkm}
 
 	methods := 0
 	for _, set := range []bool{leg.Fuel != nil, leg.LoadFactor != 0, leg.EnergyKWhPerTkm != 0} {

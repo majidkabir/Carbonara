@@ -1,0 +1,50 @@
+# Adds inland waterway routing to the stack: a second OSRM built with the
+# barge profile (deploy/barge.lua) on the same map region.
+#
+#   docker compose -f compose.yaml -f compose.waterway.yaml up -d
+#
+# Choose a region with navigable rivers or canals (OSRM_PBF_URL), e.g. the
+# Netherlands, Belgium or Germany; preparing fails if the region has none.
+
+services:
+  prepare-osrm-waterway:
+    image: ${OSRM_IMAGE:-ghcr.io/project-osrm/osrm-backend:v26.8.0-debian}
+    depends_on:
+      download-map:
+        condition: service_completed_successfully
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        out=/wdata/waterway.osrm.mldgr
+        if [ -f "$$out" ] && [ "$$out" -nt /data/region.osm.pbf ] && [ "$$out" -nt /deploy/barge.lua ]; then
+          echo "OSRM waterway data up to date"; exit 0
+        fi
+        ln -sf /data/region.osm.pbf /wdata/waterway.osm.pbf
+        osrm-extract -p /deploy/barge.lua /wdata/waterway.osm.pbf
+        osrm-partition /wdata/waterway.osrm
+        osrm-customize /wdata/waterway.osrm
+    volumes:
+      - osrm-data:/data:ro
+      - waterway-data:/wdata
+      - ./deploy:/deploy:ro
+
+  osrm-waterway:
+    image: ${OSRM_IMAGE:-ghcr.io/project-osrm/osrm-backend:v26.8.0-debian}
+    depends_on:
+      prepare-osrm-waterway:
+        condition: service_completed_successfully
+    command: ["osrm-routed", "--algorithm", "mld", "/wdata/waterway.osrm"]
+    volumes:
+      - waterway-data:/wdata:ro
+    restart: unless-stopped
+
+  carbonara:
+    depends_on:
+      osrm-waterway:
+        condition: service_started
+    environment:
+      CARBONARA_OSRM_WATERWAY_URL: http://osrm-waterway:5000
+
+volumes:
+  waterway-data:

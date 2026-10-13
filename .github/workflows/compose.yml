@@ -1,12 +1,14 @@
 name: Compose
 
 # Brings up the full stack (OSRM + sea network + Carbonara) on a tiny
-# region and checks that road and sea legs are really routed.
+# region and checks that road and sea legs are really routed; and the
+# waterway add-on on a small region with a navigable river.
 on:
   push:
     branches: [main]
     paths:
       - compose.yaml
+      - compose.waterway.yaml
       - deploy/**
       - Dockerfile
       - cmd/**
@@ -15,6 +17,7 @@ on:
   pull_request:
     paths:
       - compose.yaml
+      - compose.waterway.yaml
       - deploy/**
       - Dockerfile
   schedule:
@@ -67,6 +70,52 @@ jobs:
           for s in download-map prepare-osrm prepare-sea; do
             docker compose logs "$s" | grep -q "up to date" || { echo "$s redid its work"; exit 1; }
           done
+
+      - name: Logs
+        if: failure()
+        run: docker compose logs
+
+      - name: Stop
+        if: always()
+        run: docker compose down -v
+
+  waterway:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # The Saar is a class Vb federal waterway through Saarland.
+      OSRM_PBF_URL: https://download.geofabrik.de/europe/germany/saarland-latest.osm.pbf
+      SEA_RESOLUTION_KM: "100"
+      COMPOSE_FILE: compose.yaml:compose.waterway.yaml
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start stack with waterway routing
+        run: docker compose up -d --build
+
+      - name: Wait for Carbonara
+        run: |
+          for i in $(seq 1 90); do
+            if curl -fs localhost:8080/healthz; then exit 0; fi
+            sleep 5
+          done
+          echo "Carbonara did not become healthy"; exit 1
+
+      - name: Barge leg is routed along the Saar
+        run: |
+          # Saarbruecken to Dillingen: about 24 km as the crow flies, more along the river.
+          out=$(curl -fsS -X POST localhost:8080/v1/calculate -d '{"weight_kg":1000000,"legs":[{"mode":"inland_waterway","vehicle_type":"barge",
+            "from":{"lat":49.2328,"lon":6.9935},"to":{"lat":49.3537,"lon":6.7155}}]}')
+          echo "$out" | jq '.legs[0] | {distance_km, distance_method, distance_type, daf, wtw_kg}'
+          echo "$out" | jq -e '.legs[0].distance_method == "osrm_waterway" and .legs[0].distance_type == "sfd"
+            and .legs[0].distance_km > 26 and .legs[0].distance_km < 45'
+
+      - name: Points far from a waterway are refused
+        run: |
+          code=$(curl -s -o /tmp/out.json -w '%{http_code}' -X POST localhost:8080/v1/calculate -d '{"weight_kg":1000,"legs":[{"mode":"inland_waterway","vehicle_type":"barge",
+            "from":{"lat":49.2328,"lon":6.9935},"to":{"lat":49.50,"lon":7.10}}]}')
+          cat /tmp/out.json
+          [ "$code" = 422 ] && grep -q "from the nearest" /tmp/out.json
 
       - name: Logs
         if: failure()

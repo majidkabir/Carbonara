@@ -2,6 +2,7 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
 	"encoding/json"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/carbonara/pkg/report"
 )
 
 //go:embed openapi.yaml
@@ -86,6 +88,7 @@ func (s *Server) Handler() http.Handler {
 	})
 	mux.HandleFunc("POST /v1/calculate", s.limited(s.calculate))
 	mux.HandleFunc("POST /v1/calculate/batch", s.limited(s.calculateBatch))
+	mux.HandleFunc("POST /v1/report", s.limited(s.report))
 	var h http.Handler = s.recoverPanics(secureHeaders(mux))
 	if s.Log != nil {
 		h = s.logRequests(h)
@@ -216,36 +219,96 @@ func (s *Server) calculateBatch(w http.ResponseWriter, r *http.Request) {
 	if !s.decode(w, r, &req) {
 		return
 	}
-	if len(req.Shipments) > maxBatchItems {
-		writeError(w, http.StatusRequestEntityTooLarge,
-			fmt.Errorf("batch has %d shipments, max is %d", len(req.Shipments), maxBatchItems))
-		return
-	}
 	resp := BatchResponse{Results: make([]BatchItem, 0, len(req.Shipments))}
-	for _, sh := range req.Shipments {
-		if err := r.Context().Err(); err != nil {
-			writeError(w, calcStatus(err), fmt.Errorf("batch stopped after %d of %d shipments: %w",
-				len(resp.Results), len(req.Shipments), err))
-			return
-		}
-		item := BatchItem{ShipmentID: sh.ID}
-		if err := s.checkSize(sh); err != nil {
-			item.Error = err.Error()
-			resp.Failed++
-		} else if res, err := s.Calc.Calculate(r.Context(), sh); err != nil {
-			if r.Context().Err() != nil { // timed out or client left: stop, don't blame the shipment
-				writeError(w, calcStatus(r.Context().Err()), fmt.Errorf("batch stopped after %d of %d shipments: %w",
-					len(resp.Results), len(req.Shipments), r.Context().Err()))
-				return
-			}
+	ok := s.each(w, r, req.Shipments, func(id string, res calc.Result, err error) {
+		item := BatchItem{ShipmentID: id}
+		if err != nil {
 			item.Error = err.Error()
 			resp.Failed++
 		} else {
 			item.Result = &res
 		}
 		resp.Results = append(resp.Results, item)
+	})
+	if ok {
+		writeJSON(w, http.StatusOK, resp)
 	}
-	writeJSON(w, http.StatusOK, resp)
+}
+
+// each calculates shipments in order, passing each result or error to fn.
+// It writes an error response and returns false if the batch is too big or
+// the request times out or is cancelled; a shipment that merely fails is
+// passed to fn.
+func (s *Server) each(w http.ResponseWriter, r *http.Request, shipments []calc.Shipment, fn func(string, calc.Result, error)) bool {
+	if len(shipments) > maxBatchItems {
+		writeError(w, http.StatusRequestEntityTooLarge,
+			fmt.Errorf("batch has %d shipments, max is %d", len(shipments), maxBatchItems))
+		return false
+	}
+	stop := func(done int, err error) bool {
+		writeError(w, calcStatus(err), fmt.Errorf("batch stopped after %d of %d shipments: %w", done, len(shipments), err))
+		return false
+	}
+	for i, sh := range shipments {
+		if err := r.Context().Err(); err != nil {
+			return stop(i, err)
+		}
+		if err := s.checkSize(sh); err != nil {
+			fn(sh.ID, calc.Result{}, err)
+			continue
+		}
+		res, err := s.Calc.Calculate(r.Context(), sh)
+		if err != nil && r.Context().Err() != nil { // timed out or client left: stop, don't blame the shipment
+			return stop(i, r.Context().Err())
+		}
+		fn(sh.ID, res, err)
+	}
+	return true
+}
+
+// ReportRequest is the body of POST /v1/report.
+type ReportRequest struct {
+	report.Meta
+	Shipments []calc.Shipment `json:"shipments"`
+}
+
+// maxMetaLen caps each free-text report field.
+const maxMetaLen = 1000
+
+func (s *Server) report(w http.ResponseWriter, r *http.Request) {
+	var req ReportRequest
+	if !s.decode(w, r, &req) {
+		return
+	}
+	m := req.Meta
+	for _, f := range []string{m.Title, m.Organisation, m.Reference, m.PeriodFrom, m.PeriodTo} {
+		if len(f) > maxMetaLen {
+			writeError(w, http.StatusBadRequest, fmt.Errorf("report text fields are limited to %d bytes", maxMetaLen))
+			return
+		}
+	}
+	for _, d := range []string{m.PeriodFrom, m.PeriodTo} {
+		if _, err := time.Parse(time.DateOnly, d); d != "" && err != nil {
+			writeError(w, http.StatusBadRequest, fmt.Errorf("period dates must be YYYY-MM-DD, got %q", d))
+			return
+		}
+	}
+	b := report.New(m)
+	if !s.each(w, r, req.Shipments, b.Add) {
+		return
+	}
+	rep := b.Report()
+	if r.URL.Query().Get("format") == "md" {
+		var buf bytes.Buffer
+		if err := report.WriteMarkdown(&buf, rep); err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+		_, _ = w.Write(buf.Bytes())
+		return
+	}
+	writeJSON(w, http.StatusOK, rep)
 }
 
 // decode reads a JSON body into v, writing a 4xx and returning false on failure.
