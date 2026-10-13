@@ -9,12 +9,14 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"mime"
 	"net/http"
 	"runtime"
 	"runtime/debug"
 	"time"
 
 	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/carbonara/pkg/csvio"
 	"github.com/majidkabir/carbonara/pkg/report"
 )
 
@@ -277,7 +279,37 @@ const maxMetaLen = 1000
 
 func (s *Server) report(w http.ResponseWriter, r *http.Request) {
 	var req ReportRequest
-	if !s.decode(w, r, &req) {
+	var parseErrs []csvio.Item // CSV shipments that failed to parse
+	if ct, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type")); ct == "text/csv" {
+		// A shipments CSV as the body, report details in the query.
+		q := r.URL.Query()
+		req.Meta = report.Meta{Title: q.Get("title"), Organisation: q.Get("organisation"),
+			PeriodFrom: q.Get("period_from"), PeriodTo: q.Get("period_to"), Reference: q.Get("reference"),
+			DeclareISO: q.Get("declare_iso") == "true"}
+		r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
+		items, err := csvio.Read(r.Body)
+		if err != nil {
+			var tooBig *http.MaxBytesError
+			if errors.As(err, &tooBig) {
+				writeError(w, http.StatusRequestEntityTooLarge, err)
+			} else {
+				writeError(w, http.StatusBadRequest, err)
+			}
+			return
+		}
+		if len(items) > maxBatchItems {
+			writeError(w, http.StatusRequestEntityTooLarge,
+				fmt.Errorf("file has %d shipments, max is %d", len(items), maxBatchItems))
+			return
+		}
+		for _, it := range items {
+			if it.Err != nil {
+				parseErrs = append(parseErrs, it)
+			} else {
+				req.Shipments = append(req.Shipments, it.Shipment)
+			}
+		}
+	} else if !s.decode(w, r, &req) {
 		return
 	}
 	m := req.Meta
@@ -294,6 +326,9 @@ func (s *Server) report(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	b := report.New(m)
+	for _, it := range parseErrs {
+		b.Add(it.Shipment.ID, calc.Result{}, it.Err)
+	}
 	if !s.each(w, r, req.Shipments, b.Add) {
 		return
 	}

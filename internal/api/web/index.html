@@ -45,8 +45,8 @@ button, input, select { font: inherit; color: inherit; }
 .top p { margin: 0; color: var(--muted); }
 .top .dataset { margin-left: auto; color: var(--muted); font-size: .9rem; }
 
-main { max-width: 1240px; margin: 0 auto; padding: 16px 24px 48px; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 28px; align-items: start; }
-@media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); padding: 12px 16px 40px; } .top { padding: 20px 16px 4px; } }
+main, .grid { max-width: 1240px; margin: 0 auto; padding: 16px 24px 48px; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 28px; align-items: start; }
+@media (max-width: 900px) { main, .grid { grid-template-columns: minmax(0, 1fr); padding: 12px 16px 40px; } .top { padding: 20px 16px 4px; } }
 
 section.panel { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; padding: 20px; }
 .panel h2 { font-size: 1.15rem; margin-bottom: 14px; }
@@ -107,6 +107,27 @@ td.num, th.num { text-align: right; }
 details.json { margin-top: 22px; }
 details.json summary { cursor: pointer; color: var(--blue); }
 pre { background: var(--paper); padding: 12px; border-radius: 4px; overflow: auto; font-size: .8rem; max-height: 320px; }
+.grid { padding-top: 0; }
+.section-title { max-width: 1240px; margin: 8px auto 0; padding: 0 24px 12px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+.section-title h2 { font-size: 1.4rem; }
+.section-title p { margin: 0; color: var(--muted); }
+@media (max-width: 900px) { .section-title { padding: 0 16px 8px; } }
+.check { display: flex; align-items: flex-start; gap: 8px; color: var(--ink); font-size: .9rem; margin: 4px 0 12px; }
+.check input { width: auto; margin-top: 3px; }
+input[type="file"] { padding: 7px; }
+.quality { display: flex; height: 18px; border-radius: 3px; overflow: hidden; background: var(--paper); margin: 8px 0 6px; }
+.quality span { min-width: 2px; }
+.q-primary { background: var(--signal); }
+.q-modelled { background: var(--blue); }
+.q-default { background: var(--rule); }
+.notes { padding-left: 18px; color: var(--ink); font-size: .92rem; }
+.notes li { margin-bottom: 6px; }
+.statement { color: var(--muted); font-size: .88rem; border-left: 3px solid var(--rule); padding-left: 10px; margin: 18px 0; }
+h3.sub { font-size: 1rem; margin: 22px 0 8px; }
+.report-table td { padding: 8px 8px 8px 0; border-bottom: 1px solid var(--rule); }
+.report-table td.num, .report-table th.num { white-space: nowrap; }
+.report-table.long-names td:first-child { overflow-wrap: anywhere; }
+.report-table td:first-child { min-width: 6.5em; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 </style>
 </head>
@@ -152,6 +173,36 @@ pre { background: var(--paper); padding: 12px; border-radius: 4px; overflow: aut
     <div id="result"><p class="empty">Add a leg and calculate to see emissions.</p></div>
   </section>
 </main>
+
+<div class="section-title">
+  <h2>Report</h2>
+  <p>Many shipments at once, as an ISO 14083 style emissions report.</p>
+</div>
+<div class="grid">
+  <section class="panel" aria-labelledby="rep-form-h">
+    <h2 id="rep-form-h">Shipments file</h2>
+    <form id="rform" novalidate>
+      <div class="row"><div><label for="rfile">CSV, one row per leg (same columns as <code>carbonara batch</code>)</label>
+        <input id="rfile" type="file" accept=".csv,text/csv"></div></div>
+      <div class="row"><div><label for="rorg">Organisation</label><input id="rorg" autocomplete="organization"></div></div>
+      <div class="row">
+        <div><label for="rfrom">Period from</label><input id="rfrom" type="date"></div>
+        <div><label for="rto">Period to</label><input id="rto" type="date"></div>
+      </div>
+      <label class="check"><input type="checkbox" id="riso">
+        <span>Declare conformity with ISO 14083:2023. Only tick this if your data collection and boundaries conform.</span></label>
+      <div class="actions">
+        <button type="submit" class="btn primary">Make report</button>
+        <button type="button" class="btn quiet" id="rexample">Try with example data</button>
+      </div>
+      <p class="error" id="rerror" role="alert"></p>
+    </form>
+  </section>
+  <section class="panel" aria-labelledby="rep-h" aria-live="polite">
+    <h2 id="rep-h">Emissions report</h2>
+    <div id="report"><p class="empty">Choose a shipments file to see the report.</p></div>
+  </section>
+</div>
 
 <template id="leg-t">
   <div class="leg">
@@ -209,7 +260,7 @@ const kg = v => v >= 10000 ? fmt(v / 1000, 2) + " t" : fmt(v, 1) + " kg";
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const modeName = { road: "Road", rail: "Rail", sea: "Sea", air: "Air", inland_waterway: "Inland waterway" };
 const distName = { given: "given", great_circle: "great-circle", great_circle_adjusted: "great-circle, adjusted",
-  osrm: "road routing", sea_network: "sea route" };
+  osrm: "road routing", osrm_rail: "rail routing", osrm_waterway: "waterway routing", sea_network: "sea route" };
 const methodName = { intensity: "average factor", fuel: "measured fuel", load_model: "load model", energy: "electricity" };
 
 function addLeg(values = {}) {
@@ -376,6 +427,128 @@ async function loadFactors() {
     document.querySelectorAll('[name="mode"]').forEach(m => m.dispatchEvent(new Event("change")));
   } catch { /* suggestions are optional */ }
 }
+
+// ---- Report ----
+const exampleCSV = `shipment_id,weight_kg,leg_id,mode,vehicle_type,distance_km,distance_type,fuel,fuel_amount,hub_id,hub_type
+EX-1,12000,L1,road,hgv,320,sfd,,,,
+EX-1,,L2,sea,container_ship,1100,sfd,,,,
+EX-2,8000,L1,road,hgv,95,,diesel,32,,
+EX-2,,L2,rail,freight_train,640,sfd,,,,
+EX-3,450,L1,air,air_freight,6100,actual,,,,
+EX-4,250000,L1,inland_waterway,barge,220,sfd,,,,
+EX-5,0,L1,road,hgv,10,,,,,
+`;
+let reportInput = null; // { body, type } of the last report request
+
+function reportQuery(format) {
+  const q = new URLSearchParams();
+  const org = $("#rorg").value.trim();
+  if (org) q.set("organisation", org);
+  if ($("#rfrom").value) q.set("period_from", $("#rfrom").value);
+  if ($("#rto").value) q.set("period_to", $("#rto").value);
+  if ($("#riso").checked) q.set("declare_iso", "true");
+  if (format) q.set("format", format);
+  return q.toString();
+}
+
+async function postReport(body, format) {
+  return fetch("v1/report?" + reportQuery(format), { method: "POST", headers: { "Content-Type": "text/csv" }, body });
+}
+
+async function makeReport(e, body) {
+  e && e.preventDefault();
+  $("#rerror").textContent = "";
+  if (!body) {
+    const file = $("#rfile").files[0];
+    if (!file) { $("#rerror").textContent = "Choose a CSV file first."; return; }
+    body = file;
+  }
+  let res, r;
+  try {
+    res = await postReport(body);
+    r = await res.json();
+  } catch {
+    $("#rerror").textContent = "Couldn't reach the Carbonara server. Check it's still running.";
+    return;
+  }
+  if (!res.ok) { $("#rerror").textContent = r.error || `Request failed (HTTP ${res.status}).`; return; }
+  reportInput = body;
+  renderReport(r);
+}
+
+const pct = v => fmt(v * 100, 1) + "%";
+const legs = n => `${n} leg${n === 1 ? "" : "s"}`;
+const distLabel = m => Object.entries(m || {}).sort((a, b) => b[1] - a[1])
+  .map(([k, v]) => (Object.keys(m).length > 1 ? `${{ sfd: "SFD", gcd: "GCD", actual: "actual" }[k] || "unspecified"} ${pct(v)}`
+    : ({ sfd: "SFD", gcd: "GCD", actual: "actual" }[k] || "unspecified"))).join(", ");
+
+function renderReport(r) {
+  const t = r.total, c = r.coverage, d = r.data_quality;
+  const modes = (r.modes || []).map(m => `<tr><td>${esc(modeName[m.mode] || m.mode)}</td>
+    <td class="num">${fmt(m.tonne_km, 0)}</td><td>${esc(distLabel(m.distance_types))}</td>
+    <td class="num">${kg(m.ttw_kg)}</td><td class="num">${kg(m.wtt_kg)}</td><td class="num"><strong>${kg(m.wtw_kg)}</strong></td>
+    <td class="num">${fmt(m.intensity_g_per_tkm, 1)}</td></tr>`).join("");
+  const hubs = (r.hubs || []).map(h => `<tr><td>${esc(h.hub_type)}</td><td class="num">${h.stops}</td>
+    <td class="num">${fmt(h.tonnes, 1)}</td><td class="num"><strong>${kg(h.wtw_kg)}</strong></td><td class="num">${fmt(h.intensity_g_per_t, 0)}</td></tr>`).join("");
+  const energy = (r.energy_carriers || []).map(e => `<tr><td>${e.carrier === "unspecified" ? "Not stated (average factor or load model)" : esc(e.carrier)}</td>
+    <td class="num">${kg(e.wtw_kg)}</td><td class="num">${pct(e.share)}</td></tr>`).join("");
+  const sources = (d.default_sources || []).map(s => `<li>${esc(s.source)}: ${kg(s.wtw_kg)} (${pct(s.share)})</li>`).join("");
+  const models = (d.models || []).map(m => `<li>${esc(m.model)}. ${legs(m.legs)}, ${kg(m.wtw_kg)}.<br>
+    <span class="id">${Object.entries(m.parameters).map(([k, v]) => `${esc(k.replaceAll("_", " "))}: ${esc(v)}`).join("; ")}</span></li>`).join("");
+  const dafs = (r.distance_adjustments || []).map(a => `<li>${esc(a.source)}: ${legs(a.legs)}, factor ${fmt(a.min, 3)}${a.max !== a.min ? "–" + fmt(a.max, 3) : ""}</li>`).join("");
+  const notes = (r.notes || []).map(n => `<li>${esc(n)}</li>`).join("");
+  const period = r.period.from || r.period.to ? `${esc(r.period.from || "…")} to ${esc(r.period.to || "…")}` : "period not stated";
+
+  $("#report").innerHTML = `
+    <p class="answer">${c.calculated} shipments emit <strong>${kg(t.wtw_kg)}</strong> CO₂e well-to-wheel.</p>
+    <p class="answer-sub">${r.organisation ? esc(r.organisation) + ", " : ""}${period}. ${fmt(t.tonne_km, 0)} tonne-km,
+      ${fmt(t.intensity_g_per_tkm, 1)} g per tonne-km. Transport: ${kg(t.ttw_kg)} from the vehicles and ${kg(t.wtt_kg)} from
+      producing their energy${t.hub_wtw_kg ? `; hubs ${kg(t.hub_wtw_kg)}` : ""}.
+      ${c.failed ? `<strong>${c.failed} of ${c.shipments} shipments excluded</strong> (see notes).` : ""}</p>
+    <div class="actions"><button type="button" class="btn" id="dl-md">Download Markdown</button>
+      <button type="button" class="btn" id="dl-json">Download JSON</button></div>
+    <h3 class="sub">By mode of transport</h3>
+    <div class="scroll"><table class="report-table"><thead><tr><th>Mode</th><th class="num">Tonne-km</th><th>Distance type</th>
+      <th class="num">Vehicle</th><th class="num">Supply</th><th class="num">Total</th><th class="num">g/tkm</th></tr></thead>
+      <tbody>${modes}</tbody></table></div>
+    ${hubs ? `<h3 class="sub">By hub operation</h3><div class="scroll"><table class="report-table"><thead><tr><th>Hub type</th>
+      <th class="num">Stops</th><th class="num">Tonnes</th><th class="num">Total</th><th class="num">g/t</th></tr></thead><tbody>${hubs}</tbody></table></div>` : ""}
+    <h3 class="sub">By energy carrier</h3>
+    <div class="scroll"><table class="report-table long-names"><thead><tr><th>Energy carrier</th><th class="num">Total</th><th class="num">Share</th></tr></thead>
+      <tbody>${energy}</tbody></table></div>
+    <h3 class="sub">Data quality</h3>
+    <div class="quality" role="img" aria-label="Primary ${pct(d.primary_share)}, modelled ${pct(d.modelled_share)}, default ${pct(d.default_share)}">
+      <span class="q-primary" style="flex:0 0 ${d.primary_share * 100}%"></span><span class="q-modelled" style="flex:0 0 ${d.modelled_share * 100}%"></span><span class="q-default" style="flex:1"></span></div>
+    <div class="legend"><span><i class="q-primary"></i>Primary ${pct(d.primary_share)}</span><span><i class="q-modelled"></i>Modelled ${pct(d.modelled_share)}</span>
+      <span><i class="q-default"></i>Default ${pct(d.default_share)}</span></div>
+    ${sources ? `<p class="id">Default values from:</p><ul class="notes">${sources}</ul>` : ""}
+    ${models ? `<p class="id">Models:</p><ul class="notes">${models}</ul>` : ""}
+    ${dafs ? `<h3 class="sub">Distance adjustment factors</h3><ul class="notes">${dafs}</ul>` : ""}
+    ${notes ? `<h3 class="sub">Notes, omissions and deviations</h3><ul class="notes">${notes}</ul>` : ""}
+    <p class="statement">${esc(r.statement)}</p>`;
+  $("#dl-json").addEventListener("click", () => download(JSON.stringify(r, null, 2), "application/json", "json"));
+  $("#dl-md").addEventListener("click", async () => {
+    try {
+      const res = await postReport(reportInput, "md");
+      if (!res.ok) throw new Error();
+      download(await res.text(), "text/markdown", "md");
+    } catch { $("#rerror").textContent = "Couldn't make the Markdown file."; }
+  });
+}
+
+function download(text, type, ext) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type }));
+  a.download = `emissions-report.${ext}`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+$("#rform").addEventListener("submit", makeReport);
+$("#rexample").addEventListener("click", () => {
+  if (!$("#rorg").value) $("#rorg").value = "Example Logistics";
+  makeReport(null, exampleCSV);
+});
 
 document.querySelectorAll('input[name="cargo"]').forEach(r => r.addEventListener("change", toggleCargo));
 $("#add").addEventListener("click", () => addLeg());

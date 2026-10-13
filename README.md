@@ -94,8 +94,9 @@ This is the capacity-utilisation approach EcoTransIT World and GLEC use, built e
 |---|---|---|
 | road | an [OSRM](https://project-osrm.org) server, with `-osrm URL` | shortest feasible (`sfd`) |
 | sea | shortest route on a maritime network, with `-sea-network file.geojson` | shortest feasible (`sfd`) |
+| rail | an OSRM server built with the rail profile, with `-osrm-rail URL` | shortest feasible (`sfd`) |
 | inland waterway | an OSRM server built with the barge profile, with `-osrm-waterway URL` | shortest feasible (`sfd`) |
-| air, rail, and inland waterway without a server | great-circle | great-circle (`gcd`) |
+| air, and rail or inland waterway without a server | great-circle | great-circle (`gcd`) |
 
 A dataset may also define `distance_adjustments` (`gcd × multiplier + add_km`) to estimate route distance from great-circle for a mode; the result then has no known type.
 
@@ -135,6 +136,16 @@ docker run -t -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osrm-customize /
 docker run -t -p 5000:5000 -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osrm-routed --algorithm mld /data/denmark-latest.osrm
 carbonara calc -osrm http://localhost:5000 examples/cph-rotterdam.json
 ```
+
+### Rail routing
+
+[`deploy/rail.lua`](deploy/rail.lua) is an OSRM profile for freight trains on OpenStreetMap's `railway=rail` lines, including sidings and yards that reach terminals. Trams, light rail, subways, narrow gauge and tourist lines are left out. Trains can't turn sharply or reverse at a junction, so turns over 60° carry a 100 km penalty. Points more than `-rail-max-snap-km` (default 5 km) from a line are refused.
+
+```sh
+docker compose -f compose.yaml -f compose.rail.yaml up -d
+```
+
+It works with any region, and combines with the waterway file. CI routes Saarbrücken–Saarlouis on Saarland's map each week. Without it, rail legs given as coordinates use the great-circle distance, which undercounts real track distance.
 
 ### Inland waterway routing
 
@@ -229,7 +240,11 @@ A bad row fails only its shipment; the rest still calculate.
 
 ## Web page
 
-`carbonara serve` also serves a page at `/`: enter a shipment leg by leg and see its emissions, a bar of each leg's share split into vehicle and fuel-supply emissions, and for every number the distance method, calculation method, data type and factor source. It opens with a worked example. Works offline (no external scripts or fonts) and in light or dark mode.
+`carbonara serve` also serves a page at `/`: enter a shipment leg by leg and see its emissions, a bar of each leg's share split into vehicle and fuel-supply emissions, and for every number the distance method, calculation method, data type and factor source. It opens with a worked example.
+
+Below it, **Report** takes a shipments CSV (the `batch` columns), an organisation and a period, and shows the [report](#report-over-many-shipments): totals, modes, hubs, energy carriers, data quality, notes. Download it as Markdown or JSON. `POST /v1/report` takes the CSV directly with `Content-Type: text/csv`, report details in the query (`?organisation=...&period_from=...`).
+
+The page works offline (no external scripts or fonts) and in light or dark mode.
 
 ## Streaming (Kafka and pipes)
 

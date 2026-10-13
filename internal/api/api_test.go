@@ -150,3 +150,34 @@ func TestReport(t *testing.T) {
 		}
 	}
 }
+
+func TestReport_CSV(t *testing.T) {
+	srv := newTestServer(t)
+	csv := "shipment_id,weight_kg,mode,vehicle_type,distance_km\nA,10000,road,truck_40t,500\nB,1000,road,truck_40t,abc\n"
+	resp, err := http.Post(srv.URL+"/v1/report?organisation=Acme&period_from=2026-01-01", "text/csv; charset=utf-8", strings.NewReader(csv))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	var out map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		t.Fatal(err)
+	}
+	cov := out["coverage"].(map[string]any)
+	if resp.StatusCode != 200 || out["total"].(map[string]any)["wtw_kg"].(float64) != 375 ||
+		cov["shipments"].(float64) != 2 || cov["failed"].(float64) != 1 || out["organisation"] != "Acme" {
+		t.Errorf("status %d: %v", resp.StatusCode, out)
+	}
+	for name, bad := range map[string]string{"no header": "", "no id": "weight_kg\n1\n"} {
+		r, _ := http.Post(srv.URL+"/v1/report", "text/csv", strings.NewReader(bad))
+		r.Body.Close()
+		if r.StatusCode != http.StatusBadRequest {
+			t.Errorf("%s: status %d", name, r.StatusCode)
+		}
+	}
+	r, _ := http.Post(srv.URL+"/v1/report?period_to=yesterday", "text/csv", strings.NewReader(csv))
+	r.Body.Close()
+	if r.StatusCode != http.StatusBadRequest {
+		t.Errorf("bad date: status %d", r.StatusCode)
+	}
+}

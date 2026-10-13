@@ -83,7 +83,7 @@ func WriteMarkdown(w io.Writer, r Report) error {
 		p("\n")
 	}
 	for _, m := range d.Models {
-		p("Model: %s. %d legs, %s kg WTW.\n\n", esc(m.Model), m.Legs, num(m.WTWKg, 1))
+		p("Model: %s. %s, %s kg WTW.\n\n", esc(m.Model), plural(m.Legs, "leg"), num(m.WTWKg, 1))
 		keys := make([]string, 0, len(m.Parameters))
 		for k := range m.Parameters {
 			keys = append(keys, k)
@@ -191,4 +191,11 @@ func esc(s string) string {
 	r := strings.NewReplacer("|", "\\|", "\n", " ", "\r", " ", "<", "&lt;", ">", "&gt;",
 		"*", "\\*", "_", "\\_", "`", "\\`", "[", "\\[", "]", "\\]", "#", "\\#")
 	return r.Replace(s)
+}
+
+func plural(n int, word string) string {
+	if n == 1 {
+		return "1 " + word
+	}
+	return fmt.Sprintf("%d %ss", n, word)
 }
