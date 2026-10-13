@@ -34,11 +34,14 @@ type Operations struct {
 
 // TOC is a transport operation category.
 type TOC struct {
-	ID          string      `json:"id"`
-	Mode        calc.Mode   `json:"mode"`
-	Description string      `json:"description,omitempty"`
-	TonneKm     float64     `json:"tonne_km"` // all tonne-km carried in the period
-	Fuels       []EnergyUse `json:"fuels"`    // all fuel and electricity used, incl. empty running
+	ID          string    `json:"id"`
+	Mode        calc.Mode `json:"mode"`
+	Description string    `json:"description,omitempty"`
+	TonneKm     float64   `json:"tonne_km"` // all tonne-km carried in the period
+	// DistanceBasis is the distance type TonneKm was measured on (sfd, gcd,
+	// actual), so shipments on other distance types get a DAF. Optional.
+	DistanceBasis string      `json:"distance_basis,omitempty"`
+	Fuels         []EnergyUse `json:"fuels"` // all fuel and electricity used, incl. empty running
 }
 
 // HOC is a hub operation category.
@@ -76,6 +79,11 @@ func Parse(r io.Reader) (Operations, error) {
 		}
 		if t.TonneKm <= 0 {
 			return Operations{}, fmt.Errorf("toc %q: tonne_km must be > 0", t.ID)
+		}
+		switch t.DistanceBasis {
+		case "", calc.DistSFD, calc.DistGCD, calc.DistActual:
+		default:
+			return Operations{}, fmt.Errorf("toc %q: distance_basis must be sfd, gcd or actual", t.ID)
 		}
 		if err := checkEnergy(t.ID, t.Fuels); err != nil {
 			return Operations{}, err
@@ -134,7 +142,7 @@ func Build(ops Operations, fuels calc.FactorProvider) (factors.Dataset, error) {
 			return factors.Dataset{}, fmt.Errorf("toc %q: %w", t.ID, err)
 		}
 		ds.Legs = append(ds.Legs, calc.Factor{
-			Mode: t.Mode, VehicleType: t.ID, Year: ops.Year, DataType: calc.DataPrimary,
+			Mode: t.Mode, VehicleType: t.ID, Year: ops.Year, DataType: calc.DataPrimary, DistanceBasis: t.DistanceBasis,
 			TTW: ttw * 1000 / t.TonneKm, WTT: wtt * 1000 / t.TonneKm,
 			Source: fmt.Sprintf("TOC %s (%s, %s): %s over %.0f tonne-km", t.ID, ops.Name, ops.Period, desc, t.TonneKm),
 		})

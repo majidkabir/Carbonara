@@ -193,12 +193,12 @@ func (c Calculator) weight(s Shipment) (float64, string, error) {
 }
 
 func (c Calculator) leg(ctx context.Context, tonnes float64, leg Leg) (LegResult, error) {
-	dist, method, err := c.distance(ctx, leg)
+	dist, method, dtype, err := c.distance(ctx, leg)
 	if err != nil {
 		return LegResult{}, err
 	}
 	tkm := tonnes * dist
-	lr := LegResult{LegID: leg.ID, DistanceKm: dist, DistanceMethod: method, TonneKm: tkm}
+	lr := LegResult{LegID: leg.ID, DistanceKm: dist, DistanceMethod: method, DistanceType: dtype, TonneKm: tkm}
 
 	methods := 0
 	for _, set := range []bool{leg.Fuel != nil, leg.LoadFactor != 0, leg.EnergyKWhPerTkm != 0} {
@@ -229,10 +229,19 @@ func (c Calculator) leg(ctx context.Context, tonnes float64, leg Leg) (LegResult
 	if err != nil {
 		return LegResult{}, err
 	}
+	// Emissions = tonne-km x intensity x DAF (GLEC Framework, ISO 14083).
+	adjKm, daf, err := c.adjust(leg.Mode, dtype, f.DistanceBasis, dist)
+	if err != nil {
+		return LegResult{}, err
+	}
+	if daf != nil {
+		lr.DAF, lr.DAFSource = adjKm/dist, daf.Source
+	}
+	adjTkm := tonnes * adjKm
 	lr.Method = MethodIntensity
 	lr.Factor = &f
-	lr.TTWKg = tkm * f.TTW / 1000
-	lr.WTWKg = tkm * f.WTW() / 1000
+	lr.TTWKg = adjTkm * f.TTW / 1000
+	lr.WTWKg = adjTkm * f.WTW() / 1000
 	return lr, nil
 }
 
@@ -286,20 +295,25 @@ func (c Calculator) loadLeg(lr LegResult, leg Leg) (LegResult, error) {
 	return lr, nil
 }
 
-func (c Calculator) distance(ctx context.Context, leg Leg) (float64, string, error) {
+func (c Calculator) distance(ctx context.Context, leg Leg) (km float64, method, dtype string, err error) {
 	if leg.DistanceKm > 0 {
-		return leg.DistanceKm, DistanceGiven, nil
+		return leg.DistanceKm, DistanceGiven, leg.DistanceType, nil
+	}
+	if leg.DistanceType != "" {
+		return 0, "", "", fmt.Errorf("%w: distance_type describes distance_km, which is not given", ErrInvalidInput)
 	}
 	if c.Distances == nil {
-		return 0, "", errors.New("no distance given and no distance provider")
+		return 0, "", "", errors.New("no distance given and no distance provider")
 	}
 	d, err := c.Distances.Distance(ctx, leg.Mode, leg.From, leg.To)
 	if err != nil {
-		return 0, "", fmt.Errorf("distance: %w", err)
+		return 0, "", "", fmt.Errorf("distance: %w", err)
 	}
-	method := ""
 	if dm, ok := c.Distances.(DistanceMethoder); ok {
 		method = dm.DistanceMethod(leg.Mode)
 	}
-	return d, method, nil
+	if dt, ok := c.Distances.(DistanceTyper); ok {
+		dtype = dt.DistanceType(leg.Mode)
+	}
+	return d, method, dtype, nil
 }

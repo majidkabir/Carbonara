@@ -28,6 +28,10 @@ type Leg struct {
 	To          Location `json:"to"`
 	// DistanceKm overrides the DistanceProvider when > 0 (e.g. actual odometer distance).
 	DistanceKm float64 `json:"distance_km,omitempty"`
+	// DistanceType says what kind of distance DistanceKm is: "sfd", "gcd"
+	// or "actual". When it differs from the factor's distance basis, the
+	// dataset's DAF converts between them. Empty means "same as the factor".
+	DistanceType string `json:"distance_type,omitempty"`
 	// Fuel, when set, switches the leg to the fuel-based (primary data) method.
 	Fuel *FuelUse `json:"fuel,omitempty"`
 	// LoadFactor (0..1] switches the leg to the dataset's load model for the
@@ -101,6 +105,9 @@ type Factor struct {
 	// DataType overrides the default label for factors built from the
 	// operator's own measurements (e.g. transport operation categories).
 	DataType string `json:"data_type,omitempty"`
+	// DistanceBasis is the distance type the intensity is per tonne-km of
+	// ("sfd", "gcd", "actual"); empty if unknown, which disables DAFs.
+	DistanceBasis string `json:"distance_basis,omitempty"`
 }
 
 // WTW is the well-to-wheel factor (WTT + TTW).
@@ -121,11 +128,17 @@ type LegResult struct {
 	DistanceKm float64 `json:"distance_km"`
 	// DistanceMethod says where the distance came from: "given" (input),
 	// or the provider's name, e.g. "great_circle", "osrm".
-	DistanceMethod string  `json:"distance_method,omitempty"`
-	TonneKm        float64 `json:"tonne_km"`
-	TTWKg          float64 `json:"ttw_kg"`
-	WTTKg          float64 `json:"wtt_kg"`
-	WTWKg          float64 `json:"wtw_kg"`
+	DistanceMethod string `json:"distance_method,omitempty"`
+	// DistanceType is the kind of distance DistanceKm is (sfd, gcd, actual),
+	// when known. When a DAF bridged it to the factor's basis, DAF holds
+	// the ratio applied to emissions and DAFSource where it came from.
+	DistanceType string  `json:"distance_type,omitempty"`
+	DAF          float64 `json:"daf,omitempty"`
+	DAFSource    string  `json:"daf_source,omitempty"`
+	TonneKm      float64 `json:"tonne_km"`
+	TTWKg        float64 `json:"ttw_kg"`
+	WTTKg        float64 `json:"wtt_kg"`
+	WTWKg        float64 `json:"wtw_kg"`
 	// IntensityG is WTW g CO2e per tonne-km for this leg.
 	IntensityG float64 `json:"intensity_g_per_tkm"`
 	Method     string  `json:"method"`

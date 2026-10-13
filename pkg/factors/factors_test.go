@@ -71,8 +71,19 @@ func TestOpen(t *testing.T) {
 	if err != nil || f.TTW != 25.83 || f.WTT != 6.91 || f.Year != 2026 {
 		t.Errorf("rail freight = %+v, %v", f, err)
 	}
-	if a := ds.Distances().Adjust[calc.Air]; a.AddKm != 95 || a.Multiplier != 0 {
-		t.Errorf("air distance rule = %+v, want great-circle + 95 km", a)
+	// GLEC v3.2: air is measured on great-circle distance, with no +95 km on
+	// top; 95 km is only the default DAF from actual flown distance.
+	if _, adjusted := ds.Distances().Adjust[calc.Air]; adjusted {
+		t.Error("air distances must not be adjusted on top of great-circle")
+	}
+	if f, _ := ds.LegFactor(calc.Air, "air_freight"); f.DistanceBasis != calc.DistGCD {
+		t.Errorf("air factor basis = %q, want gcd", f.DistanceBasis)
+	}
+	if d, ok := ds.DAF(calc.Air, calc.DistActual, calc.DistGCD); !ok || d.Apply(1095) != 1000 {
+		t.Errorf("air actual->gcd DAF = %+v, %v", d, ok)
+	}
+	if d, ok := ds.DAF(calc.Sea, calc.DistSFD, calc.DistActual); !ok || math.Abs(d.Apply(1000)-1150) > 1e-9 {
+		t.Errorf("sea sfd->actual DAF = %+v, %v", d, ok)
 	}
 	if _, err := Open("testdata-does-not-exist.json"); err == nil {
 		t.Error("want error for missing file")
@@ -291,7 +302,7 @@ func TestOpen_Layered(t *testing.T) {
 	clash := map[string]string{
 		"duplicate leg":       `{"legs":[{"mode":"rail","vehicle_type":"rail/freight_train","ttw_g_per_tkm":1}]}`,
 		"duplicate alias":     `{"fuel_aliases":{"diesel":"biofuel/biodiesel_hvo/litres"}}`,
-		"duplicate air rule":  `{"distance_adjustments":[{"mode":"air","add_km":100}]}`,
+		"duplicate DAF":       `{"dafs":[{"mode":"air","from":"actual","to":"gcd","add_km":-100,"source":"x"}]}`,
 		"duplicate container": `{"container_loads":{"average":12}}`,
 	}
 	for name, body := range clash {
@@ -313,5 +324,29 @@ func TestLegFactor_MissingModeHint(t *testing.T) {
 	}
 	if _, err := ds.LegFactor(calc.Road, "unicycle"); err == nil || strings.Contains(err.Error(), "has no road factors") {
 		t.Errorf("road has factors, want plain not-found error, got %v", err)
+	}
+}
+
+func TestParse_DAFs(t *testing.T) {
+	ok := `{"legs":[{"mode":"sea","vehicle_type":"s","ttw_g_per_tkm":1,"distance_basis":"actual"}],
+		"dafs":[{"mode":"sea","from":"sfd","to":"actual","multiplier":1.15,"source":"x"}]}`
+	ds, err := Parse(strings.NewReader(ok))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, found := ds.DAF(calc.Sea, calc.DistSFD, calc.DistActual); !found {
+		t.Error("DAF not indexed")
+	}
+	for name, in := range map[string]string{
+		"bad basis":     `{"legs":[{"mode":"sea","vehicle_type":"s","distance_basis":"miles"}]}`,
+		"bad type":      `{"dafs":[{"mode":"sea","from":"sfd","to":"odometer"}]}`,
+		"same types":    `{"dafs":[{"mode":"sea","from":"sfd","to":"sfd"}]}`,
+		"no mode":       `{"dafs":[{"from":"sfd","to":"gcd"}]}`,
+		"negative mult": `{"dafs":[{"mode":"sea","from":"sfd","to":"gcd","multiplier":-1}]}`,
+		"duplicate":     `{"dafs":[{"mode":"sea","from":"sfd","to":"gcd"},{"mode":"sea","from":"sfd","to":"gcd"}]}`,
+	} {
+		if _, err := Parse(strings.NewReader(in)); err == nil {
+			t.Errorf("%s: want error", name)
+		}
 	}
 }

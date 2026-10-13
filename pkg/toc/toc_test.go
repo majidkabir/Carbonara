@@ -119,3 +119,18 @@ func TestBuild_UnknownFuel(t *testing.T) {
 }
 
 func writeFile(p string, b []byte) error { return os.WriteFile(p, b, 0o600) }
+
+func TestDistanceBasis(t *testing.T) {
+	ds, _ := factors.Open(factors.Default)
+	o, err := Parse(strings.NewReader(`{"tocs":[{"id":"sea_x","mode":"sea","tonne_km":1000,"distance_basis":"actual","fuels":[{"fuel":"marine_fuel_oil","amount":10}]}]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	layer, err := Build(o, ds)
+	if err != nil || layer.Legs[0].DistanceBasis != "actual" {
+		t.Fatalf("basis not carried: %+v %v", layer.Legs, err)
+	}
+	if _, err := Parse(strings.NewReader(`{"tocs":[{"id":"a","mode":"sea","tonne_km":1,"distance_basis":"nm","fuels":[{"fuel":"x","amount":1}]}]}`)); err == nil {
+		t.Error("bad basis: want error")
+	}
+}

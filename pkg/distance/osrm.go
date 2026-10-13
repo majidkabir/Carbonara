@@ -102,6 +102,10 @@ func (o *OSRM) Distance(ctx context.Context, _ calc.Mode, from, to calc.Location
 // DistanceMethod implements calc.DistanceMethoder.
 func (o *OSRM) DistanceMethod(calc.Mode) string { return "osrm" }
 
+// DistanceType implements calc.DistanceTyper: a routed shortest path on the
+// road network is a shortest feasible distance.
+func (o *OSRM) DistanceType(calc.Mode) string { return calc.DistSFD }
+
 // ByMode sends each mode to its own provider, and the rest to Fallback.
 type ByMode struct {
 	Providers map[calc.Mode]calc.DistanceProvider
@@ -122,6 +126,14 @@ func (b ByMode) Distance(ctx context.Context, m calc.Mode, from, to calc.Locatio
 		return 0, fmt.Errorf("no distance provider for mode %s", m)
 	}
 	return p.Distance(ctx, m, from, to)
+}
+
+// DistanceType implements calc.DistanceTyper.
+func (b ByMode) DistanceType(m calc.Mode) string {
+	if dt, ok := b.pick(m).(calc.DistanceTyper); ok {
+		return dt.DistanceType(m)
+	}
+	return ""
 }
 
 // DistanceMethod implements calc.DistanceMethoder.

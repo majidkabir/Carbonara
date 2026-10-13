@@ -8,6 +8,7 @@
 //	shipment_id                                     required
 //	weight_kg, or teu with teu_net_tonnes or container_load   cargo
 //	leg_id, mode, vehicle_type, distance_km         leg
+//	distance_type                                   leg: sfd, gcd or actual (optional)
 //	from_lat, from_lon, to_lat, to_lon              leg, used when distance_km is empty
 //	fuel, fuel_amount, vehicle_tonne_km             leg, fuel-based method
 //	load_factor, empty_trip_factor                  leg, load model method
@@ -223,9 +224,10 @@ func addRow(s *calc.Shipment, row rowReader) error {
 	}
 
 	leg := calc.Leg{
-		ID:          row.str("leg_id"),
-		Mode:        calc.Mode(strings.ToLower(row.str("mode"))),
-		VehicleType: row.str("vehicle_type"),
+		ID:           row.str("leg_id"),
+		Mode:         calc.Mode(strings.ToLower(row.str("mode"))),
+		VehicleType:  row.str("vehicle_type"),
+		DistanceType: strings.ToLower(row.str("distance_type")),
 	}
 	if leg.Mode == "" {
 		return errors.New("leg row without mode")

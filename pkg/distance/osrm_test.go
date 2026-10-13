@@ -99,6 +99,9 @@ func TestByMode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if b.DistanceType(calc.Road) != calc.DistSFD || b.DistanceType(calc.Rail) != calc.DistGCD || b.DistanceType(calc.Air) != "" {
+		t.Errorf("distance types: road %q rail %q air %q", b.DistanceType(calc.Road), b.DistanceType(calc.Rail), b.DistanceType(calc.Air))
+	}
 	want := map[string]struct {
 		km     float64
 		method string

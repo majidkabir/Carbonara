@@ -2,7 +2,6 @@ package desnz
 
 import (
 	"github.com/majidkabir/carbonara/pkg/calc"
-	"github.com/majidkabir/carbonara/pkg/distance"
 	"github.com/majidkabir/carbonara/pkg/factors"
 )
 
@@ -39,15 +38,24 @@ var fuelAliases = map[string]string{
 	"jet_fuel":        "liquid_fuels/aviation_turbine_fuel/litres",
 }
 
-// distanceAdjustments are methodology conventions, not DESNZ data: DESNZ
-// publishes no distance rules, so Carbonara adds the standard air rule.
-var distanceAdjustments = []distance.Adjustment{
-	{Mode: calc.Air, AddKm: 95, Source: "EN 16258 convention: great-circle distance + 95 km for take-off and landing (also used by EcoTransIT World)"},
+// dafs are GLEC Framework v3.2 default distance adjustment factors, used
+// only when a leg's distance type differs from a factor's distance basis.
+var dafs = []calc.DAF{
+	{Mode: calc.Air, From: calc.DistActual, To: calc.DistGCD, AddKm: -95,
+		Source: "GLEC Framework v3.2, Section 1 Chapter 4 (air): without specific data, DAF = GCD / (GCD + 95 km), i.e. actual flown distance minus 95 km"},
+	{Mode: calc.Sea, From: calc.DistSFD, To: calc.DistActual, Multiplier: 1.15,
+		Source: "GLEC Framework v3.2, Section 1 Chapter 4 (sea), citing Clean Cargo: actual container distances average 15% above the shortest feasible route"},
 }
 
 // addAliases attaches the aliases whose targets exist in ds.
 func addAliases(ds *factors.Dataset, warn func(string, ...any)) {
-	ds.DistanceAdjustments = append(ds.DistanceAdjustments, distanceAdjustments...)
+	ds.DAFs = append(ds.DAFs, dafs...)
+	// GLEC and ISO 14083 measure air transport on great-circle distance.
+	for i := range ds.Legs {
+		if ds.Legs[i].Mode == calc.Air {
+			ds.Legs[i].DistanceBasis = calc.DistGCD
+		}
+	}
 	legs := map[string]bool{}
 	for _, f := range ds.Legs {
 		legs[string(f.Mode)+"/"+f.VehicleType] = true

@@ -208,3 +208,13 @@ func TestReader_LineNumbers(t *testing.T) {
 		t.Error("empty input: want error")
 	}
 }
+
+func TestRead_DistanceType(t *testing.T) {
+	items, err := Read(strings.NewReader("shipment_id,weight_kg,mode,vehicle_type,distance_km,distance_type\nS,1000,air,air_freight,8500,Actual\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if l := items[0].Shipment.Legs[0]; l.DistanceType != "actual" {
+		t.Errorf("distance_type = %q", l.DistanceType)
+	}
+}

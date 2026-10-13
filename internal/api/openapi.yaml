@@ -108,6 +108,10 @@ components:
             properties:
               error: { type: string }
   schemas:
+    DistanceType:
+      type: string
+      enum: [sfd, gcd, actual]
+      description: "Shortest feasible, great-circle, or actually travelled distance (GLEC / ISO 14083)"
     DataType:
       type: string
       enum: [primary, modelled, default]
@@ -145,6 +149,8 @@ components:
         distance_km:
           type: number
           description: Overrides computed distance when > 0
+        distance_type:
+          $ref: "#/components/schemas/DistanceType"
         fuel: { $ref: "#/components/schemas/FuelUse" }
         load_factor:
           type: number
@@ -194,6 +200,7 @@ components:
         wtt_g_per_tkm: { type: number }
         source: { type: string }
         year: { type: integer }
+        distance_basis: { $ref: "#/components/schemas/DistanceType" }
     FuelFactor:
       type: object
       properties:
@@ -219,6 +226,11 @@ components:
           type: string
           description: Where the distance came from
           enum: [given, great_circle, great_circle_adjusted, osrm, sea_network]
+        distance_type: { $ref: "#/components/schemas/DistanceType" }
+        daf:
+          type: number
+          description: Distance adjustment factor applied to emissions, when the leg's distance type differed from the factor's basis
+        daf_source: { type: string }
         tonne_km: { type: number }
         ttw_kg: { type: number }
         wtt_kg: { type: number }
@@ -289,6 +301,18 @@ components:
           type: object
           additionalProperties: { type: number }
           description: Profile name to net cargo tonnes per TEU
+        dafs:
+          type: array
+          description: "Distance adjustment factors: to_km = from_km * multiplier + add_km"
+          items:
+            type: object
+            properties:
+              mode: { $ref: "#/components/schemas/Mode" }
+              from: { $ref: "#/components/schemas/DistanceType" }
+              to: { $ref: "#/components/schemas/DistanceType" }
+              multiplier: { type: number }
+              add_km: { type: number }
+              source: { type: string }
         distance_adjustments:
           type: array
           description: "Great-circle to actual distance, per mode: gcd * multiplier + add_km"

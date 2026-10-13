@@ -39,6 +39,9 @@ func validate(s Shipment) error {
 				return bad("%s: %s must be a finite number, got %v", where, name, v)
 			}
 		}
+		if !validDistanceType(l.DistanceType) {
+			return bad("%s: distance_type must be sfd, gcd or actual, got %q", where, l.DistanceType)
+		}
 		if l.DistanceKm < 0 {
 			return bad("%s: distance_km must be >= 0, got %v", where, l.DistanceKm)
 		}

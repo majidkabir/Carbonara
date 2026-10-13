@@ -88,20 +88,30 @@ This is the capacity-utilisation approach EcoTransIT World and GLEC use, built e
 
 **Hubs** add `weight_t × hub g/t / 1000` (WTW) to the total. Intensity (g/tkm) covers transport only.
 
-**Distance** comes from `distance_km` when given. Otherwise, following the same approach as EcoTransIT World:
+**Distance** comes from `distance_km` when given. Otherwise:
 
-| Mode | Source |
-|---|---|
-| road | an [OSRM](https://project-osrm.org) server, with `-osrm URL` |
-| sea | shortest route on a maritime network, with `-sea-network file.geojson` |
-| air | great-circle + 95 km (EN 16258 convention) |
-| anything else | great-circle, adjusted by the dataset's `distance_adjustments` (`gcd × multiplier + add_km`) |
+| Mode | Source | Distance type |
+|---|---|---|
+| road | an [OSRM](https://project-osrm.org) server, with `-osrm URL` | shortest feasible (`sfd`) |
+| sea | shortest route on a maritime network, with `-sea-network file.geojson` | shortest feasible (`sfd`) |
+| air and anything else | great-circle | great-circle (`gcd`) |
+
+A dataset may also define `distance_adjustments` (`gcd × multiplier + add_km`) to estimate route distance from great-circle for a mode; the result then has no known type.
+
+**Distance adjustment factors (DAF).** Following the GLEC Framework v3.2 and ISO 14083, emissions are `tonne-km × intensity × DAF`. A DAF is needed when the leg's distance type differs from the distance type a factor was built on (`distance_basis`: `sfd`, `gcd` or `actual`). Give the type of a given distance with `distance_type`. Built-in GLEC defaults:
+
+| Mode | From → to | DAF |
+|---|---|---|
+| air | actual flown → great-circle | actual − 95 km (GLEC: GCD / (GCD + 95 km)) |
+| sea | shortest feasible → actual | × 1.15 (Clean Cargo, cited by GLEC) |
+
+DESNZ air factors are per great-circle tonne-km, as GLEC and ISO 14083 measure air; so a great-circle leg needs no DAF and a flown distance gets the air DAF. A mismatch with no DAF is an error rather than a silent guess. Results report `distance_type`, `daf` and `daf_source` per leg.
 
 Each leg result records `distance_method` (`given`, `osrm`, `sea_network`, `great_circle`, `great_circle_adjusted`) so every number can be traced. Plain great-circle badly understates sea distances (Rotterdam–Shanghai: 8,970 km vs 19,696 km routed), so use a sea network for sea legs.
 
 ### Sea routing
 
-Uses Eurostat's [SeaRoute](https://github.com/eurostat/searoute) maritime network. It's EUPL-1.2 licensed, so it isn't bundled; convert it once with GDAL:
+Uses Eurostat's [SeaRoute](https://github.com/eurostat/searoute) maritime network. It's EUPL-1.2 licensed, so it isn't bundled. The Compose setup prepares it for you (or run `python deploy/prepare_sea.py 20 marnet.geojson`); with GDAL it's:
 
 ```sh
 curl -LO https://github.com/eurostat/searoute/raw/master/modules/core/src/main/resources/marnet/marnet_plus_20km.gpkg
@@ -168,7 +178,7 @@ Fuels are converted with the selected dataset's fuel factors, including `electri
 |---|---|
 | `shipment_id` | required |
 | `weight_kg`, or `teu` with `teu_net_tonnes` / `container_load` | cargo; can be on the first row only |
-| `leg_id`, `mode`, `vehicle_type`, `distance_km` | leg |
+| `leg_id`, `mode`, `vehicle_type`, `distance_km`, `distance_type` | leg |
 | `from_lat`, `from_lon`, `to_lat`, `to_lon` | leg, when `distance_km` is empty |
 | `fuel`, `fuel_amount`, `vehicle_tonne_km` | leg, fuel method |
 | `load_factor`, `empty_trip_factor` | leg, load model |
@@ -217,7 +227,7 @@ Protections for running it on a network: at most `-max-concurrent` calculation r
 | `desnz-2026` (default) | UK government GHG conversion factors 2026, imported from the official flat file |
 | `sample` | Placeholder values, for tests only |
 
-A dataset is JSON with `legs` (g CO2e/tkm), `hubs` (g CO2e/t), `fuels` (kg CO2e/unit) and optional `load_models`, `distance_adjustments`, `vehicle_aliases`, `fuel_aliases` and `container_loads`, each factor with a TTW/WTT split, source and year. See [`sample.json`](pkg/factors/data/sample.json) for the shape.
+A dataset is JSON with `legs` (g CO2e/tkm), `hubs` (g CO2e/t), `fuels` (kg CO2e/unit) and optional `load_models`, `dafs`, `distance_adjustments`, `vehicle_aliases`, `fuel_aliases` and `container_loads`, each factor with a TTW/WTT split, source and year. See [`sample.json`](pkg/factors/data/sample.json) for the shape.
 
 **Vehicle types and fuel ids** follow the source's labels, e.g. `hgv_refrigerated_all_diesel/articulated_33t/100pct_laden` or `liquid_fuels/marine_gas_oil/tonnes`. Run `carbonara factors` to list them. Common ones have short aliases; results always show the full id used:
 
@@ -241,7 +251,7 @@ Road aliases use DESNZ's "average laden" factors.
    "hubs": [{"hub_type": "transhipment_ambient", "wtw_g_per_tonne": 0, "source": "…", "year": 2024}]}
   ```
   Fill in real values (g CO2e per tonne handled) from a source you're allowed to use.
-- The only distance adjustment is the air rule above (a convention, not DESNZ data).
+- Air factors are marked as great-circle based; the GLEC default DAFs above are added. Sea factors state no distance basis, so no DAF applies to them.
 - GLEC default values can't be bundled: Smart Freight Centre limits them to members and certified tools. If you have access, put them in a dataset file.
 
 **Updating DESNZ** each year: download the "flat file" from [gov.uk](https://www.gov.uk/government/collections/government-conversion-factors-for-company-reporting) and run
@@ -281,11 +291,11 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 - [x] CI, GoReleaser, Docker image
 - [x] Real dataset: UK DESNZ 2026, with importer for future years
 - [x] Dataset-level distance adjustments
-- [ ] GLEC distance adjustment factors (need a verified primary source)
-- [ ] GLEC worked examples as golden tests
+- [ ] GLEC worked examples as golden tests (Module 4)
 - [x] Short aliases for common vehicle types and fuels
 - [x] OSRM road routing
-- [x] Sea routing on a maritime network (SeaRoute), air = great-circle + 95 km
+- [x] Sea routing on a maritime network (SeaRoute)
+- [x] GLEC distance types and DAFs (air: actual − 95 km → great-circle; sea: × 1.15)
 - [x] Containers in TEU
 - [x] Truck load model (load factor, empty trip factor)
 - [x] Electricity by country (213 grids) for electric rail and trucks

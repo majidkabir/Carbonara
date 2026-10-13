@@ -187,6 +187,10 @@ func (n *SeaNetwork) Distance(ctx context.Context, _ calc.Mode, from, to calc.Lo
 // DistanceMethod implements calc.DistanceMethoder.
 func (n *SeaNetwork) DistanceMethod(calc.Mode) string { return "sea_network" }
 
+// DistanceType implements calc.DistanceTyper: the shortest path on the
+// maritime network is a shortest feasible distance.
+func (n *SeaNetwork) DistanceType(calc.Mode) string { return calc.DistSFD }
+
 func (n *SeaNetwork) shortest(ctx context.Context, src, dst int) (float64, error) {
 	if src == dst {
 		return 0, nil

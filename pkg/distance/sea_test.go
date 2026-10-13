@@ -69,6 +69,9 @@ func TestSeaNetwork_Routes(t *testing.T) {
 		t.Errorf("snap = %v", d)
 	}
 
+	if n.DistanceType(calc.Sea) != calc.DistSFD {
+		t.Error("sea network distances are shortest feasible")
+	}
 	if got := n.DistanceMethod(calc.Sea); got != "sea_network" {
 		t.Errorf("method = %q", got)
 	}

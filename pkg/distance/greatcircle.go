@@ -70,6 +70,15 @@ func (g GreatCircle) DistanceMethod(m calc.Mode) string {
 	return "great_circle"
 }
 
+// DistanceType implements calc.DistanceTyper: plain great-circle distance
+// is "gcd"; once adjusted it is an estimate of unknown type.
+func (g GreatCircle) DistanceType(m calc.Mode) string {
+	if _, ok := g.Adjust[m]; ok {
+		return ""
+	}
+	return calc.DistGCD
+}
+
 // Haversine returns the great-circle distance in km.
 func Haversine(a, b calc.Location) float64 {
 	lat1, lat2 := rad(a.Lat), rad(b.Lat)

@@ -528,7 +528,8 @@
       "ttw_g_per_tkm": 4603.97,
       "wtt_g_per_tkm": 574.29,
       "source": "DESNZ 2026: Freighting goods \u003e Freight flights \u003e Domestic, to/from UK \u003e With RF",
-      "year": 2026
+      "year": 2026,
+      "distance_basis": "gcd"
     },
     {
       "mode": "air",
@@ -536,7 +537,8 @@
       "ttw_g_per_tkm": 2719.31,
       "wtt_g_per_tkm": 574.29,
       "source": "DESNZ 2026: Freighting goods \u003e Freight flights \u003e Domestic, to/from UK \u003e Without RF",
-      "year": 2026
+      "year": 2026,
+      "distance_basis": "gcd"
     },
     {
       "mode": "air",
@@ -544,7 +546,8 @@
       "ttw_g_per_tkm": 1278.35,
       "wtt_g_per_tkm": 205.15,
       "source": "DESNZ 2026: Freighting goods \u003e Freight flights \u003e Short-haul, to/from UK \u003e With RF",
-      "year": 2026
+      "year": 2026,
+      "distance_basis": "gcd"
     },
     {
       "mode": "air",
@@ -552,7 +555,8 @@
       "ttw_g_per_tkm": 755.39,
       "wtt_g_per_tkm": 205.15,
       "source": "DESNZ 2026: Freighting goods \u003e Freight flights \u003e Short-haul, to/from UK \u003e Without RF",
-      "year": 2026
+      "year": 2026,
+      "distance_basis": "gcd"
     },
     {
       "mode": "air",
@@ -560,7 +564,8 @@
       "ttw_g_per_tkm": 899.39,
       "wtt_g_per_tkm": 135.16,
       "source": "DESNZ 2026: Freighting goods \u003e Freight flights \u003e Long-haul, to/from UK \u003e With RF",
-      "year": 2026
+      "year": 2026,
+      "distance_basis": "gcd"
     },
     {
       "mode": "air",
@@ -568,7 +573,8 @@
       "ttw_g_per_tkm": 531.3,
       "wtt_g_per_tkm": 135.16,
       "source": "DESNZ 2026: Freighting goods \u003e Freight flights \u003e Long-haul, to/from UK \u003e Without RF",
-      "year": 2026
+      "year": 2026,
+      "distance_basis": "gcd"
     },
     {
       "mode": "air",
@@ -576,7 +582,8 @@
       "ttw_g_per_tkm": 899.39,
       "wtt_g_per_tkm": 135.16,
       "source": "DESNZ 2026: Freighting goods \u003e Freight flights \u003e International, to/from non-UK \u003e With RF",
-      "year": 2026
+      "year": 2026,
+      "distance_basis": "gcd"
     },
     {
       "mode": "air",
@@ -584,7 +591,8 @@
       "ttw_g_per_tkm": 531.3,
       "wtt_g_per_tkm": 135.16,
       "source": "DESNZ 2026: Freighting goods \u003e Freight flights \u003e International, to/from non-UK \u003e Without RF",
-      "year": 2026
+      "year": 2026,
+      "distance_basis": "gcd"
     },
     {
       "mode": "rail",
@@ -2350,13 +2358,6 @@
       "year": 2026
     }
   ],
-  "distance_adjustments": [
-    {
-      "mode": "air",
-      "add_km": 95,
-      "source": "EN 16258 convention: great-circle distance + 95 km for take-off and landing (also used by EcoTransIT World)"
-    }
-  ],
   "vehicle_aliases": [
     {
       "mode": "road",
@@ -2438,6 +2439,22 @@
     "marine_gas_oil": "liquid_fuels/marine_gas_oil/litres",
     "petrol": "liquid_fuels/petrol_average_biofuel_blend/litres"
   },
+  "dafs": [
+    {
+      "mode": "air",
+      "from": "actual",
+      "to": "gcd",
+      "add_km": -95,
+      "source": "GLEC Framework v3.2, Section 1 Chapter 4 (air): without specific data, DAF = GCD / (GCD + 95 km), i.e. actual flown distance minus 95 km"
+    },
+    {
+      "mode": "sea",
+      "from": "sfd",
+      "to": "actual",
+      "multiplier": 1.15,
+      "source": "GLEC Framework v3.2, Section 1 Chapter 4 (sea), citing Clean Cargo: actual container distances average 15% above the shortest feasible route"
+    }
+  ],
   "load_models": [
     {
       "mode": "road",

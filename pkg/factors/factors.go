@@ -46,6 +46,8 @@ type Dataset struct {
 	// ContainerLoads maps profile names (e.g. "average") to net cargo
 	// tonnes per TEU, for shipments given in TEU.
 	ContainerLoads map[string]float64 `json:"container_loads,omitempty"`
+	// DAFs convert a leg's distance type into a factor's distance basis.
+	DAFs []calc.DAF `json:"dafs,omitempty"`
 	// LoadModels give load-dependent emissions per vehicle class.
 	LoadModels []calc.LoadModel `json:"load_models,omitempty"`
 	// Grids give electricity carbon intensity per country. Datasets without
@@ -55,6 +57,7 @@ type Dataset struct {
 
 	legIdx  map[string]calc.Factor
 	loadIdx map[string]calc.LoadModel
+	dafIdx  map[string]calc.DAF
 	gridIdx map[string]calc.GridFactor
 	hubIdx  map[string]calc.HubFactor
 	fuelIdx map[string]calc.FuelFactor
@@ -173,6 +176,7 @@ func mergeInto(dst *Dataset, src Dataset) error {
 	dst.Hubs = append(dst.Hubs, src.Hubs...)
 	dst.Fuels = append(dst.Fuels, src.Fuels...)
 	dst.LoadModels = append(dst.LoadModels, src.LoadModels...)
+	dst.DAFs = append(dst.DAFs, src.DAFs...)
 	dst.VehicleAliases = append(dst.VehicleAliases, src.VehicleAliases...)
 	dst.Grids = append(dst.Grids, src.Grids...)
 	if src.GridNote != "" {
@@ -228,6 +232,11 @@ func Parse(r io.Reader) (*Dataset, error) {
 		if f.TTW < 0 || f.WTT < 0 {
 			return nil, fmt.Errorf("negative factor for %s/%s", f.Mode, f.VehicleType)
 		}
+		switch f.DistanceBasis {
+		case "", calc.DistSFD, calc.DistGCD, calc.DistActual:
+		default:
+			return nil, fmt.Errorf("factor %s/%s: distance_basis must be sfd, gcd or actual", f.Mode, f.VehicleType)
+		}
 		k := legKey(f.Mode, f.VehicleType)
 		if _, dup := d.legIdx[k]; dup {
 			return nil, fmt.Errorf("duplicate factor for %s", k)
@@ -267,6 +276,17 @@ func Parse(r io.Reader) (*Dataset, error) {
 			return nil, fmt.Errorf("vehicle alias %s clashes with an existing vehicle type", k)
 		}
 		d.legIdx[k] = target
+	}
+	d.dafIdx = make(map[string]calc.DAF, len(d.DAFs))
+	for _, x := range d.DAFs {
+		if err := x.Validate(); err != nil {
+			return nil, err
+		}
+		k := dafKey(x.Mode, x.From, x.To)
+		if _, dup := d.dafIdx[k]; dup {
+			return nil, fmt.Errorf("duplicate DAF %s", k)
+		}
+		d.dafIdx[k] = x
 	}
 	d.loadIdx = make(map[string]calc.LoadModel, len(d.LoadModels))
 	for _, m := range d.LoadModels {
@@ -373,6 +393,14 @@ func (d *Dataset) LoadModel(m calc.Mode, vt string) (calc.LoadModel, error) {
 	return calc.LoadModel{}, fmt.Errorf("no load model for %s/%s in dataset %q", m, vt, d.Name)
 }
 
+func dafKey(m calc.Mode, from, to string) string { return string(m) + " " + from + "->" + to }
+
+// DAF implements calc.DAFProvider.
+func (d *Dataset) DAF(m calc.Mode, from, to string) (calc.DAF, bool) {
+	x, ok := d.dafIdx[dafKey(m, from, to)]
+	return x, ok
+}
+
 // DatasetName implements calc.DatasetNamer.
 func (d *Dataset) DatasetName() string { return d.Name }
 
@@ -428,4 +456,5 @@ var (
 	_ calc.LoadModelProvider     = (*Dataset)(nil)
 	_ calc.GridProvider          = (*Dataset)(nil)
 	_ calc.DatasetNamer          = (*Dataset)(nil)
+	_ calc.DAFProvider           = (*Dataset)(nil)
 )
