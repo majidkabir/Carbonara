@@ -177,3 +177,40 @@ func TestEsc(t *testing.T) {
 		t.Error("num")
 	}
 }
+
+// A road leg with a ferry crossing and a rail leg with an electrified part:
+// each part is reported under its own mode, energy carrier and data type.
+func TestReport_LegParts(t *testing.T) {
+	b := New(Meta{})
+	b.Add("x", calc.Result{WeightKg: 10_000, Legs: []calc.LegResult{
+		{Mode: calc.Road, TonneKm: 1000, TTWKg: 108, WTTKg: 26, WTWKg: 134, Method: calc.MethodIntensity, DataType: calc.DataDefault,
+			Factor: &calc.Factor{Source: "truck"}, Parts: []calc.LegPart{{Kind: calc.PartFerry, Mode: calc.Sea, TonneKm: 200,
+				TTWKg: 60, WTTKg: 14, WTWKg: 74, Method: calc.MethodIntensity, DataType: calc.DataDefault, Factor: &calc.Factor{Source: "ferry"}}}},
+		{Mode: calc.Rail, TonneKm: 4000, TTWKg: 12, WTTKg: 13.2, WTWKg: 25.2, Method: calc.MethodIntensity, DataType: calc.DataDefault,
+			Factor: &calc.Factor{Source: "diesel train"}, Parts: []calc.LegPart{{Kind: calc.PartElectrified, Mode: calc.Rail, TonneKm: 3400,
+				WTTKg: 10.2, WTWKg: 10.2, Method: calc.MethodEnergy, DataType: calc.DataModelled, Country: "DNK", EnergyKWhPerTkm: 0.03,
+				Factor: &calc.Factor{Source: "grid"}}}},
+	}}, nil)
+	r := b.Report()
+	modes := map[calc.Mode]Mode{}
+	for _, m := range r.Modes {
+		modes[m.Mode] = m
+	}
+	near(t, "road wtw", modes[calc.Road].WTWKg, 60)
+	near(t, "road tkm", modes[calc.Road].TonneKm, 800)
+	near(t, "sea wtw", modes[calc.Sea].WTWKg, 74)
+	near(t, "rail wtw", modes[calc.Rail].WTWKg, 25.2)
+	near(t, "total", r.Total.WTWKg, 159.2)
+	near(t, "modelled", r.Data.Modelled, 10.2/159.2)
+	if r.Coverage.Legs != 2 {
+		t.Errorf("legs %d", r.Coverage.Legs)
+	}
+	carriers := map[string]float64{}
+	for _, e := range r.Energy {
+		carriers[e.Carrier] = e.WTWKg
+	}
+	near(t, "electricity", carriers["electricity/DNK"], 10.2)
+	if len(r.Data.Models) != 1 || r.Data.Models[0].Parameters["countries"] != "DNK" {
+		t.Errorf("models %+v", r.Data.Models)
+	}
+}

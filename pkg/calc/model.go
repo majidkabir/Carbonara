@@ -159,6 +159,13 @@ type LegResult struct {
 	// Set for the energy method.
 	EnergyKWhPerTkm float64 `json:"energy_kwh_per_tkm,omitempty"`
 	Country         string  `json:"country,omitempty"`
+	// RouteParts is the routed distance by kind (e.g. ferry, electrified),
+	// when the distance provider reports it.
+	RouteParts map[string]float64 `json:"route_parts_km,omitempty"`
+	// Parts are calculated separately and included in the leg's totals:
+	// a ferry crossing on a road leg, or the electrified track of a rail
+	// leg. Method and Factor above describe the rest of the leg.
+	Parts []LegPart `json:"parts,omitempty"`
 }
 
 // HubResult is the outcome for one hub stop.

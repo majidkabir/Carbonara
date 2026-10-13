@@ -38,6 +38,9 @@ const DistanceGiven = "given"
 type Calculator struct {
 	Factors   FactorProvider
 	Distances DistanceProvider
+	// FerryVehicle is the sea vehicle type for ferry crossings found on
+	// road routes (default DefaultFerryVehicle).
+	FerryVehicle string
 }
 
 // Input errors returned by Calculate. Wrapped errors carry details; match
@@ -127,8 +130,15 @@ func (c Calculator) Calculate(ctx context.Context, s Shipment) (Result, error) {
 	}
 	var primary float64
 	for _, l := range res.Legs {
+		main := l.WTWKg
+		for _, p := range l.Parts {
+			main -= p.WTWKg
+			if p.DataType == DataPrimary {
+				primary += p.WTWKg
+			}
+		}
 		if l.DataType == DataPrimary {
-			primary += l.WTWKg
+			primary += main
 		}
 	}
 	for _, h := range res.Hubs {
@@ -193,12 +203,61 @@ func (c Calculator) weight(s Shipment) (float64, string, error) {
 }
 
 func (c Calculator) leg(ctx context.Context, tonnes float64, leg Leg) (LegResult, error) {
-	dist, method, dtype, err := c.distance(ctx, leg)
+	dist, method, dtype, routeParts, err := c.distance(ctx, leg)
 	if err != nil {
 		return LegResult{}, err
 	}
-	tkm := tonnes * dist
-	lr := LegResult{LegID: leg.ID, Mode: leg.Mode, VehicleType: leg.VehicleType, DistanceKm: dist, DistanceMethod: method, DistanceType: dtype, TonneKm: tkm}
+
+	// Split off parts calculated differently, and calculate the rest of the
+	// leg (mainKm) as usual.
+	mainKm := dist
+	var parts []LegPart
+	if ferryKm := routeParts[PartFerry]; leg.Mode == Road && ferryKm > 0 {
+		if ferryKm >= dist {
+			return LegResult{}, fmt.Errorf("%w: the road route is all ferry; give it as a sea leg", ErrInvalidInput)
+		}
+		p, err := c.ferry(tonnes, ferryKm, dtype)
+		if err != nil {
+			return LegResult{}, err
+		}
+		parts = append(parts, p)
+		mainKm -= ferryKm
+	}
+	// Electric rail with known non-electrified track: that track runs on
+	// the vehicle's own factor (diesel), the rest on electricity. Track with
+	// unknown electrification follows the input (electric).
+	if dieselKm := routeParts[PartNotElectrified]; leg.Mode == Rail && leg.EnergyKWhPerTkm != 0 && dieselKm > 0 && dieselKm < dist {
+		p, err := c.electricPart(tonnes, dist-dieselKm, leg)
+		if err != nil {
+			return LegResult{}, err
+		}
+		parts = append(parts, p)
+		mainKm = dieselKm
+		leg.EnergyKWhPerTkm, leg.Country = 0, ""
+	} else if leg.Mode == Rail && leg.EnergyKWhPerTkm != 0 && dieselKm >= dist {
+		// No electrified track at all: the vehicle's own factor for all of it.
+		leg.EnergyKWhPerTkm, leg.Country = 0, ""
+	}
+
+	lr, err := c.main(tonnes, mainKm, dtype, leg)
+	if err != nil {
+		return LegResult{}, err
+	}
+	lr.LegID, lr.Mode, lr.VehicleType = leg.ID, leg.Mode, leg.VehicleType
+	lr.DistanceKm, lr.DistanceMethod, lr.DistanceType = dist, method, dtype
+	lr.TonneKm = tonnes * dist
+	lr.RouteParts = routeParts
+	for _, p := range parts {
+		lr.TTWKg += p.TTWKg
+		lr.WTWKg += p.WTWKg
+	}
+	lr.Parts = parts
+	return lr, nil
+}
+
+// main calculates a leg, or the part of it left after LegParts, over km.
+func (c Calculator) main(tonnes, dist float64, dtype string, leg Leg) (LegResult, error) {
+	lr := LegResult{TonneKm: tonnes * dist}
 
 	methods := 0
 	for _, set := range []bool{leg.Fuel != nil, leg.LoadFactor != 0, leg.EnergyKWhPerTkm != 0} {
@@ -234,7 +293,7 @@ func (c Calculator) leg(ctx context.Context, tonnes float64, leg Leg) (LegResult
 	if err != nil {
 		return LegResult{}, err
 	}
-	if daf != nil {
+	if daf != nil && dist > 0 {
 		lr.DAF, lr.DAFSource = adjKm/dist, daf.Source
 	}
 	adjTkm := tonnes * adjKm
@@ -295,19 +354,31 @@ func (c Calculator) loadLeg(lr LegResult, leg Leg) (LegResult, error) {
 	return lr, nil
 }
 
-func (c Calculator) distance(ctx context.Context, leg Leg) (km float64, method, dtype string, err error) {
+func (c Calculator) distance(ctx context.Context, leg Leg) (km float64, method, dtype string, parts map[string]float64, err error) {
 	if leg.DistanceKm > 0 {
-		return leg.DistanceKm, DistanceGiven, leg.DistanceType, nil
+		return leg.DistanceKm, DistanceGiven, leg.DistanceType, nil, nil
 	}
 	if leg.DistanceType != "" {
-		return 0, "", "", fmt.Errorf("%w: distance_type describes distance_km, which is not given", ErrInvalidInput)
+		return 0, "", "", nil, fmt.Errorf("%w: distance_type describes distance_km, which is not given", ErrInvalidInput)
 	}
 	if c.Distances == nil {
-		return 0, "", "", errors.New("no distance given and no distance provider")
+		return 0, "", "", nil, errors.New("no distance given and no distance provider")
 	}
-	d, err := c.Distances.Distance(ctx, leg.Mode, leg.From, leg.To)
+	var d float64
+	if r, ok := c.Distances.(Router); ok {
+		var rt Route
+		rt, err = r.Route(ctx, leg.Mode, leg.From, leg.To)
+		d, parts = rt.Km, rt.Parts
+	} else {
+		d, err = c.Distances.Distance(ctx, leg.Mode, leg.From, leg.To)
+	}
 	if err != nil {
-		return 0, "", "", fmt.Errorf("distance: %w", err)
+		return 0, "", "", nil, fmt.Errorf("distance: %w", err)
+	}
+	for k, v := range parts {
+		if !(v >= 0) || v > d*(1+1e-9) {
+			return 0, "", "", nil, fmt.Errorf("distance: route part %s of %v km in a %v km route", k, v, d)
+		}
 	}
 	if dm, ok := c.Distances.(DistanceMethoder); ok {
 		method = dm.DistanceMethod(leg.Mode)
@@ -315,5 +386,5 @@ func (c Calculator) distance(ctx context.Context, leg Leg) (km float64, method, 
 	if dt, ok := c.Distances.(DistanceTyper); ok {
 		dtype = dt.DistanceType(leg.Mode)
 	}
-	return d, method, dtype, nil
+	return d, method, dtype, parts, nil
 }

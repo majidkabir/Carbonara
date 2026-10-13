@@ -147,6 +147,10 @@ docker compose -f compose.yaml -f compose.rail.yaml up -d
 
 It works with any region, and combines with the waterway file. CI routes Saarbrücken–Saarlouis on Saarland's map each week. Without it, rail legs given as coordinates use the great-circle distance, which undercounts real track distance.
 
+**Ferries on road routes.** When a routed road leg crosses water by ferry, those kilometres are calculated as a sea part with `-ferry-vehicle` (default `ropax`, DESNZ's large RoPax ferry), and the rest with the truck. The leg's result lists the ferry under `parts`, and reports credit it to sea. CI checks this on the Faroe Islands, where Tórshavn–Tvøroyri needs the Suðuroy ferry.
+
+**Electrified rail.** The rail profile records which track is electrified (OpenStreetMap's `electrified` tag); results show it as `route_parts_km`. When a rail leg also has `energy_kwh_per_tkm` and `country`, track tagged `electrified=no` is calculated with the vehicle type's own factor (diesel), and the rest on that country's grid, as EcoTransIT does. Track with no tag is treated as electric, following your input. There's no default energy figure for electric freight trains: give your operator's.
+
 ### Inland waterway routing
 
 [`deploy/barge.lua`](deploy/barge.lua) is an OSRM profile that routes along OpenStreetMap waterways a freight barge can use: CEMT class I or higher, `ship=yes`, canals with `usage=transportation`, and fairways. Routes are the shortest such path, so they're shortest feasible distances, and the inland waterway factors need no DAF on them (GLEC). Points more than `-waterway-max-snap-km` (default 10 km) from a navigable waterway are refused.

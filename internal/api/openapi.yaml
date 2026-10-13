@@ -293,6 +293,31 @@ components:
         factor: { $ref: "#/components/schemas/Factor" }
         fuel_factor: { $ref: "#/components/schemas/FuelFactor" }
         allocation_share: { type: number }
+        route_parts_km:
+          type: object
+          additionalProperties: { type: number }
+          description: "Routed km by kind: ferry (road), electrified, not_electrified, electrification_unknown (rail)"
+        parts:
+          type: array
+          description: Parts calculated separately and included in the leg's totals
+          items: { $ref: "#/components/schemas/LegPart" }
+    LegPart:
+      type: object
+      properties:
+        kind: { type: string, enum: [ferry, electrified] }
+        mode: { $ref: "#/components/schemas/Mode" }
+        distance_km: { type: number }
+        tonne_km: { type: number }
+        ttw_kg: { type: number }
+        wtt_kg: { type: number }
+        wtw_kg: { type: number }
+        method: { type: string }
+        data_type: { $ref: "#/components/schemas/DataType" }
+        factor: { $ref: "#/components/schemas/Factor" }
+        daf: { type: number }
+        daf_source: { type: string }
+        energy_kwh_per_tkm: { type: number }
+        country: { type: string }
     Result:
       type: object
       properties:

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"strings"
@@ -31,9 +32,28 @@ type OSRM struct {
 	// MaxSnapKm rejects points farther than this from the routable network
 	// (0 = no limit). OSRM snaps a point to the nearest edge however far.
 	MaxSnapKm float64
+	// PartModes maps OSRM travel modes of route steps (e.g. "ferry") to
+	// calc route part kinds (e.g. calc.PartFerry). When set, routes are
+	// fetched with steps and Route reports the km of each part.
+	PartModes map[string]string
 
 	mu    sync.Mutex
-	cache map[string]float64
+	cache map[string]calc.Route
+}
+
+// RoadParts reports ferry crossings on road routes (OSRM's car profile
+// gives ferries the "ferry" mode).
+var RoadParts = map[string]string{"ferry": calc.PartFerry}
+
+// RailParts reports electrification on rail routes. deploy/rail.lua marks
+// electrified track with OSRM's "train" mode, track tagged
+// electrified=no with "driving", and track without the tag with
+// "cycling": OSRM splits steps where the mode changes, and these are only
+// labels.
+var RailParts = map[string]string{
+	"train":   calc.PartElectrified,
+	"driving": calc.PartNotElectrified,
+	"cycling": calc.PartElectrificationUnknown,
 }
 
 // maxCacheEntries bounds the per-process route cache.
@@ -50,12 +70,24 @@ func NewOSRM(baseURL string) (*OSRM, error) {
 
 // Distance implements calc.DistanceProvider. The mode is ignored: OSRM routes
 // whatever its profile is built for.
-func (o *OSRM) Distance(ctx context.Context, _ calc.Mode, from, to calc.Location) (float64, error) {
+func (o *OSRM) Distance(ctx context.Context, m calc.Mode, from, to calc.Location) (float64, error) {
+	r, err := o.Route(ctx, m, from, to)
+	return r.Km, err
+}
+
+// maxResponse caps an OSRM response; routes with steps are much larger.
+const (
+	maxResponse      = 1 << 20
+	maxStepsResponse = 64 << 20
+)
+
+// Route implements calc.Router.
+func (o *OSRM) Route(ctx context.Context, _ calc.Mode, from, to calc.Location) (calc.Route, error) {
 	key := fmt.Sprintf("%.5f,%.5f;%.5f,%.5f", from.Lon, from.Lat, to.Lon, to.Lat)
 	o.mu.Lock()
-	if d, ok := o.cache[key]; ok {
+	if r, ok := o.cache[key]; ok {
 		o.mu.Unlock()
-		return d, nil
+		return r, nil
 	}
 	o.mu.Unlock()
 
@@ -63,11 +95,15 @@ func (o *OSRM) Distance(ctx context.Context, _ calc.Mode, from, to calc.Location
 	if profile == "" {
 		profile = "driving"
 	}
-	u := fmt.Sprintf("%s/route/v1/%s/%s?overview=false&alternatives=false&steps=false",
-		o.BaseURL, url.PathEscape(profile), key)
+	steps, limit := "false", int64(maxResponse)
+	if len(o.PartModes) > 0 {
+		steps, limit = "true", maxStepsResponse
+	}
+	u := fmt.Sprintf("%s/route/v1/%s/%s?overview=false&alternatives=false&steps=%s&geometries=polyline",
+		o.BaseURL, url.PathEscape(profile), key, steps)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
-		return 0, err
+		return calc.Route{}, err
 	}
 	client := o.Client
 	if client == nil {
@@ -75,7 +111,7 @@ func (o *OSRM) Distance(ctx context.Context, _ calc.Mode, from, to calc.Location
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return 0, fmt.Errorf("osrm: %w", err)
+		return calc.Route{}, fmt.Errorf("osrm: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -84,19 +120,25 @@ func (o *OSRM) Distance(ctx context.Context, _ calc.Mode, from, to calc.Location
 		Message string `json:"message"`
 		Routes  []struct {
 			Distance float64 `json:"distance"` // metres
+			Legs     []struct {
+				Steps []struct {
+					Distance float64 `json:"distance"`
+					Mode     string  `json:"mode"`
+				} `json:"steps"`
+			} `json:"legs"`
 		} `json:"routes"`
 		Waypoints []struct {
 			Distance float64 `json:"distance"` // metres from the input point to the network
 		} `json:"waypoints"`
 	}
-	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&body); err != nil {
-		return 0, fmt.Errorf("osrm: HTTP %d, unreadable response: %w", resp.StatusCode, err)
+	if err := json.NewDecoder(io.LimitReader(resp.Body, limit)).Decode(&body); err != nil {
+		return calc.Route{}, fmt.Errorf("osrm: HTTP %d, unreadable response: %w", resp.StatusCode, err)
 	}
 	if body.Code != "Ok" {
-		return 0, fmt.Errorf("osrm: %s: %s", body.Code, body.Message)
+		return calc.Route{}, fmt.Errorf("osrm: %s: %s", body.Code, body.Message)
 	}
 	if len(body.Routes) == 0 {
-		return 0, errors.New("osrm: no route")
+		return calc.Route{}, errors.New("osrm: no route")
 	}
 	if o.MaxSnapKm > 0 {
 		for i, w := range body.Waypoints {
@@ -105,20 +147,33 @@ func (o *OSRM) Distance(ctx context.Context, _ calc.Mode, from, to calc.Location
 				if i > 0 {
 					end = "destination"
 				}
-				return 0, fmt.Errorf("osrm: %s is %.1f km from the nearest %s network edge (limit %.0f km)",
+				return calc.Route{}, fmt.Errorf("osrm: %s is %.1f km from the nearest %s network edge (limit %.0f km)",
 					end, w.Distance/1000, o.DistanceMethod(""), o.MaxSnapKm)
 			}
 		}
 	}
-	km := body.Routes[0].Distance / 1000
+	r := calc.Route{Km: body.Routes[0].Distance / 1000}
+	for _, leg := range body.Routes[0].Legs {
+		for _, st := range leg.Steps {
+			if kind, ok := o.PartModes[st.Mode]; ok && st.Distance > 0 {
+				if r.Parts == nil {
+					r.Parts = map[string]float64{}
+				}
+				r.Parts[kind] += st.Distance / 1000
+			}
+		}
+	}
+	for k, v := range r.Parts { // step distances are rounded; keep parts within the route
+		r.Parts[k] = math.Min(v, r.Km)
+	}
 
 	o.mu.Lock()
 	if o.cache == nil || len(o.cache) >= maxCacheEntries {
-		o.cache = make(map[string]float64)
+		o.cache = make(map[string]calc.Route)
 	}
-	o.cache[key] = km
+	o.cache[key] = r
 	o.mu.Unlock()
-	return km, nil
+	return r, nil
 }
 
 // DistanceMethod implements calc.DistanceMethoder.
@@ -161,6 +216,20 @@ func (b ByMode) DistanceType(m calc.Mode) string {
 		return dt.DistanceType(m)
 	}
 	return ""
+}
+
+// Route implements calc.Router: providers that can't break a route down
+// return it without parts.
+func (b ByMode) Route(ctx context.Context, m calc.Mode, from, to calc.Location) (calc.Route, error) {
+	p := b.pick(m)
+	if p == nil {
+		return calc.Route{}, fmt.Errorf("no distance provider for mode %s", m)
+	}
+	if r, ok := p.(calc.Router); ok {
+		return r.Route(ctx, m, from, to)
+	}
+	d, err := p.Distance(ctx, m, from, to)
+	return calc.Route{Km: d}, err
 }
 
 // DistanceMethod implements calc.DistanceMethoder.

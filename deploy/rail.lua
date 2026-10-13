@@ -10,6 +10,11 @@
 -- than 60 degrees and u-turns get a penalty of 100 km: a route only uses
 -- them when there is no other way.
 --
+-- Electrification is reported through the travel mode of each part of the
+-- route (Carbonara reads the route's steps): "train" for electrified track,
+-- "driving" for track tagged electrified=no, "cycling" for track without
+-- the tag. These are only labels; the modes don't change the routing.
+--
 -- Weights are distance, so routes are shortest feasible distances (SFD, in
 -- GLEC / ISO 14083 terms). Speeds are nominal and only used for durations,
 -- which Carbonara ignores.
@@ -61,12 +66,24 @@ end
 function process_node(profile, node, result, relations)
 end
 
+local function electrification_mode(way)
+  local e = way:get_value_by_key('electrified')
+  if not e then
+    return mode.cycling
+  end
+  if e == 'no' then
+    return mode.driving
+  end
+  return mode.train
+end
+
 function process_way(profile, way, result, relations)
   if not usable(way) then
     return
   end
-  result.forward_mode  = mode.train
-  result.backward_mode = mode.train
+  local m = electrification_mode(way)
+  result.forward_mode  = m
+  result.backward_mode = m
   result.forward_speed  = SPEED_KMH
   result.backward_speed = SPEED_KMH
   -- metres per unit of weight: weight = distance

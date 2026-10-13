@@ -146,3 +146,30 @@ func TestOSRM_Waterway(t *testing.T) {
 		t.Error("method or type")
 	}
 }
+
+func TestOSRM_RouteParts(t *testing.T) {
+	var calls int32
+	var path string
+	body := `{"code":"Ok","routes":[{"distance":120000,"legs":[
+		{"steps":[{"distance":50000,"mode":"driving"},{"distance":19000,"mode":"ferry"},{"distance":0,"mode":"ferry"}]},
+		{"steps":[{"distance":1500,"mode":"ferry"},{"distance":49500,"mode":"driving"}]}]}]}`
+	srv := fakeOSRM(t, body, 200, &calls, &path)
+	o, _ := NewOSRM(srv.URL)
+	o.PartModes = RoadParts
+	r, err := o.Route(context.Background(), calc.Road, copenhagen, hamburg)
+	if err != nil || r.Km != 120 || len(r.Parts) != 1 || r.Parts[calc.PartFerry] != 20.5 {
+		t.Errorf("route = %+v, %v", r, err)
+	}
+	// Distance and Route share the cache.
+	if d, _ := o.Distance(context.Background(), calc.Road, copenhagen, hamburg); d != 120 || calls != 1 {
+		t.Errorf("d = %v, calls = %d", d, calls)
+	}
+	// Through ByMode, and for a provider without parts.
+	b := ByMode{Providers: map[calc.Mode]calc.DistanceProvider{calc.Road: o}, Fallback: GreatCircle{}}
+	if r, _ := b.Route(context.Background(), calc.Road, copenhagen, hamburg); r.Parts[calc.PartFerry] != 20.5 {
+		t.Errorf("by mode %+v", r)
+	}
+	if r, err := b.Route(context.Background(), calc.Air, copenhagen, hamburg); err != nil || r.Parts != nil || r.Km < 280 {
+		t.Errorf("fallback %+v %v", r, err)
+	}
+}

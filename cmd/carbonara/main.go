@@ -79,6 +79,7 @@ type common struct {
 	factorFile, osrmURL, waterwayURL, railURL      string
 	seaNetwork, seaAvoid, seaOpen                  string
 	seaMaxSnapKm, waterwayMaxSnapKm, railMaxSnapKm float64
+	ferryVehicle                                   string
 }
 
 func (c *common) register(fs *flag.FlagSet) {
@@ -97,6 +98,8 @@ func (c *common) register(fs *flag.FlagSet) {
 		"OSRM server built with deploy/rail.lua for rail distances, also $CARBONARA_OSRM_RAIL_URL (default: great-circle)")
 	fs.Float64Var(&c.railMaxSnapKm, "rail-max-snap-km", 5,
 		"reject rail points farther than this from a railway line (0 = no limit)")
+	fs.StringVar(&c.ferryVehicle, "ferry-vehicle", calc.DefaultFerryVehicle,
+		"sea vehicle type for ferry crossings on routed road legs")
 	fs.StringVar(&c.seaNetwork, "sea-network", os.Getenv("CARBONARA_SEA_NETWORK"),
 		"maritime network GeoJSON for sea distances, also $CARBONARA_SEA_NETWORK (default: adjusted great-circle)")
 	fs.StringVar(&c.seaAvoid, "sea-avoid", "", "comma-separated passages to avoid, e.g. suez,panama")
@@ -127,6 +130,7 @@ func (c *common) calculator() (calc.Calculator, *factors.Dataset, error) {
 		if err != nil {
 			return calc.Calculator{}, nil, err
 		}
+		o.PartModes = distance.RoadParts
 		routed[calc.Road] = o
 	}
 	if c.waterwayURL != "" {
@@ -142,7 +146,7 @@ func (c *common) calculator() (calc.Calculator, *factors.Dataset, error) {
 		if err != nil {
 			return calc.Calculator{}, nil, err
 		}
-		o.Method, o.MaxSnapKm = "osrm_rail", c.railMaxSnapKm
+		o.Method, o.MaxSnapKm, o.PartModes = "osrm_rail", c.railMaxSnapKm, distance.RailParts
 		routed[calc.Rail] = o
 	}
 	if c.seaNetwork != "" {
@@ -156,7 +160,7 @@ func (c *common) calculator() (calc.Calculator, *factors.Dataset, error) {
 	if len(routed) > 0 {
 		dist = distance.ByMode{Providers: routed, Fallback: dist}
 	}
-	return calc.Calculator{Factors: ds, Distances: dist}, ds, nil
+	return calc.Calculator{Factors: ds, Distances: dist, FerryVehicle: c.ferryVehicle}, ds, nil
 }
 
 func (c *common) loadSea() (*distance.SeaNetwork, error) {

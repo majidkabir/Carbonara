@@ -368,6 +368,19 @@ function render(req, r) {
     } else {
       how = `${fmt((f.ttw_g_per_tkm || 0) + (f.wtt_g_per_tkm || 0), 2)} g CO₂e per tonne-km. ${esc(f.source)}`;
     }
+    const partName = { ferry: "by ferry", electrified: "on electrified track" };
+    for (const p of l.parts || []) {
+      const pf = p.factor || {};
+      how += `<br>Includes ${fmt(p.distance_km, 0)} km ${partName[p.kind] || esc(p.kind)}: ${kg(p.wtw_kg)}, ` +
+        `${fmt((pf.ttw_g_per_tkm || 0) + (pf.wtt_g_per_tkm || 0), 2)} g CO₂e per tonne-km. ${esc(pf.source)}`;
+    }
+    const rp = l.route_parts_km || {};
+    const track = (rp.electrified || 0) + (rp.not_electrified || 0) + (rp.electrification_unknown || 0);
+    if (track > 0 && !(l.parts || []).length) {
+      how += `<br>Track: ${fmt((rp.electrified || 0) / l.distance_km * 100, 0)}% electrified, ` +
+        `${fmt((rp.not_electrified || 0) / l.distance_km * 100, 0)}% not, the rest unknown. ` +
+        `Give energy per tonne-km and a country to calculate the electrified part on the grid.`;
+    }
     const vt = f.vehicle_type || req.legs[i].vehicle_type || "";
     return `<tr>
       <td><strong>Leg ${i + 1}</strong> ${esc((modeName[req.legs[i].mode] || "").toLowerCase())}</td>

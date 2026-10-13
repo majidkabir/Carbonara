@@ -252,8 +252,28 @@ func (b *Builder) Add(id string, r calc.Result, err error) {
 	}
 }
 
+// leg adds a leg: the parts calculated separately (a ferry crossing, the
+// electrified track) under their own mode, energy and data type, and the
+// rest under the leg's.
 func (b *Builder) leg(l calc.LegResult) {
 	b.cov.Legs++
+	main := l
+	main.Parts = nil
+	for _, p := range l.Parts {
+		main.TonneKm -= p.TonneKm
+		main.TTWKg -= p.TTWKg
+		main.WTTKg -= p.WTTKg
+		main.WTWKg -= p.WTWKg
+		b.element(calc.LegResult{Mode: p.Mode, VehicleType: l.VehicleType, DistanceType: l.DistanceType,
+			TonneKm: p.TonneKm, TTWKg: p.TTWKg, WTTKg: p.WTTKg, WTWKg: p.WTWKg, Method: p.Method,
+			DataType: p.DataType, Factor: p.Factor, DAF: p.DAF, DAFSource: p.DAFSource,
+			EnergyKWhPerTkm: p.EnergyKWhPerTkm, Country: p.Country})
+	}
+	b.element(main)
+}
+
+// element adds one leg, or one part of a leg.
+func (b *Builder) element(l calc.LegResult) {
 	m := b.modes[l.Mode]
 	if m == nil {
 		m = &Mode{Mode: l.Mode}
