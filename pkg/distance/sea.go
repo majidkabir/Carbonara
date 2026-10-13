@@ -108,8 +108,12 @@ func LoadSeaNetwork(r io.Reader) (*SeaNetwork, error) {
 			}
 		}
 	}
-	if len(n.nodes) == 0 {
-		return nil, errors.New("sea network: no line features")
+	edges := 0
+	for _, es := range n.adj {
+		edges += len(es)
+	}
+	if edges == 0 {
+		return nil, errors.New("sea network: no line segments")
 	}
 	return n, nil
 }
@@ -162,6 +166,9 @@ func (n *SeaNetwork) nearest(p calc.Location) (int, float64) {
 func (n *SeaNetwork) Distance(ctx context.Context, _ calc.Mode, from, to calc.Location) (float64, error) {
 	a, snapA := n.nearest(from)
 	b, snapB := n.nearest(to)
+	if a < 0 || b < 0 {
+		return 0, errors.New("sea network: no connected nodes")
+	}
 	if n.MaxSnapKm > 0 {
 		if snapA > n.MaxSnapKm {
 			return 0, fmt.Errorf("sea network: origin is %.0f km from the network (max %.0f)", snapA, n.MaxSnapKm)

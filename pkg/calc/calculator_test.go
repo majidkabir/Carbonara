@@ -325,3 +325,29 @@ func TestCalculate_ReportFields(t *testing.T) {
 		t.Errorf("hub = %+v", r.Hubs[0])
 	}
 }
+
+// Property: any input either errors or gives finite, non-negative results.
+func FuzzCalculate_Finite(f *testing.F) {
+	f.Add(1000.0, 100.0, 0.0, 0.0, 55.0, 12.0, 53.0, 10.0, 0.0, 0.0)
+	f.Add(1e300, 1e300, 0.5, 0.2, 0.0, 0.0, 0.0, 0.0, 2.0, 1e6)
+	c := Calculator{Factors: withModels{testFactors}, Distances: fixedDistance(100)}
+	f.Fuzz(func(t *testing.T, w, d, lf, etf, lat1, lon1, lat2, lon2, teu, fuel float64) {
+		s := Shipment{WeightKg: w, Legs: []Leg{{Mode: Road, VehicleType: "truck", DistanceKm: d, LoadFactor: lf,
+			EmptyTripFactor: etf, From: Location{Lat: lat1, Lon: lon1}, To: Location{Lat: lat2, Lon: lon2}}}}
+		if teu != 0 {
+			s.WeightKg, s.TEU, s.TEUNetTonnes = 0, teu, 10
+		}
+		if fuel != 0 {
+			s.Legs = append(s.Legs, Leg{Mode: Road, DistanceKm: d, Fuel: &FuelUse{Fuel: "diesel", Amount: fuel}})
+		}
+		r, err := c.Calculate(context.Background(), s)
+		if err != nil {
+			return
+		}
+		for _, v := range []float64{r.WeightKg, r.TonneKm, r.TTWKg, r.WTTKg, r.WTWKg, r.IntensityG, r.PrimaryDataShare} {
+			if math.IsNaN(v) || math.IsInf(v, 0) || v < -1e-9 {
+				t.Fatalf("bad result %v in %+v", v, r)
+			}
+		}
+	})
+}

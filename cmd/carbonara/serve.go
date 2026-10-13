@@ -19,6 +19,9 @@ func runServe(args []string) error {
 	var c common
 	c.register(fs)
 	addr := fs.String("addr", envOr("CARBONARA_ADDR", ":8080"), "listen address")
+	maxConcurrent := fs.Int("max-concurrent", 0, "calculation requests at once; more get 503 (default 4 x CPUs)")
+	timeout := fs.Duration("request-timeout", 30*time.Second, "time limit per calculation request; past it 504")
+	maxLegs := fs.Int("max-legs", 100, "legs (and hubs) allowed per shipment")
 	_ = fs.Parse(args)
 
 	calculator, ds, err := c.calculator()
@@ -27,12 +30,14 @@ func runServe(args []string) error {
 	}
 	log := slog.New(slog.NewJSONHandler(os.Stderr, nil))
 	srv := &http.Server{
-		Addr:              *addr,
-		Handler:           (&api.Server{Calc: calculator, Factors: ds, Log: log}).Handler(),
+		Addr: *addr,
+		Handler: (&api.Server{Calc: calculator, Factors: ds, Log: log,
+			Limits: api.Limits{MaxConcurrent: *maxConcurrent, Timeout: *timeout, MaxLegs: *maxLegs}}).Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       30 * time.Second,
-		WriteTimeout:      60 * time.Second,
+		WriteTimeout:      *timeout + 30*time.Second, // room to write the 504 after a timeout
 		IdleTimeout:       120 * time.Second,
+		MaxHeaderBytes:    64 << 10,
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

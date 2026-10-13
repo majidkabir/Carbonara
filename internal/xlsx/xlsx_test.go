@@ -1,8 +1,10 @@
 package xlsx
 
 import (
+	"bytes"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -85,5 +87,30 @@ func TestOpen_NotZip(t *testing.T) {
 	st, _ := fh.Stat()
 	if _, err := Open(fh, st.Size()); err == nil {
 		t.Error("want error for non-zip input")
+	}
+}
+
+func TestRows_Hostile(t *testing.T) {
+	for name, sheet := range map[string]string{
+		"negative row":   `<worksheet><sheetData><row r="-3"><c><v>1</v></c></row></sheetData></worksheet>`,
+		"huge row":       `<worksheet><sheetData><row r="50000000"><c><v>1</v></c></row></sheetData></worksheet>`,
+		"overflow col":   `<worksheet><sheetData><row r="1"><c r="AAAAAAAAAAAAAAAAAA1"><v>1</v></c></row></sheetData></worksheet>`,
+		"col past XFD":   `<worksheet><sheetData><row r="1"><c r="XFE1"><v>1</v></c></row></sheetData></worksheet>`,
+		"too many cells": `<worksheet><sheetData>` + strings.Repeat(`<row><c r="XFD1"><v>1</v></c></row>`, 300) + `</sheetData></worksheet>`,
+	} {
+		b := buildXLSX(sheet, "")
+		f, err := Open(bytes.NewReader(b), int64(len(b)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.Rows("S"); err == nil {
+			t.Errorf("%s: want error", name)
+		}
+	}
+	// The last valid column still works.
+	b := buildXLSX(`<worksheet><sheetData><row r="1"><c r="XFD1"><v>1</v></c></row></sheetData></worksheet>`, "")
+	f, _ := Open(bytes.NewReader(b), int64(len(b)))
+	if rows, err := f.Rows("S"); err != nil || len(rows[0]) != maxCols {
+		t.Errorf("XFD: %v", err)
 	}
 }

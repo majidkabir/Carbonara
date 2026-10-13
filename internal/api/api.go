@@ -2,12 +2,15 @@
 package api
 
 import (
+	"context"
 	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"runtime"
+	"runtime/debug"
 	"time"
 
 	"github.com/majidkabir/carbonara/pkg/calc"
@@ -29,10 +32,40 @@ type Server struct {
 	Calc    calc.Calculator
 	Factors any // served as-is on GET /v1/factors
 	Log     *slog.Logger
+	Limits  Limits
+
+	sem chan struct{}
+}
+
+// Limits protect the server from overload. Zero values use the defaults.
+type Limits struct {
+	// MaxConcurrent is how many calculation requests run at once; more get
+	// 503 with Retry-After. Default 4 x GOMAXPROCS.
+	MaxConcurrent int
+	// Timeout bounds each calculation request; past it the request gets
+	// 504. Default 30s.
+	Timeout time.Duration
+	// MaxLegs bounds legs (and hubs) per shipment. Default 100.
+	MaxLegs int
+}
+
+func (l Limits) withDefaults() Limits {
+	if l.MaxConcurrent <= 0 {
+		l.MaxConcurrent = 4 * runtime.GOMAXPROCS(0)
+	}
+	if l.Timeout <= 0 {
+		l.Timeout = 30 * time.Second
+	}
+	if l.MaxLegs <= 0 {
+		l.MaxLegs = 100
+	}
+	return l
 }
 
 // Handler returns the HTTP routes.
 func (s *Server) Handler() http.Handler {
+	s.Limits = s.Limits.withDefaults()
+	s.sem = make(chan struct{}, s.Limits.MaxConcurrent)
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -51,12 +84,76 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/factors", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, s.Factors)
 	})
-	mux.HandleFunc("POST /v1/calculate", s.calculate)
-	mux.HandleFunc("POST /v1/calculate/batch", s.calculateBatch)
-	if s.Log == nil {
-		return mux
+	mux.HandleFunc("POST /v1/calculate", s.limited(s.calculate))
+	mux.HandleFunc("POST /v1/calculate/batch", s.limited(s.calculateBatch))
+	var h http.Handler = s.recoverPanics(secureHeaders(mux))
+	if s.Log != nil {
+		h = s.logRequests(h)
 	}
-	return s.logRequests(mux)
+	return h
+}
+
+// limited applies the concurrency cap and request timeout.
+func (s *Server) limited(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case s.sem <- struct{}{}:
+			defer func() { <-s.sem }()
+		default:
+			w.Header().Set("Retry-After", "1")
+			writeError(w, http.StatusServiceUnavailable, errors.New("server busy, retry shortly"))
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), s.Limits.Timeout)
+		defer cancel()
+		w.Header().Set("Cache-Control", "no-store")
+		h(w, r.WithContext(ctx))
+	}
+}
+
+func secureHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Referrer-Policy", "no-referrer")
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *Server) recoverPanics(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if v := recover(); v != nil {
+				if v == http.ErrAbortHandler {
+					panic(v)
+				}
+				if s.Log != nil {
+					s.Log.Error("panic", "path", r.URL.Path, "error", fmt.Sprint(v), "stack", string(debug.Stack()))
+				}
+				writeError(w, http.StatusInternalServerError, errors.New("internal error"))
+			}
+		}()
+		next.ServeHTTP(w, r)
+	})
+}
+
+// checkSize rejects shipments too large to calculate in one request.
+func (s *Server) checkSize(sh calc.Shipment) error {
+	if len(sh.Legs) > s.Limits.MaxLegs || len(sh.Hubs) > s.Limits.MaxLegs {
+		return fmt.Errorf("shipment has %d legs and %d hubs; max is %d each", len(sh.Legs), len(sh.Hubs), s.Limits.MaxLegs)
+	}
+	return nil
+}
+
+// calcStatus maps a calculation error to an HTTP status.
+func calcStatus(err error) int {
+	switch {
+	case errors.Is(err, context.DeadlineExceeded):
+		return http.StatusGatewayTimeout
+	case errors.Is(err, context.Canceled):
+		return 499 // client closed request; nobody reads it
+	default:
+		return http.StatusUnprocessableEntity
+	}
 }
 
 type statusRecorder struct {
@@ -84,9 +181,13 @@ func (s *Server) calculate(w http.ResponseWriter, r *http.Request) {
 	if !s.decode(w, r, &sh) {
 		return
 	}
+	if err := s.checkSize(sh); err != nil {
+		writeError(w, http.StatusRequestEntityTooLarge, err)
+		return
+	}
 	res, err := s.Calc.Calculate(r.Context(), sh)
 	if err != nil {
-		writeError(w, http.StatusUnprocessableEntity, err)
+		writeError(w, calcStatus(err), err)
 		return
 	}
 	writeJSON(w, http.StatusOK, res)
@@ -123,10 +224,20 @@ func (s *Server) calculateBatch(w http.ResponseWriter, r *http.Request) {
 	resp := BatchResponse{Results: make([]BatchItem, 0, len(req.Shipments))}
 	for _, sh := range req.Shipments {
 		if err := r.Context().Err(); err != nil {
-			return // client went away
+			writeError(w, calcStatus(err), fmt.Errorf("batch stopped after %d of %d shipments: %w",
+				len(resp.Results), len(req.Shipments), err))
+			return
 		}
 		item := BatchItem{ShipmentID: sh.ID}
-		if res, err := s.Calc.Calculate(r.Context(), sh); err != nil {
+		if err := s.checkSize(sh); err != nil {
+			item.Error = err.Error()
+			resp.Failed++
+		} else if res, err := s.Calc.Calculate(r.Context(), sh); err != nil {
+			if r.Context().Err() != nil { // timed out or client left: stop, don't blame the shipment
+				writeError(w, calcStatus(r.Context().Err()), fmt.Errorf("batch stopped after %d of %d shipments: %w",
+					len(resp.Results), len(req.Shipments), r.Context().Err()))
+				return
+			}
 			item.Error = err.Error()
 			resp.Failed++
 		} else {
@@ -162,8 +273,15 @@ func writeError(w http.ResponseWriter, status int, err error) {
 	writeJSON(w, status, errorBody{Error: err.Error()})
 }
 
+// writeJSON encodes before writing, so an encoding failure becomes a 500
+// instead of a truncated 200.
 func writeJSON(w http.ResponseWriter, status int, v any) {
+	b, err := json.Marshal(v)
+	if err != nil {
+		status = http.StatusInternalServerError
+		b, _ = json.Marshal(errorBody{Error: "could not encode response: " + err.Error()})
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
+	_, _ = w.Write(append(b, '\n'))
 }

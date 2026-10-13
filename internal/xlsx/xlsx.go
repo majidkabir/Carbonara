@@ -14,6 +14,15 @@ import (
 	"strings"
 )
 
+// Excel's own limits; anything beyond is malformed or hostile.
+const (
+	maxRows = 1 << 20 // 1,048,576
+	maxCols = 1 << 14 // 16,384 (column XFD)
+	// maxCells caps cells allocated per sheet (including empty ones before
+	// a referenced cell), so a small hostile file can't demand gigabytes.
+	maxCells = 1 << 22
+)
+
 // maxPartBytes caps how much of any one XML part is read (zip-bomb guard).
 const maxPartBytes = 512 << 20
 
@@ -93,10 +102,14 @@ func (f *File) Rows(sheet string) ([][]string, error) {
 	}
 
 	var rows [][]string
+	cells := 0
 	for _, xr := range ws.Rows {
 		idx := xr.R - 1
 		if xr.R == 0 { // r is optional; fall back to sequence
 			idx = len(rows)
+		}
+		if idx < 0 || idx >= maxRows {
+			return nil, fmt.Errorf("xlsx: sheet %q: row number %d out of range", sheet, xr.R)
 		}
 		for len(rows) <= idx {
 			rows = append(rows, nil)
@@ -127,8 +140,12 @@ func (f *File) Rows(sheet string) ([][]string, error) {
 			default: // "n", "str", "e" and untyped
 				v = c.Value
 			}
-			for len(row) <= col {
-				row = append(row, "")
+			if col >= len(row) {
+				cells += col + 1 - len(row)
+				if cells > maxCells {
+					return nil, fmt.Errorf("xlsx: sheet %q: more than %d cells", sheet, maxCells)
+				}
+				row = append(row, make([]string, col+1-len(row))...)
 			}
 			row[col] = v
 		}
@@ -143,6 +160,9 @@ func columnIndex(ref string) (int, error) {
 	for i, r := range ref {
 		if r >= 'A' && r <= 'Z' {
 			n = n*26 + int(r-'A'+1)
+			if n > maxCols {
+				return 0, fmt.Errorf("xlsx: column in %q beyond %d", ref, maxCols)
+			}
 			continue
 		}
 		if i == 0 {

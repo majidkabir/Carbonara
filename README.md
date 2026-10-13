@@ -188,6 +188,8 @@ Each output line is `{"line": n, "shipment_id": "...", "result": {...}}`, or `{"
 | `GET` | `/healthz` | liveness |
 | `GET` | `/` | web page |
 
+Protections for running it on a network: at most `-max-concurrent` calculation requests at once (default 4 × CPUs; more get `503` with `Retry-After`), a `-request-timeout` per request (default 30 s, then `504`), `-max-legs` per shipment (default 100), 10 MiB bodies, 10,000 shipments per batch, panics answered with `500` without taking the server down, and `nosniff`/`no-store` headers. There's no authentication: put it behind your own gateway if it faces the internet.
+
 ## Factor datasets
 
 `-factors` (or `CARBONARA_FACTORS`) takes an embedded dataset name or a JSON file, or several separated by commas to layer them: `-factors desnz-2026,my-hubs.json`. Layers are combined; defining the same factor twice is an error, so nothing is silently overridden.
@@ -274,6 +276,7 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 - [x] Web page for `carbonara serve`
 - [x] Streaming, parallel batch
 - [x] NDJSON stream mode for pipes and Kafka
+- [x] Input validation, fuzzing of every parser in CI, API limits
 - [x] Transport and hub operation categories from your own data
 - [x] Package docs and runnable examples
 - [ ] Bundled inland waterway factors (needs an openly licensed source)

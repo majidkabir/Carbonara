@@ -47,6 +47,9 @@ paths:
         "400": { $ref: "#/components/responses/Error" }
         "413": { $ref: "#/components/responses/Error" }
         "422": { $ref: "#/components/responses/Error" }
+        "500": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Busy" }
+        "504": { $ref: "#/components/responses/Error" }
   /v1/calculate/batch:
     post:
       summary: Calculate emissions for up to 10,000 shipments
@@ -81,8 +84,21 @@ paths:
                         error: { type: string }
         "400": { $ref: "#/components/responses/Error" }
         "413": { $ref: "#/components/responses/Error" }
+        "500": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Busy" }
+        "504": { $ref: "#/components/responses/Error" }
 components:
   responses:
+    Busy:
+      description: Too many requests in progress; retry after the given seconds
+      headers:
+        Retry-After: { schema: { type: integer } }
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string }
     Error:
       description: Error
       content:
