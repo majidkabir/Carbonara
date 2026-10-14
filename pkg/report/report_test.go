@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -212,5 +213,20 @@ func TestReport_LegParts(t *testing.T) {
 	near(t, "electricity", carriers["electricity/DNK"], 10.2)
 	if len(r.Data.Models) != 1 || r.Data.Models[0].Parameters["countries"] != "DNK" {
 		t.Errorf("models %+v", r.Data.Models)
+	}
+}
+
+func TestFailureReasons(t *testing.T) {
+	b := New(Meta{})
+	b.Add("a", calc.Result{}, errors.New("leg 1: from is 12.3 km from the nearest rail line (max 5 km)"))
+	b.Add("b", calc.Result{}, errors.New("leg 2: from is 7.9 km from the nearest rail line (max 5 km)"))
+	b.Add("c", calc.Result{}, errors.New("unknown vehicle"))
+	r := b.Report()
+	if len(r.Coverage.Failures) != 3 || r.Coverage.Failures[0].ShipmentID != "a" {
+		t.Fatalf("failures %+v", r.Coverage.Failures)
+	}
+	want := []ReasonCount{{"leg #: from is # km from the nearest rail line (max # km)", 2}, {"unknown vehicle", 1}}
+	if !reflect.DeepEqual(r.Coverage.FailureReasons, want) {
+		t.Fatalf("reasons %+v", r.Coverage.FailureReasons)
 	}
 }

@@ -600,7 +600,7 @@ function renderReport(r) {
     <p class="answer-sub">${r.organisation ? esc(r.organisation) + ", " : ""}${period}. ${fmt(t.tonne_km, 0)} tonne-km,
       ${fmt(t.intensity_g_per_tkm, 1)} g per tonne-km. Transport: ${kg(t.ttw_kg)} from the vehicles and ${kg(t.wtt_kg)} from
       producing their energy${t.hub_wtw_kg ? `; hubs ${kg(t.hub_wtw_kg)}` : ""}.
-      ${c.failed ? `<strong>${c.failed} of ${c.shipments} shipments excluded</strong> (see notes).` : ""}</p>
+      ${c.failed ? `<strong>${c.failed} of ${c.shipments} shipments excluded</strong> (see below).` : ""}</p>
     <div class="actions"><button type="button" class="btn" id="dl-md">Download Markdown</button>
       <button type="button" class="btn" id="dl-json">Download JSON</button></div>
     <h3 class="sub">By mode of transport</h3>
@@ -620,6 +620,12 @@ function renderReport(r) {
     ${sources ? `<p class="id">Default values from:</p><ul class="notes">${sources}</ul>` : ""}
     ${models ? `<p class="id">Models:</p><ul class="notes">${models}</ul>` : ""}
     ${dafs ? `<h3 class="sub">Distance adjustment factors</h3><ul class="notes">${dafs}</ul>` : ""}
+    ${c.failed ? `<h3 class="sub">Shipments not calculated</h3>
+      <div class="scroll"><table class="report-table long-names"><thead><tr><th>Reason</th><th class="num">Shipments</th></tr></thead>
+      <tbody>${(c.failure_reasons || []).map(x => `<tr><td>${esc(x.reason)}</td><td class="num">${x.shipments}</td></tr>`).join("")}</tbody></table></div>
+      <details class="json"><summary>First ${(c.failures || []).length} by shipment</summary>
+      <div class="scroll"><table class="report-table long-names"><tbody>${(c.failures || []).map(x =>
+        `<tr><td>${esc(x.shipment_id)}</td><td>${esc(x.error)}</td></tr>`).join("")}</tbody></table></div></details>` : ""}
     ${notes ? `<h3 class="sub">Notes, omissions and deviations</h3><ul class="notes">${notes}</ul>` : ""}
     <p class="statement">${esc(r.statement)}</p>`;
   $("#dl-json").addEventListener("click", () => download(JSON.stringify(r, null, 2), "application/json", "json"));

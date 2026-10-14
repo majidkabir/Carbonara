@@ -84,13 +84,48 @@ type Coverage struct {
 	Calculated int      `json:"calculated"`
 	Failed     int      `json:"failed"`
 	FailedIDs  []string `json:"failed_ids,omitempty"` // first MaxListed
-	Legs       int      `json:"legs"`
-	HubStops   int      `json:"hub_stops"`
-	WeightT    float64  `json:"weight_t"`
+	// Failures says why the first MaxListed failed shipments failed, and
+	// FailureReasons counts all failures by reason.
+	Failures       []Failure     `json:"failures,omitempty"`
+	FailureReasons []ReasonCount `json:"failure_reasons,omitempty"`
+	Legs           int           `json:"legs"`
+	HubStops       int           `json:"hub_stops"`
+	WeightT        float64       `json:"weight_t"`
 }
 
 // MaxListed caps the failed shipment ids listed in a report.
 const MaxListed = 100
+
+// Failure is one shipment that couldn't be calculated.
+type Failure struct {
+	ShipmentID string `json:"shipment_id"`
+	Error      string `json:"error"`
+}
+
+// ReasonCount is how many shipments failed for one reason.
+type ReasonCount struct {
+	Reason    string `json:"reason"`
+	Shipments int    `json:"shipments"`
+}
+
+// reason turns an error into a reason shared by similar failures: numbers
+// (distances, leg numbers, coordinates) become "#".
+func reason(e string) string {
+	var b strings.Builder
+	num := false
+	for _, r := range e {
+		if (r >= '0' && r <= '9') || (num && (r == '.' || r == ',')) {
+			if !num {
+				b.WriteByte('#')
+				num = true
+			}
+			continue
+		}
+		num = false
+		b.WriteRune(r)
+	}
+	return b.String()
+}
 
 // Total is the whole covered transport chain.
 type Total struct {
@@ -190,6 +225,7 @@ type Builder struct {
 	byType   map[string]float64
 	sources  map[string]float64
 	models   map[string]*modelAcc
+	reasons  map[string]int // failures by reason
 	dafs     map[string]*DAF
 	datasets map[string]bool
 }
@@ -223,7 +259,12 @@ func (b *Builder) Add(id string, r calc.Result, err error) {
 		b.cov.Failed++
 		if len(b.cov.FailedIDs) < MaxListed {
 			b.cov.FailedIDs = append(b.cov.FailedIDs, id)
+			b.cov.Failures = append(b.cov.Failures, Failure{ShipmentID: id, Error: err.Error()})
 		}
+		if b.reasons == nil {
+			b.reasons = map[string]int{}
+		}
+		b.reasons[reason(err.Error())]++
 		return
 	}
 	b.cov.Calculated++
@@ -373,6 +414,20 @@ func (b *Builder) model(l calc.LegResult) {
 
 // Report returns the report for everything added so far.
 func (b *Builder) Report() Report {
+	b.cov.FailureReasons = nil
+	for k, n := range b.reasons {
+		b.cov.FailureReasons = append(b.cov.FailureReasons, ReasonCount{Reason: k, Shipments: n})
+	}
+	sort.Slice(b.cov.FailureReasons, func(i, j int) bool {
+		x, y := b.cov.FailureReasons[i], b.cov.FailureReasons[j]
+		if x.Shipments != y.Shipments {
+			return x.Shipments > y.Shipments
+		}
+		return x.Reason < y.Reason
+	})
+	if len(b.cov.FailureReasons) > 20 {
+		b.cov.FailureReasons = b.cov.FailureReasons[:20]
+	}
 	r := Report{
 		Title:        b.meta.Title,
 		Organisation: b.meta.Organisation,
@@ -473,14 +528,20 @@ func (b *Builder) notes(r Report) []string {
 	if r.Coverage.Failed > 0 {
 		s := strconv.Itoa(r.Coverage.Failed) + " of " + strconv.Itoa(r.Coverage.Shipments) +
 			" shipments could not be calculated and are excluded from all totals"
-		if len(r.Coverage.FailedIDs) > 0 {
-			s += " (" + strings.Join(r.Coverage.FailedIDs, ", ")
-			if r.Coverage.Failed > len(r.Coverage.FailedIDs) {
-				s += ", ..."
-			}
-			s += ")"
+		if len(r.Coverage.FailedIDs) > 0 && len(r.Coverage.FailedIDs) <= 10 {
+			s += " (" + strings.Join(r.Coverage.FailedIDs, ", ") + ")"
 		}
-		n = append(n, s+". See the batch output for the reason per shipment.")
+		var why []string
+		for i, c := range r.Coverage.FailureReasons {
+			if i == 5 {
+				break
+			}
+			why = append(why, strconv.Itoa(c.Shipments)+" × "+c.Reason)
+		}
+		if len(why) > 0 {
+			s += ". Reasons: " + strings.Join(why, "; ")
+		}
+		n = append(n, s+".")
 	}
 	if r.Total.HubWTWKg > 0 {
 		n = append(n, "Hub emissions are reported well-to-wheel only: the hub factors used carry no split "+
