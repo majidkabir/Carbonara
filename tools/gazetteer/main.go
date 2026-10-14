@@ -137,7 +137,7 @@ func main() {
 		for i, k := range map[int]struct {
 			letter string
 			bonus  int
-		}{0: {"p", 25}, 1: {"r", 10}, 2: {"t", 0}, 3: {"a", 5}, 5: {"i", 10}, 7: {"b", 0}} {
+		}{0: {"p", 25}, 1: {"r", 10}, 2: {"t", 0}, 5: {"i", 10}, 7: {"b", 0}} { // airports come from OurAirports
 			if fn[i] != '-' && fn[i] != '0' {
 				kinds += k.letter
 				rank += k.bonus
@@ -145,6 +145,9 @@ func main() {
 		}
 		if kinds == "" {
 			continue
+		}
+		if kinds == "t" { // a road terminal only: often just a town name
+			rank -= 10
 		}
 		kinds = sortLetters(kinds)
 		alt, cityRank := englishName(r[1], lat, lon, places.Fold(r[3]))

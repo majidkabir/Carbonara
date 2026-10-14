@@ -27,7 +27,7 @@ const (
 	Port    = "port"    // sea or inland port (UN/LOCODE function 1)
 	Rail    = "rail"    // rail terminal (function 2)
 	Road    = "road"    // road terminal (function 3)
-	Airport = "airport" // airport (IATA code, or UN/LOCODE function 4)
+	Airport = "airport" // airport with an IATA code (OurAirports)
 	Inland  = "inland"  // multimodal / inland clearance depot (function 6)
 	Border  = "border"  // border crossing (function B)
 )
@@ -174,8 +174,8 @@ func (ix *Index) Search(q string, kinds []string, limit int) []Place {
 			s = 1000
 		case p.name == fq:
 			s = 500
-		case p.alt == fq:
-			s = 450
+		case p.alt == fq: // usually the English name
+			s = 480
 		case len(fq) < 3:
 		case strings.HasPrefix(p.name, fq):
 			s = 400

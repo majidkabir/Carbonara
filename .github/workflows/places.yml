@@ -28,6 +28,7 @@ jobs:
       - name: Test
         run: |
           echo "::notice title=Place list::$(tail -1 build.log)"
+          set -o pipefail
           go test ./pkg/places ./internal/api 2>&1 | tee test.log || {
             grep -E "_test.go|FAIL|panic" test.log | head -9 | sed 's/^[[:space:]]*/::error::/'; exit 1; }
       - name: Commit
