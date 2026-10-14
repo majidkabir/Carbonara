@@ -1,8 +1,16 @@
 # Carbonara 🍝
 
+[![CI](https://github.com/majidkabir/Carbonara/actions/workflows/ci.yml/badge.svg)](https://github.com/majidkabir/Carbonara/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/majidkabir/Carbonara)](https://github.com/majidkabir/Carbonara/releases)
+[![Go Reference](https://pkg.go.dev/badge/github.com/majidkabir/carbonara.svg)](https://pkg.go.dev/github.com/majidkabir/carbonara)
+[![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue)](LICENSE)
+[![Try it](https://img.shields.io/badge/try%20it-carbonara--co2.org-1F5E8C)](https://carbonara-co2.org)
+
 Source-available freight emissions calculator following the GLEC Framework / ISO 14083 approach. Free for non-commercial use; see [License](#license).
 
 **Try it at [carbonara-co2.org](https://carbonara-co2.org)**: a free test service with worldwide road, rail, inland waterway and sea routing. Sign in with your email to use the calculator and get an API key.
+
+![The Carbonara web page: a shipment entered leg by leg on the left; on the right its emissions, a bar per leg split into vehicle and fuel-supply emissions, and how each number was made](docs/screenshot.png)
 
 Ships with the **UK DESNZ 2026** conversion factors built in: 127 freight factors (road, rail, sea, air) and 166 fuel factors, each split into tank-to-wheel and well-to-tank.
 
