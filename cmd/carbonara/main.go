@@ -78,6 +78,7 @@ func main() {
 // common holds flags shared by all subcommands.
 type common struct {
 	factorFile, osrmURL, waterwayURL, railURL      string
+	roadRegions                                    string
 	seaNetwork, seaAvoid, seaOpen                  string
 	seaMaxSnapKm, waterwayMaxSnapKm, railMaxSnapKm float64
 	ferryVehicle                                   string
@@ -90,6 +91,9 @@ func (c *common) register(fs *flag.FlagSet) {
 			"also $CARBONARA_FACTORS (default "+factors.Default+")")
 	fs.StringVar(&c.osrmURL, "osrm", os.Getenv("CARBONARA_OSRM_URL"),
 		"OSRM server URL for road distances, also $CARBONARA_OSRM_URL (default: adjusted great-circle)")
+	fs.StringVar(&c.roadRegions, "osrm-regions", os.Getenv("CARBONARA_OSRM_REGIONS"),
+		"road OSRM servers by region, \"name=url@minlon,minlat,maxlon,maxlat;...\"; a route uses the smallest region "+
+			"holding both ends; replaces -osrm. Also $CARBONARA_OSRM_REGIONS")
 	fs.StringVar(&c.waterwayURL, "osrm-waterway", os.Getenv("CARBONARA_OSRM_WATERWAY_URL"),
 		"OSRM server built with deploy/barge.lua for inland waterway distances, also $CARBONARA_OSRM_WATERWAY_URL "+
 			"(default: none; give distance_km)")
@@ -126,7 +130,13 @@ func (c *common) calculator() (calc.Calculator, *factors.Dataset, error) {
 		return calc.Calculator{}, nil, err
 	}
 	routed := map[calc.Mode]calc.DistanceProvider{}
-	if c.osrmURL != "" {
+	if c.roadRegions != "" {
+		rs, err := distance.ParseRegions(c.roadRegions, func(o *distance.OSRM) { o.PartModes = distance.RoadParts })
+		if err != nil {
+			return calc.Calculator{}, nil, err
+		}
+		routed[calc.Road] = rs
+	} else if c.osrmURL != "" {
 		o, err := distance.NewOSRM(c.osrmURL)
 		if err != nil {
 			return calc.Calculator{}, nil, err

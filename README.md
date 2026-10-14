@@ -331,6 +331,8 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 
 **Updating grid intensities**: `carbonara import-grid -o pkg/factors/data/grid/ember-owid.json owid-energy-data.csv`, with the CSV from [owid/energy-data](https://github.com/owid/energy-data).
 
+**World road routing on one server.** A road graph of the whole planet needs more memory than a 256 GB server has. `-osrm-regions` (or `$CARBONARA_OSRM_REGIONS`) takes several OSRM servers, each built for an overlapping part of the world, as `name=url@minlon,minlat,maxlon,maxlat;...`; each road leg is routed by the smallest region that holds both its ends, and a leg no region holds is reported as an error.
+
 ## Performance
 
 Measured with [`tools/loadtest`](tools/loadtest/main.go) against `carbonara serve` with the default datasets, the server pinned to **one CPU core** and the load generator to another (Go 1.24, Linux, a small cloud VM). Each shipment has a road and a sea leg, distances by great-circle; routing via OSRM adds its own time.
