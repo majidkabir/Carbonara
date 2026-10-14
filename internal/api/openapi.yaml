@@ -30,6 +30,24 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Dataset" }
+  /v1/places:
+    get:
+      summary: Find cities, ports, rail and road terminals and airports by name or code
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string }, description: Name, UN/LOCODE or IATA code, e.g. rotterdam, NLRTM, CPH }
+        - { name: kind, in: query, schema: { type: string }, description: "Comma-separated kinds: city, port, rail, road, airport, inland, border" }
+        - { name: limit, in: query, schema: { type: integer, default: 10, maximum: 50 } }
+      responses:
+        "200":
+          description: Matching places, best first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  places:
+                    type: array
+                    items: { $ref: "#/components/schemas/Place" }
   /v1/calculate:
     post:
       summary: Calculate emissions for one shipment
@@ -166,8 +184,28 @@ components:
       enum: [road, rail, sea, air, inland_waterway]
     Location:
       type: object
+      description: Coordinates, or a code instead of them.
       properties:
         name: { type: string }
+        code:
+          type: string
+          description: UN/LOCODE (NLRTM) or IATA airport code (CPH), used when lat and lon are not given. Find codes with GET /v1/places.
+          example: NLRTM
+        lat: { type: number }
+        lon: { type: number }
+    Place:
+      type: object
+      properties:
+        id: { type: string, example: "locode:NLRTM" }
+        code: { type: string, example: NLRTM }
+        kinds:
+          type: array
+          items: { type: string, enum: [city, port, rail, road, airport, inland, border] }
+        name: { type: string, example: Rotterdam }
+        alt_name: { type: string, description: e.g. the English name of a place listed under its local name }
+        region: { type: string }
+        country: { type: string, example: NL }
+        country_name: { type: string, example: Netherlands }
         lat: { type: number }
         lon: { type: number }
     FuelUse:

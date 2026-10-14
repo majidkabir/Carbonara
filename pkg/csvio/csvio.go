@@ -10,6 +10,7 @@
 //	leg_id, mode, vehicle_type, distance_km         leg
 //	distance_type                                   leg: sfd, gcd or actual (optional)
 //	from_lat, from_lon, to_lat, to_lon              leg, used when distance_km is empty
+//	from_code, to_code                              leg, UN/LOCODE or IATA code instead of coordinates
 //	fuel, fuel_amount, vehicle_tonne_km             leg, fuel-based method
 //	load_factor, empty_trip_factor                  leg, load model method
 //	energy_kwh_per_tkm, country                     leg, energy method
@@ -239,8 +240,8 @@ func addRow(s *calc.Shipment, row rowReader) error {
 		return v
 	}
 	leg.DistanceKm = get("distance_km")
-	leg.From = calc.Location{Lat: get("from_lat"), Lon: get("from_lon")}
-	leg.To = calc.Location{Lat: get("to_lat"), Lon: get("to_lon")}
+	leg.From = calc.Location{Code: row.str("from_code"), Lat: get("from_lat"), Lon: get("from_lon")}
+	leg.To = calc.Location{Code: row.str("to_code"), Lat: get("to_lat"), Lon: get("to_lon")}
 	leg.LoadFactor = get("load_factor")
 	leg.EmptyTripFactor = get("empty_trip_factor")
 	leg.EnergyKWhPerTkm = get("energy_kwh_per_tkm")

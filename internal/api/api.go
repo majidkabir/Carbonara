@@ -13,11 +13,14 @@ import (
 	"net/http"
 	"runtime"
 	"runtime/debug"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/majidkabir/carbonara/pkg/calc"
 	"github.com/majidkabir/carbonara/pkg/csvio"
+	"github.com/majidkabir/carbonara/pkg/places"
 	"github.com/majidkabir/carbonara/pkg/report"
 )
 
@@ -36,8 +39,10 @@ const (
 type Server struct {
 	Calc    calc.Calculator
 	Factors any // served as-is on GET /v1/factors
-	Log     *slog.Logger
-	Limits  Limits
+	// Places backs GET /v1/places (default: the embedded place list).
+	Places func() (*places.Index, error)
+	Log    *slog.Logger
+	Limits Limits
 
 	sem chan struct{}
 }
@@ -96,6 +101,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/factors", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, s.Factors)
 	})
+	mux.HandleFunc("GET /v1/places", s.places)
 	mux.HandleFunc("POST /v1/calculate", s.limited(s.calculate))
 	mux.HandleFunc("POST /v1/calculate/batch", s.limited(s.calculateBatch))
 	mux.HandleFunc("POST /v1/report", s.limited(s.report))
@@ -204,6 +210,47 @@ func (s *Server) calculate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, res)
+}
+
+// PlacesResponse is the body returned by GET /v1/places.
+type PlacesResponse struct {
+	Places []places.Place `json:"places"`
+}
+
+// places searches cities, ports, terminals and airports by name or code:
+// ?q=rotterdam&kind=port,rail&limit=10
+func (s *Server) places(w http.ResponseWriter, r *http.Request) {
+	load := s.Places
+	if load == nil {
+		load = places.Default
+	}
+	ix, err := load()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	q := r.URL.Query()
+	if len(q.Get("q")) > 100 {
+		writeError(w, http.StatusBadRequest, errors.New("q is too long"))
+		return
+	}
+	var kinds []string
+	for _, k := range strings.Split(q.Get("kind"), ",") {
+		if k = strings.TrimSpace(k); k != "" {
+			kinds = append(kinds, k)
+		}
+	}
+	limit, _ := strconv.Atoi(q.Get("limit"))
+	limit = max(1, min(limit, 50))
+	if q.Get("limit") == "" {
+		limit = 10
+	}
+	res := ix.Search(q.Get("q"), kinds, limit)
+	if res == nil {
+		res = []places.Place{}
+	}
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	writeJSON(w, http.StatusOK, PlacesResponse{Places: res})
 }
 
 // BatchRequest is the body of POST /v1/calculate/batch.

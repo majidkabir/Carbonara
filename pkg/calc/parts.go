@@ -121,6 +121,10 @@ func (c Calculator) Prefetch(ctx context.Context, shipments []Shipment) {
 	seen := map[Lane]bool{}
 	var lanes []Lane
 	for _, s := range shipments {
+		s, err := c.resolve(s)
+		if err != nil {
+			continue
+		}
 		for _, l := range s.Legs {
 			if l.DistanceKm > 0 || l.From == (Location{}) || l.To == (Location{}) {
 				continue

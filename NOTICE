@@ -21,3 +21,11 @@ This product includes inland waterway emission factors
 www.co2emissiefactoren.nl (2026), based on CE Delft (2021), STREAM
 Goederenvervoer, Emissies van modaliteiten in het goederenvervoer 2020,
 versie 2. Source: www.co2emissiefactoren.nl
+
+This product includes place data (pkg/places/data/places.tsv.gz):
+- cities from GeoNames (https://www.geonames.org), licensed under CC BY 4.0:
+  https://creativecommons.org/licenses/by/4.0/
+- UN/LOCODE, the United Nations Code for Trade and Transport Locations, maintained
+  by UNECE (https://unece.org/trade/uncefact/unlocode), via the datasets/un-locode
+  package (https://github.com/datasets/un-locode)
+- airports from OurAirports (https://ourairports.com), public domain

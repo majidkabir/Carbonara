@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +12,7 @@ import (
 	"github.com/majidkabir/carbonara/pkg/calc"
 	"github.com/majidkabir/carbonara/pkg/distance"
 	"github.com/majidkabir/carbonara/pkg/factors"
+	"github.com/majidkabir/carbonara/pkg/places"
 )
 
 func newTestServer(t *testing.T) *httptest.Server {
@@ -19,7 +21,7 @@ func newTestServer(t *testing.T) *httptest.Server {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := &Server{Calc: calc.Calculator{Factors: ds, Distances: distance.GreatCircle{}}, Factors: ds}
+	s := &Server{Calc: calc.Calculator{Factors: ds, Distances: distance.GreatCircle{}, Places: places.Codes{}}, Factors: ds}
 	srv := httptest.NewServer(s.Handler())
 	t.Cleanup(srv.Close)
 	return srv
@@ -179,5 +181,44 @@ func TestReport_CSV(t *testing.T) {
 	r.Body.Close()
 	if r.StatusCode != http.StatusBadRequest {
 		t.Errorf("bad date: status %d", r.StatusCode)
+	}
+}
+
+func TestPlaces(t *testing.T) {
+	srv := newTestServer(t)
+	resp, err := http.Get(srv.URL + "/v1/places?q=rotterdam&kind=port&limit=3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	var out PlacesResponse
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != 200 || len(out.Places) == 0 || out.Places[0].Code != "NLRTM" || len(out.Places) > 3 {
+		t.Fatalf("status %d: %+v", resp.StatusCode, out)
+	}
+	resp2, err := http.Get(srv.URL + "/v1/places?q=")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp2.Body.Close()
+	b, _ := io.ReadAll(resp2.Body)
+	if resp2.StatusCode != 200 || !strings.Contains(string(b), `"places":[]`) {
+		t.Fatalf("empty query: %d %s", resp2.StatusCode, b)
+	}
+}
+
+func TestCalculate_LocationCode(t *testing.T) {
+	srv := newTestServer(t)
+	resp, out := post(t, srv.URL+"/v1/calculate",
+		`{"weight_kg":1000,"legs":[{"mode":"road","vehicle_type":"truck_40t","from":{"code":"DKCPH"},"to":{"code":"DEHAM"}}]}`)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status %d: %v", resp.StatusCode, out)
+	}
+	resp, out = post(t, srv.URL+"/v1/calculate",
+		`{"weight_kg":1000,"legs":[{"mode":"road","vehicle_type":"truck_40t","from":{"code":"QQQQQ"},"to":{"code":"DEHAM"}}]}`)
+	if resp.StatusCode != http.StatusUnprocessableEntity || !strings.Contains(fmt.Sprint(out["error"]), "unknown location code") {
+		t.Fatalf("unknown code: %d %v", resp.StatusCode, out)
 	}
 }

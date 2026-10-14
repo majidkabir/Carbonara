@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/majidkabir/carbonara/internal/api"
+	"github.com/majidkabir/carbonara/pkg/places"
 )
 
 func runServe(args []string) error {
@@ -30,6 +31,11 @@ func runServe(args []string) error {
 		return err
 	}
 	log := slog.New(slog.NewJSONHandler(os.Stderr, nil))
+	go func() { // load the place list in the background so the first search is quick
+		if _, err := places.Default(); err != nil {
+			log.Error("loading places", "err", err)
+		}
+	}()
 	srv := &http.Server{
 		Addr: *addr,
 		Handler: (&api.Server{Calc: calculator, Factors: ds, Log: log,

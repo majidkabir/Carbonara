@@ -128,6 +128,18 @@ h3.sub { font-size: 1rem; margin: 22px 0 8px; }
 .report-table td.num, .report-table th.num { white-space: nowrap; }
 .report-table.long-names td:first-child { overflow-wrap: anywhere; }
 .report-table td:first-child { min-width: 6.5em; }
+.place { position: relative; }
+.suggest { position: absolute; z-index: 10; left: 0; top: 100%; min-width: 100%; width: max-content; max-width: min(360px, calc(100vw - 32px)); margin: 2px 0 0; padding: 4px 0; list-style: none;
+  background: var(--sheet); border: 1px solid var(--rule); border-radius: 4px; box-shadow: 0 6px 18px rgb(0 0 0 / .15);
+  max-height: 320px; overflow-y: auto; }
+.place + .place .suggest { left: auto; right: 0; }
+.suggest li { padding: 7px 12px; cursor: pointer; line-height: 1.3; }
+.suggest .code { font-weight: 600; margin-left: 6px; color: var(--blue); }
+.suggest li[aria-selected="true"], .suggest li:hover { background: color-mix(in srgb, var(--blue) 12%, transparent); }
+.suggest .where { display: block; color: var(--muted); font-size: .8rem; }
+.suggest .none { color: var(--muted); cursor: default; }
+footer.credits { max-width: 1240px; margin: 0 auto; padding: 0 24px 32px; color: var(--muted); font-size: .8rem; }
+footer.credits a { color: var(--blue); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 </style>
 </head>
@@ -216,9 +228,16 @@ h3.sub { font-size: 1rem; margin: 22px 0 8px; }
       <div><label>Vehicle</label><input name="vehicle_type" autocomplete="off"></div>
     </div>
     <div class="row">
-      <div><label>Distance (km)</label><input name="distance_km" type="number" min="0" step="any"></div>
+      <div class="place"><label>From</label><input name="from_q" placeholder="City, port, airport or code" autocomplete="off"
+        role="combobox" aria-autocomplete="list" aria-expanded="false"><ul class="suggest" role="listbox" hidden></ul></div>
+      <div class="place"><label>To</label><input name="to_q" placeholder="City, port, airport or code" autocomplete="off"
+        role="combobox" aria-autocomplete="list" aria-expanded="false"><ul class="suggest" role="listbox" hidden></ul></div>
     </div>
-    <details><summary>Use coordinates instead of distance</summary>
+    <details><summary>Distance or coordinates</summary>
+      <p class="hint">A distance here is used instead of routing between the places.</p>
+      <div class="row">
+        <div><label>Distance (km)</label><input name="distance_km" type="number" min="0" step="any"></div>
+      </div>
       <div class="row">
         <div><label>From lat</label><input name="from_lat" type="number" step="any"></div>
         <div><label>From lon</label><input name="from_lon" type="number" step="any"></div>
@@ -281,12 +300,72 @@ function addLeg(values = {}) {
   const fillList = () => { list.innerHTML = (vehicleLists[mode.value] || []).map(v => `<option value="${esc(v)}">`).join(""); };
   mode.addEventListener("change", fillList);
   fillList();
+  node.querySelectorAll(".place").forEach(el => placeSearch(el, node));
   node.querySelector(".remove").addEventListener("click", () => { node.remove(); renumber(); });
   node.querySelectorAll("details").forEach(d => {
-    if ([...d.querySelectorAll("input")].some(i => i.value !== "")) d.open = true;
+    if ([...d.querySelectorAll("input")].some(i => i.value !== "" && !/_(lat|lon)$/.test(i.name))) d.open = true;
   });
   legsEl.appendChild(node);
   renumber();
+}
+
+// ---- Place search ----
+const kindsFor = { sea: "port", inland_waterway: "port,inland", air: "airport", rail: "rail,inland,city", road: "" };
+const kindName = { city: "city", port: "port", rail: "rail", road: "road terminal", airport: "airport", inland: "inland depot", border: "border" };
+const placeLabel = p => `${p.name}${p.code ? " (" + p.code + ")" : ""}, ${p.country}`;
+
+function placeSearch(box, leg) {
+  const input = box.querySelector("input"), list = box.querySelector("ul");
+  const side = input.name.startsWith("from") ? "from" : "to";
+  const lat = leg.querySelector(`[name="${side}_lat"]`), lon = leg.querySelector(`[name="${side}_lon"]`);
+  list.id = input.id + "-list";
+  input.setAttribute("aria-controls", list.id);
+  let items = [], active = -1, timer = 0, seq = 0;
+  const close = () => { list.hidden = true; input.setAttribute("aria-expanded", "false"); active = -1; };
+  const highlight = i => {
+    active = i;
+    [...list.children].forEach((li, j) => li.setAttribute("aria-selected", j === i ? "true" : "false"));
+    if (list.children[i]) list.children[i].scrollIntoView({ block: "nearest" });
+  };
+  const choose = p => {
+    input.value = placeLabel(p);
+    lat.value = p.lat; lon.value = p.lon;
+    close();
+  };
+  async function search() {
+    const q = input.value.trim();
+    if (q.length < 2) { close(); return; }
+    const mode = leg.querySelector('[name="mode"]').value;
+    const my = ++seq;
+    let res;
+    try {
+      res = await (await fetch(`v1/places?limit=8&q=${encodeURIComponent(q)}&kind=${kindsFor[mode] || ""}`)).json();
+    } catch { return; }
+    if (my !== seq) return;
+    items = res.places || [];
+    const kinds = p => {
+      const k = p.kinds.length > 1 ? p.kinds.filter(k => k !== "road") : p.kinds;
+      const t = k.map(x => kindName[x] || x).join(", ");
+      return t.charAt(0).toUpperCase() + t.slice(1);
+    };
+    list.innerHTML = items.length ? items.map((p, i) => `<li role="option" id="${list.id}-${i}">${esc(p.name)}${p.alt_name && p.alt_name !== p.name ? " · " + esc(p.alt_name) : ""}${p.code ? `<span class="code">${esc(p.code)}</span>` : ""}
+        <span class="where">${esc(kinds(p))} · ${esc([p.region, p.country_name || p.country].filter(Boolean).join(", "))}</span></li>`).join("")
+      : `<li class="none">Nothing found${kindsFor[mode] ? " for " + modeName[mode].toLowerCase() : ""}. Try a city or a code like NLRTM or CPH.</li>`;
+    [...list.querySelectorAll("li[role=option]")].forEach((li, i) => li.addEventListener("mousedown", e => { e.preventDefault(); choose(items[i]); }));
+    list.hidden = false; input.setAttribute("aria-expanded", "true"); highlight(items.length ? 0 : -1);
+  }
+  input.addEventListener("input", () => {
+    lat.value = ""; lon.value = ""; // the old place no longer applies
+    clearTimeout(timer); timer = setTimeout(search, 180);
+  });
+  input.addEventListener("keydown", e => {
+    if (list.hidden || !items.length) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); highlight((active + 1) % items.length); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); highlight((active - 1 + items.length) % items.length); }
+    else if (e.key === "Enter" && active >= 0) { e.preventDefault(); choose(items[active]); }
+    else if (e.key === "Escape") close();
+  });
+  input.addEventListener("blur", () => setTimeout(close, 100));
 }
 
 function renumber() {
@@ -313,6 +392,9 @@ function buildShipment() {
     const coords = ["from_lat", "from_lon", "to_lat", "to_lon"].map(n => num(f(n)));
     if (coords.every(c => c !== undefined)) {
       l.from = { lat: coords[0], lon: coords[1] }; l.to = { lat: coords[2], lon: coords[3] };
+      const fq = f("from_q").value.trim(), tq = f("to_q").value.trim();
+      if (fq) l.from.name = fq;
+      if (tq) l.to.name = tq;
     }
     for (const k of ["load_factor", "empty_trip_factor", "energy_kwh_per_tkm"]) { const v = num(f(k)); if (v) l[k] = v; }
     const country = f("country").value.trim();
@@ -418,9 +500,10 @@ function loadExample() {
   $("#sid").value = "CPH-RTM-1";
   $('input[name="cargo"][value="weight"]').checked = true; toggleCargo();
   $("#weight").value = 12000;
-  addLeg({ mode: "road", vehicle_type: "hgv", from_lat: 55.6761, from_lon: 12.5683, to_lat: 53.5511, to_lon: 9.9937,
-           load_factor: 0.8, empty_trip_factor: 0.2 });
-  addLeg({ mode: "sea", vehicle_type: "container_ship", distance_km: 560 });
+  addLeg({ mode: "road", vehicle_type: "hgv", from_q: "Copenhagen, DK", to_q: "Hamburg (DEHAM), DE",
+           from_lat: 55.6761, from_lon: 12.5683, to_lat: 53.5511, to_lon: 9.9937, load_factor: 0.8, empty_trip_factor: 0.2 });
+  addLeg({ mode: "sea", vehicle_type: "container_ship", from_q: "Hamburg (DEHAM), DE", to_q: "Rotterdam (NLRTM), NL",
+           from_lat: 53.55, from_lon: 9.96667, to_lat: 51.91667, to_lon: 4.5, distance_km: 560 });
   addLeg({ mode: "road", vehicle_type: "hgv", distance_km: 40, fuel: "diesel", fuel_amount: 14 });
 }
 
@@ -570,5 +653,7 @@ $("#form").addEventListener("submit", calculate);
 loadExample();
 loadFactors().then(() => calculate());
 </script>
+<footer class="credits">Places: <a href="https://www.geonames.org/">GeoNames</a> (CC BY 4.0), UN/LOCODE (UNECE),
+<a href="https://ourairports.com/">OurAirports</a>. Routing: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>.</footer>
 </body>
 </html>

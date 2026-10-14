@@ -233,6 +233,7 @@ Fuels are converted with the selected dataset's fuel factors, including `electri
 | `weight_kg`, or `teu` with `teu_net_tonnes` / `container_load` | cargo; can be on the first row only |
 | `leg_id`, `mode`, `vehicle_type`, `distance_km`, `distance_type` | leg |
 | `from_lat`, `from_lon`, `to_lat`, `to_lon` | leg, when `distance_km` is empty |
+| `from_code`, `to_code` | leg, instead of coordinates: a UN/LOCODE (`NLRTM`) or IATA airport code (`CPH`) |
 | `fuel`, `fuel_amount`, `vehicle_tonne_km` | leg, fuel method |
 | `load_factor`, `empty_trip_factor` | leg, load model |
 | `energy_kwh_per_tkm`, `country` | leg, energy method |
@@ -244,7 +245,7 @@ A bad row fails only its shipment; the rest still calculate.
 
 ## Web page
 
-`carbonara serve` also serves a page at `/`: enter a shipment leg by leg and see its emissions, a bar of each leg's share split into vehicle and fuel-supply emissions, and for every number the distance method, calculation method, data type and factor source. It opens with a worked example.
+`carbonara serve` also serves a page at `/`: enter a shipment leg by leg, picking each leg's start and end by name or code (cities, ports, rail and road terminals, airports; the list follows the mode), and see its emissions, a bar of each leg's share split into vehicle and fuel-supply emissions, and for every number the distance method, calculation method, data type and factor source. It opens with a worked example.
 
 Below it, **Report** takes a shipments CSV (the `batch` columns), an organisation and a period, and shows the [report](#report-over-many-shipments): totals, modes, hubs, energy carriers, data quality, notes. Download it as Markdown or JSON. `POST /v1/report` takes the CSV directly with `Content-Type: text/csv`, report details in the query (`?organisation=...&period_from=...`).
 
@@ -269,10 +270,13 @@ Each output line is `{"line": n, "shipment_id": "...", "result": {...}}`, or `{"
 | `POST` | `/v1/calculate` | one shipment |
 | `POST` | `/v1/calculate/batch` | `{"shipments": [...]}`, up to 10,000 |
 | `POST` | `/v1/report` | `{"organisation", "period_from", "period_to", "shipments": [...]}`, JSON or `?format=md` |
+| `GET` | `/v1/places?q=rotterdam&kind=port` | find places by name, UN/LOCODE or IATA code |
 | `GET` | `/v1/factors` | loaded dataset |
 | `GET` | `/openapi.yaml` | spec |
 | `GET` | `/healthz` | liveness |
 | `GET` | `/` | web page |
+
+A leg's `from` and `to` can be a code instead of coordinates: `{"code": "NLRTM"}` (UN/LOCODE) or `{"code": "CPH"}` (IATA); in CSV, `from_code` and `to_code`. The place list is embedded (about 160,000 places: GeoNames cities of 5,000 people or more, UN/LOCODE transport locations with coordinates, airports with IATA codes) and rebuilt monthly by `tools/gazetteer`; searches need no outside service.
 
 Protections for running it on a network: at most `-max-concurrent` calculation requests at once (default 4 × CPUs; more get `503` with `Retry-After`), a `-request-timeout` per request (default 30 s, then `504`), `-max-legs` per shipment (default 100), 10 MiB bodies, 10,000 shipments per batch, panics answered with `500` without taking the server down, and `nosniff`/`no-store` headers. There's no authentication: put it behind your own gateway if it faces the internet.
 
@@ -359,12 +363,14 @@ go run ./tools/loadtest -kind batch -batch 1000 -c 4 -d 20s
 | `pkg/batch` | Parallel, ordered, bounded-memory batch processing. |
 | `pkg/ndjson` | Newline-delimited JSON input and output for streaming. |
 | `pkg/toc` | Transport and hub operation categories from operational data. |
+| `pkg/places` | Place search and location codes (embedded GeoNames, UN/LOCODE, OurAirports). |
 | `internal/desnz` | DESNZ flat-file importer. |
 | `internal/xlsx` | Minimal stdlib-only .xlsx reader. |
 | `internal/grid` | Grid intensity importer (Our World in Data / Ember). |
 | `internal/api` | HTTP handlers and OpenAPI spec. |
 | `cmd/carbonara` | CLI. |
 | `tools/loadtest` | Load generator for a running server. |
+| `tools/gazetteer` | Builds the embedded place list. |
 
 ## Roadmap
 

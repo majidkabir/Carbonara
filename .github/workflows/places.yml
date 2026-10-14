@@ -1,0 +1,37 @@
+name: Place list
+
+# Rebuilds pkg/places/data/places.tsv.gz from GeoNames, UN/LOCODE and
+# OurAirports, and commits it when it changed.
+on:
+  push:
+    branches: [main]
+    paths: [tools/gazetteer/**, .github/workflows/places.yml]
+  schedule:
+    - cron: "17 4 3 * *" # monthly
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency: places
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build
+        run: go run ./tools/gazetteer -fetch -out pkg/places/data/places.tsv.gz 2>&1 | tee build.log
+      - name: Test
+        run: go test ./pkg/places ./internal/api
+      - name: Commit
+        run: |
+          echo "::notice title=Place list::$(tail -1 build.log)"
+          if git diff --quiet; then echo "unchanged"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Place list: rebuilt from GeoNames, UN/LOCODE and OurAirports"
+          git push

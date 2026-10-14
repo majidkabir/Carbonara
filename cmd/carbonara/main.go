@@ -16,6 +16,7 @@ import (
 	"github.com/majidkabir/carbonara/pkg/csvio"
 	"github.com/majidkabir/carbonara/pkg/distance"
 	"github.com/majidkabir/carbonara/pkg/factors"
+	"github.com/majidkabir/carbonara/pkg/places"
 )
 
 // version is set at build time with -ldflags "-X main.version=...".
@@ -160,7 +161,7 @@ func (c *common) calculator() (calc.Calculator, *factors.Dataset, error) {
 	if len(routed) > 0 {
 		dist = distance.ByMode{Providers: routed, Fallback: dist}
 	}
-	return calc.Calculator{Factors: ds, Distances: dist, FerryVehicle: c.ferryVehicle}, ds, nil
+	return calc.Calculator{Factors: ds, Distances: dist, FerryVehicle: c.ferryVehicle, Places: places.Codes{}}, ds, nil
 }
 
 func (c *common) loadSea() (*distance.SeaNetwork, error) {

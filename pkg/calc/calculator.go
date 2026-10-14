@@ -41,6 +41,50 @@ type Calculator struct {
 	// FerryVehicle is the sea vehicle type for ferry crossings found on
 	// road routes (default DefaultFerryVehicle).
 	FerryVehicle string
+	// Places turns location codes into coordinates (optional).
+	Places Resolver
+}
+
+// Resolver finds a location by code: a UN/LOCODE or an IATA airport code.
+type Resolver interface {
+	Resolve(code string) (Location, bool)
+}
+
+// ErrUnknownLocation is returned for a location code that isn't known.
+var ErrUnknownLocation = errors.New("unknown location code")
+
+// resolve fills in the coordinates of locations given by code. Locations
+// with coordinates keep them; the code is then only a label.
+func (c Calculator) resolve(s Shipment) (Shipment, error) {
+	need := false
+	for _, l := range s.Legs {
+		need = need || (l.From.Code != "" && isZero(l.From)) || (l.To.Code != "" && isZero(l.To))
+	}
+	if !need {
+		return s, nil
+	}
+	legs := make([]Leg, len(s.Legs))
+	copy(legs, s.Legs)
+	for i := range legs {
+		for name, p := range map[string]*Location{"from": &legs[i].From, "to": &legs[i].To} {
+			if p.Code == "" || !isZero(*p) {
+				continue
+			}
+			if c.Places == nil {
+				return s, fmt.Errorf("leg %d %s: %w %q (no place list loaded)", i+1, name, ErrUnknownLocation, p.Code)
+			}
+			loc, ok := c.Places.Resolve(p.Code)
+			if !ok {
+				return s, fmt.Errorf("leg %d %s: %w %q (give a UN/LOCODE like NLRTM or an IATA code like CPH)", i+1, name, ErrUnknownLocation, p.Code)
+			}
+			if p.Name != "" {
+				loc.Name = p.Name
+			}
+			*p = loc
+		}
+	}
+	s.Legs = legs
+	return s, nil
 }
 
 // Input errors returned by Calculate. Wrapped errors carry details; match
@@ -70,6 +114,10 @@ var (
 //
 //	hub kg   = (weight_kg / 1000) * hub g/t / 1000
 func (c Calculator) Calculate(ctx context.Context, s Shipment) (Result, error) {
+	s, err := c.resolve(s)
+	if err != nil {
+		return Result{}, err
+	}
 	if err := validate(s); err != nil {
 		return Result{}, err
 	}

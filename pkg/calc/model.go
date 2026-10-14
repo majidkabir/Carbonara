@@ -12,9 +12,12 @@ const (
 	InlandWaterway Mode = "inland_waterway"
 )
 
-// Location is a point on the map.
+// Location is a point on the map. Instead of coordinates it can give a
+// Code, a UN/LOCODE ("NLRTM") or an IATA airport code ("CPH"), which the
+// Calculator's Places turns into coordinates.
 type Location struct {
 	Name string  `json:"name,omitempty"`
+	Code string  `json:"code,omitempty"`
 	Lat  float64 `json:"lat"`
 	Lon  float64 `json:"lon"`
 }
