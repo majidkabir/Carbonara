@@ -2,6 +2,8 @@
 
 Source-available freight emissions calculator following the GLEC Framework / ISO 14083 approach. Free for non-commercial use; see [License](#license).
 
+**Try it at [carbonara-co2.org](https://carbonara-co2.org)**: a free test service with worldwide road, rail, inland waterway and sea routing. Sign in with your email to use the calculator and get an API key.
+
 Ships with the **UK DESNZ 2026** conversion factors built in: 127 freight factors (road, rail, sea, air) and 166 fuel factors, each split into tank-to-wheel and well-to-tank.
 
 ## Quick start

@@ -8,6 +8,11 @@ info:
   license:
     name: PolyForm Noncommercial 1.0.0
     identifier: PolyForm-Noncommercial-1.0.0
+servers:
+  - url: https://carbonara-co2.org
+    description: "Free test service; send your API key as 'Authorization: Bearer <key>' (get one at https://carbonara-co2.org)"
+  - url: http://localhost:8080
+    description: carbonara serve
 paths:
   /healthz:
     get:
