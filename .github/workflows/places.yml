@@ -26,10 +26,12 @@ jobs:
       - name: Build
         run: go run ./tools/gazetteer -fetch -out pkg/places/data/places.tsv.gz 2>&1 | tee build.log
       - name: Test
-        run: go test ./pkg/places ./internal/api
-      - name: Commit
         run: |
           echo "::notice title=Place list::$(tail -1 build.log)"
+          go test ./pkg/places ./internal/api 2>&1 | tee test.log || {
+            grep -E "_test.go|FAIL|panic" test.log | head -9 | sed 's/^[[:space:]]*/::error::/'; exit 1; }
+      - name: Commit
+        run: |
           if git diff --quiet; then echo "unchanged"; exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
