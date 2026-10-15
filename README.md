@@ -272,6 +272,8 @@ A bad row fails only its shipment; the rest still calculate. Only failures cause
 
 Below it, **Report** takes a shipments CSV (the `batch` columns), an organisation and a period, and shows the [report](#report-over-many-shipments): totals, modes, hubs, energy carriers, data quality, notes. Download it as Markdown or JSON, and each shipment's full calculation as CSV (a row per leg and hub: distance and how it was found, method, data type, emissions, factor source, notes on added legs) or JSON, all from the one calculation. `POST /v1/report` takes the CSV directly with `Content-Type: text/csv`, report details in the query (`?organisation=...&period_from=...`).
 
+**Check the calculation.** Under each result, "Check the calculation step by step" lays out every step: the cargo mass, each leg's distance and how it was found, the transport activity, the intensity (the factor and its source, the load model's per-km values, the DAF, the fuel or electricity used) and the emissions, then the total and the data quality. Each step shows its arithmetic with the numbers used, and the GLEC Framework v3.2 page and ISO 14083:2023 clause it follows (the clause numbers are those GLEC lists in its "ISO References" boxes), so someone who knows the methods can redo it by hand. Download it as Markdown, or print it to PDF. The API gives the same with `POST /v1/calculate?explain=true`.
+
 Each calculation also shows the legs on a map: the route as routed (road, rail, river, sea), or a dashed straight line where the distance was given or estimated. The map uses the bundled Leaflet and OpenStreetMap's tiles; everything else on the page works offline (no external scripts or fonts), in light or dark mode.
 
 ## Streaming (Kafka and pipes)

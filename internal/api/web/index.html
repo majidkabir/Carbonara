@@ -125,6 +125,20 @@ pre { background: var(--paper); padding: 12px; border-radius: 4px; overflow: aut
 .warn ul { margin: 4px 0 0; padding-left: 18px; }
 .dtype.added { border-color: var(--signal); }
 .note { color: var(--ink); font-size: .85rem; margin-top: 4px; max-width: 72ch; }
+details.sheet { margin: 20px 0 8px; border-top: 1px solid var(--rule); padding-top: 12px; }
+details.sheet > summary { cursor: pointer; color: var(--blue); font-weight: 600; }
+.sheet h4 { margin: 22px 0 6px; font-size: .95rem; border-bottom: 1px solid var(--rule); padding-bottom: 4px; }
+.sheet .step { margin: 10px 0 14px; font-size: .9rem; }
+.sheet .step p { margin: 4px 0; max-width: 80ch; }
+.sheet pre.formula { margin: 6px 0; padding: 8px 10px; background: var(--paper); border-radius: 4px;
+  font-size: .82rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.sheet .basis { color: var(--muted); font-size: .8rem; }
+@media print {
+  body * { visibility: hidden; }
+  #sheet, #sheet * { visibility: visible; }
+  #sheet { position: absolute; left: 0; top: 0; width: 100%; border: 0; }
+  #sheet .actions, #sheet > summary { display: none; }
+}
 input[type="file"] { padding: 7px; }
 .quality { display: flex; height: 18px; border-radius: 3px; overflow: hidden; background: var(--paper); margin: 8px 0 6px; }
 .quality span { min-width: 2px; }
@@ -462,7 +476,7 @@ async function calculate(e) {
   btn.disabled = true; btn.textContent = "Calculating…";
   let res, body;
   try {
-    res = await fetch("v1/calculate?path=true", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(req) });
+    res = await fetch("v1/calculate?path=true&explain=true", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(req) });
     body = await res.json();
   } catch (err) {
     $("#error").textContent = "Couldn't reach the Carbonara server. Check it's still running.";
@@ -557,10 +571,51 @@ function render(req, r) {
       <thead><tr><th>Element</th><th class="num">Distance</th><th>Method</th>
         <th class="num">Vehicle</th><th class="num">Supply</th><th class="num">Total</th></tr></thead>
       <tbody>${rows}</tbody></table></div>
+    ${sheetHTML(r.explanation)}
     <details class="json"><summary>Show request and response JSON</summary>
       <pre>${esc(JSON.stringify(req, null, 2))}</pre><pre>${esc(JSON.stringify(r, (k, v) =>
-        k === "path" && Array.isArray(v) ? `[${v.length} points]` : v, 2))}</pre></details>`;
+        k === "path" && Array.isArray(v) ? `[${v.length} points]` : k === "explanation" ? "(see above)" : v, 2))}</pre></details>`;
+  if (r.explanation) {
+    $("#sheet-md").addEventListener("click", () => download(sheetMarkdown(r.explanation), "text/markdown",
+      `calculation-${(r.shipment_id || "shipment").replace(/[^\w.-]+/g, "_")}.md`));
+    $("#sheet-print").addEventListener("click", () => { $("#sheet").open = true; window.print(); });
+  }
   drawMap(r);
+}
+
+// ---- Calculation sheet: every step with its numbers and its GLEC / ISO 14083 basis ----
+function sheetHTML(sh) {
+  if (!sh) return "";
+  let group = "";
+  const steps = sh.steps.map(st => {
+    const head = st.group !== group ? `<h4>${esc(st.group)}</h4>` : "";
+    group = st.group;
+    return `${head}<div class="step"><strong>${esc(st.title)}</strong>
+      ${st.text ? `<p>${esc(st.text)}</p>` : ""}${st.formula ? `<pre class="formula">${esc(st.formula)}</pre>` : ""}
+      ${(st.basis || []).length ? `<p class="basis">${st.basis.map(esc).join("<br>")}</p>` : ""}</div>`;
+  }).join("");
+  return `<details class="sheet" id="sheet"><summary>Check the calculation step by step (GLEC Framework v3.2, ISO 14083)</summary>
+    <p class="answer-sub">${esc(sh.summary)} Each step shows the numbers used and where the method comes from, so it can be redone by hand.</p>
+    <div class="actions"><button type="button" class="btn" id="sheet-md">Download as Markdown</button>
+      <button type="button" class="btn" id="sheet-print">Print or save as PDF</button></div>
+    ${steps}
+    <p class="basis">${esc(sh.note)}</p>
+    <p class="basis">References: ${sh.references.map(esc).join("; ")}.</p></details>`;
+}
+function sheetMarkdown(sh) {
+  const out = [`# Calculation: ${sh.shipment_id || "shipment"}`, "", sh.summary, ""];
+  let group = "";
+  for (const st of sh.steps) {
+    if (st.group !== group) { out.push(`## ${st.group}`, ""); group = st.group; }
+    out.push(`### ${st.title}`, "");
+    if (st.text) out.push(st.text, "");
+    if (st.formula) out.push("```", st.formula, "```", "");
+    for (const b of st.basis || []) out.push(`- ${b}`);
+    if ((st.basis || []).length) out.push("");
+  }
+  out.push("---", "", sh.note, "", "References:", "", ...sh.references.map(r => `- ${r}`), "",
+    "Calculated with Carbonara (https://carbonara-co2.org).", "");
+  return out.join("\n");
 }
 
 // ---- Route map (Leaflet, bundled; tiles from OpenStreetMap) ----

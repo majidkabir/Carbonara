@@ -21,6 +21,7 @@ import (
 
 	"github.com/majidkabir/carbonara/pkg/calc"
 	"github.com/majidkabir/carbonara/pkg/csvio"
+	"github.com/majidkabir/carbonara/pkg/explain"
 	"github.com/majidkabir/carbonara/pkg/places"
 	"github.com/majidkabir/carbonara/pkg/report"
 )
@@ -243,7 +244,20 @@ func (s *Server) calculate(w http.ResponseWriter, r *http.Request) {
 		writeError(w, calcStatus(err), err)
 		return
 	}
+	if v := r.URL.Query().Get("explain"); v == "true" || v == "1" {
+		sheet := explain.Shipment(sh, res, s.Calc.Factors)
+		writeJSON(w, http.StatusOK, ExplainedResult{Result: res, Explanation: &sheet})
+		return
+	}
 	writeJSON(w, http.StatusOK, res)
+}
+
+// ExplainedResult is the body of POST /v1/calculate?explain=true: the
+// result, and how it was calculated step by step with the GLEC Framework
+// and ISO 14083 basis of each step.
+type ExplainedResult struct {
+	calc.Result
+	Explanation *explain.Sheet `json:"explanation,omitempty"`
 }
 
 // PlacesResponse is the body returned by GET /v1/places.

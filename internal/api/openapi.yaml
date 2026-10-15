@@ -61,6 +61,13 @@ paths:
           in: query
           schema: { type: boolean, default: true }
           description: false adds no road legs for shipments that don't set add_road_legs themselves.
+        - name: explain
+          in: query
+          schema: { type: boolean, default: false }
+          description: >
+            Add "explanation": the calculation step by step (cargo mass, each leg's distance, transport
+            activity, intensity and emissions, hubs, total), with the numbers used and the GLEC Framework
+            v3.2 pages and ISO 14083:2023 clauses each step follows, so that it can be checked by hand.
         - name: path
           in: query
           schema: { type: boolean, default: false }

@@ -86,6 +86,10 @@ func (m LoadModel) at(lf float64) (ttw, wtt float64) {
 	return last.TTW, last.WTT
 }
 
+// At returns emissions per vehicle-km (TTW, WTT) at load factor lf, as the
+// model interpolates them.
+func (m LoadModel) At(lf float64) (ttw, wtt float64) { return m.at(lf) }
+
 // PerTonneKm returns TTW and WTT in g CO2e per tonne-km for a load factor
 // and empty trip factor.
 func (m LoadModel) PerTonneKm(lf, etf float64) (ttw, wtt float64, err error) {
