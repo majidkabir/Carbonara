@@ -49,7 +49,32 @@ type entry struct {
 
 type city struct {
 	entry
-	names map[string]bool // folded name, ascii name and alternate names
+	admin1 string          // GeoNames admin1 code, e.g. "GA" in the US
+	names  map[string]bool // folded name, ascii name and alternate names
+}
+
+// portCoords are the coordinates of large sea ports that UN/LOCODE lists
+// without coordinates and whose name isn't a GeoNames city: the
+// calculator's sea port list (pkg/places/seaports.go) needs them.
+var portCoords = map[string][2]float64{
+	"TWKHH": {22.61, 120.29}, "TWKEL": {25.15, 121.74}, "JPNGO": {35.06, 136.87}, "IDBLW": {3.79, 98.69},
+	"PHMNL": {14.59, 120.96}, "MMRGN": {16.77, 96.17}, "RUVVO": {43.11, 131.89}, "INNSA": {18.95, 72.95},
+	"INMUN": {22.74, 69.70}, "PKKHI": {24.84, 66.98}, "AEJEA": {25.01, 55.06}, "OMSLL": {16.94, 54.00},
+	"OMSOH": {24.50, 56.62}, "ILASH": {31.82, 34.64}, "GBFXT": {51.95, 1.32}, "GBSOU": {50.90, -1.42},
+	"GBTIL": {51.46, 0.36}, "ESVLC": {39.44, -0.32}, "ESALG": {36.13, -5.43}, "ESBCN": {41.35, 2.16},
+	"ITTRS": {45.63, 13.77}, "ITSAL": {40.67, 14.74}, "SIKOP": {45.56, 13.74}, "BGVAR": {43.19, 27.90},
+	"PLGDN": {54.40, 18.67}, "LTKLJ": {55.70, 21.13}, "LVRIX": {56.99, 24.07}, "IEDUB": {53.35, -6.21},
+	"EGPSD": {31.25, 32.31}, "MAPTM": {35.89, -5.50}, "KEMBA": {-4.06, 39.65}, "DJJIB": {11.60, 43.13},
+	"SDPZU": {19.61, 37.23}, "NGAPP": {6.44, 3.37}, "NGTIN": {6.44, 3.35}, "GHTEM": {5.63, 0.01},
+	"SNDKR": {14.68, -17.43}, "TGLFW": {6.14, 1.28}, "BJCOO": {6.35, 2.43}, "CMDLA": {4.05, 9.69},
+	"AOLAD": {-8.80, 13.24}, "MZMPM": {-25.97, 32.57}, "NAWVB": {-22.95, 14.50}, "MUPLU": {-20.15, 57.49},
+	"USOAK": {37.80, -122.30}, "USSEA": {47.58, -122.35}, "USTIW": {47.27, -122.41}, "USSAV": {32.12, -81.14},
+	"USCHS": {32.79, -79.92}, "USORF": {36.90, -76.33}, "USMIA": {25.77, -80.17}, "USJAX": {30.40, -81.55},
+	"USPHL": {39.90, -75.14}, "USMOB": {30.69, -88.04}, "USMSY": {29.93, -90.06}, "USBOS": {42.35, -71.03},
+	"CAVAN": {49.29, -123.10}, "CAPRR": {54.30, -130.35}, "CAMTR": {45.55, -73.53}, "CAHAL": {44.64, -63.57},
+	"PABLB": {8.95, -79.57}, "PAMIT": {9.36, -79.88}, "HNPCR": {15.84, -87.95}, "COCTG": {10.39, -75.52},
+	"COBUN": {3.89, -77.07}, "UYMVD": {-34.90, -56.21}, "JMKIN": {17.98, -76.83}, "BSFPO": {26.52, -78.77},
+	"AUFRE": {-32.05, 115.74},
 }
 
 func main() {
@@ -87,11 +112,35 @@ func main() {
 		return [3]int{int(cc[0])<<8 | int(cc[1]), int(math.Floor(lat * 5)), int(math.Floor(lon * 5))}
 	}
 	var all []entry
+	byName := map[string][]*city{} // by country and folded name
 	for _, c := range cities {
 		all = append(all, c.entry)
 		k := cell(c.country, c.lat, c.lon)
 		grid[k] = append(grid[k], c)
+		for n := range c.names {
+			byName[c.country+" "+n] = append(byName[c.country+" "+n], c)
+		}
 	}
+	// cityCoords finds a UN/LOCODE place without coordinates among the
+	// cities of its country by name: in its subdivision if a city there has
+	// the name (GeoNames and UN/LOCODE share them in some countries, the US
+	// for one), else the largest.
+	cityCoords := func(cc, sub string, names ...string) (float64, float64, bool) {
+		var best *city
+		inSub := func(c *city) bool { return sub != "" && c.admin1 == sub }
+		for _, n := range names {
+			for _, c := range byName[cc+" "+places.Fold(n)] {
+				if best == nil || inSub(c) && !inSub(best) || inSub(c) == inSub(best) && c.rank > best.rank {
+					best = c
+				}
+			}
+		}
+		if best == nil {
+			return 0, 0, false
+		}
+		return best.lat, best.lon, true
+	}
+	nByName, nByTable := 0, 0
 	// englishName finds a nearby city that has the place's name among its
 	// names, and returns that city's own (usually English) name.
 	englishName := func(cc string, lat, lon float64, folded string) (string, int) {
@@ -129,6 +178,14 @@ func main() {
 			continue
 		}
 		lat, lon, ok := locodeCoords(r[10])
+		if c, fixed := portCoords[r[1]+r[2]]; fixed && !ok {
+			lat, lon, ok = c[0], c[1], true
+			nByTable++
+		} else if !ok && strings.TrimSpace(r[10]) == "" {
+			if lat, lon, ok = cityCoords(r[1], r[5], r[3], r[4]); ok {
+				nByName++
+			}
+		}
 		if !ok {
 			continue
 		}
@@ -208,7 +265,8 @@ func main() {
 	if err := os.WriteFile(*out, buf.Bytes(), 0o644); err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("%s: %d cities, %d UN/LOCODE places, %d airports, %d bytes", *out, len(cities), nLocode, nAir, buf.Len())
+	log.Printf("%s: %d cities, %d UN/LOCODE places (%d placed by city name, %d by the port table), %d airports, %d bytes",
+		*out, len(cities), nLocode, nByName, nByTable, nAir, buf.Len())
 }
 
 func get(u string) ([]byte, error) {
@@ -272,7 +330,7 @@ func readCities(zipped, admin1 []byte) []*city {
 			rank = min(80, 40+int(10*math.Log10(pop/5000)))
 		}
 		c := &city{entry: entry{id: "geonames:" + p[0], kinds: "c", name: p[1], region: regions[p[8]+"."+p[10]],
-			country: p[8], lat: lat, lon: lon, rank: rank}, names: map[string]bool{}}
+			country: p[8], lat: lat, lon: lon, rank: rank}, admin1: p[10], names: map[string]bool{}}
 		for _, n := range append([]string{p[1], p[2]}, strings.Split(p[3], ",")...) {
 			if n = places.Fold(n); n != "" {
 				c.names[n] = true

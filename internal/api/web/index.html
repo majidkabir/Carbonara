@@ -114,6 +114,11 @@ pre { background: var(--paper); padding: 12px; border-radius: 4px; overflow: aut
 @media (max-width: 900px) { .section-title { padding: 0 16px 8px; } }
 .check { display: flex; align-items: flex-start; gap: 8px; color: var(--ink); font-size: .9rem; margin: 4px 0 12px; }
 .check input { width: auto; margin-top: 3px; }
+.warn { border-left: 4px solid var(--signal); background: color-mix(in srgb, var(--signal) 12%, transparent);
+  padding: 8px 12px; margin: 0 0 18px; font-size: .9rem; }
+.warn ul { margin: 4px 0 0; padding-left: 18px; }
+.dtype.added { border-color: var(--signal); }
+.note { color: var(--ink); font-size: .85rem; margin-top: 4px; max-width: 72ch; }
 input[type="file"] { padding: 7px; }
 .quality { display: flex; height: 18px; border-radius: 3px; overflow: hidden; background: var(--paper); margin: 8px 0 6px; }
 .quality span { min-width: 2px; }
@@ -173,6 +178,9 @@ footer.credits a { color: var(--blue); }
 
       <div id="legs"></div>
 
+      <label class="check"><input type="checkbox" id="roadlegs" checked>
+        <span>Add missing road legs: between legs that don't meet, and to a port or rail terminal when a sea, rail or
+          river leg starts or ends away from its network.</span></label>
       <div class="actions">
         <button type="button" class="btn" id="add">Add leg</button>
         <button type="submit" class="btn primary">Calculate</button>
@@ -203,6 +211,8 @@ footer.credits a { color: var(--blue); }
         <div><label for="rfrom">Period from</label><input id="rfrom" type="date"></div>
         <div><label for="rto">Period to</label><input id="rto" type="date"></div>
       </div>
+      <label class="check"><input type="checkbox" id="rroadlegs" checked>
+        <span>Add missing road legs (see above).</span></label>
       <label class="check"><input type="checkbox" id="riso">
         <span>Declare conformity with ISO 14083:2023. Only tick this if your data collection and boundaries conform.</span></label>
       <div class="actions">
@@ -415,6 +425,7 @@ function buildShipment() {
     if (fuel) l.fuel = { fuel, amount: num(f("fuel_amount")) || 0, vehicle_tonne_km: num(f("vehicle_tonne_km")) };
     s.legs.push(l);
   });
+  if (!$("#roadlegs").checked) s.add_road_legs = false;
   return s;
 }
 
@@ -438,9 +449,16 @@ async function calculate(e) {
   }
 }
 
+// legInfo names a result leg, "Leg 2" for the shipment's own (found by id) or "Added" for a road leg the
+// calculator added, and finds its request leg.
+function legInfo(req, l) {
+  const i = req.legs.findIndex(x => x.id === l.leg_id);
+  return { name: l.added ? "Added" : `Leg ${i + 1}`, req: req.legs[i] || {} };
+}
+
 function render(req, r) {
   const parts = [
-    ...r.legs.map((l, i) => ({ label: `Leg ${i + 1}, ${(modeName[req.legs[i].mode] || req.legs[i].mode).toLowerCase()}`, ttw: l.ttw_kg, wtt: l.wtt_kg, wtw: l.wtw_kg })),
+    ...r.legs.map(l => ({ label: `${legInfo(req, l).name}, ${(modeName[l.mode] || l.mode).toLowerCase()}`, ttw: l.ttw_kg, wtt: l.wtt_kg, wtw: l.wtw_kg })),
     ...(r.hubs || []).map(h => ({ label: h.hub_type, ttw: 0, wtt: h.wtw_kg, wtw: h.wtw_kg, hub: true })),
   ];
   const total = r.wtw_kg || 1;
@@ -453,8 +471,8 @@ function render(req, r) {
   const labels = parts.map(p => `<span style="flex:0 0 ${Math.max(p.wtw / total * 100, 0.6)}%">${esc(p.label)}</span>`).join("");
 
   const unit = u => String(u || "").replace(/s$/, "");
-  const rows = r.legs.map((l, i) => {
-    const f = l.factor || {}, ff = l.fuel_factor;
+  const rows = r.legs.map(l => {
+    const f = l.factor || {}, ff = l.fuel_factor, info = legInfo(req, l);
     let how;
     if (ff) {
       how = `${fmt(ff.wtt_kg_per_unit + ff.ttw_kg_per_unit, 3)} kg CO₂e per ${esc(unit(ff.unit))}` +
@@ -475,9 +493,10 @@ function render(req, r) {
         `${fmt((rp.not_electrified || 0) / l.distance_km * 100, 0)}% not, the rest unknown. ` +
         `Give energy per tonne-km and a country to calculate the electrified part on the grid.`;
     }
-    const vt = f.vehicle_type || req.legs[i].vehicle_type || "";
+    const vt = f.vehicle_type || l.vehicle_type || info.req.vehicle_type || "";
+    if (l.note) how = `<div class="note">${esc(l.note)}</div>` + how;
     return `<tr>
-      <td><strong>Leg ${i + 1}</strong> ${esc((modeName[req.legs[i].mode] || "").toLowerCase())}</td>
+      <td><strong>${info.name}</strong> ${esc((modeName[l.mode] || "").toLowerCase())}${l.added ? `<br><span class="dtype added">added</span>` : ""}</td>
       <td class="num">${fmt(l.distance_km, 0)} km<div class="id">${esc(distName[l.distance_method] || l.distance_method || "")}</div></td>
       <td>${esc(methodName[l.method] || l.method)}<br><span class="dtype ${esc(l.data_type)}">${esc(l.data_type)}</span></td>
       <td class="num">${kg(l.ttw_kg)}</td><td class="num">${kg(l.wtt_kg)}</td><td class="num"><strong>${kg(l.wtw_kg)}</strong></td>
@@ -489,8 +508,12 @@ function render(req, r) {
       <tr class="how-row"><td colspan="6"><div class="how">${esc(h.source)}</div></td></tr>`).join("");
 
   const share = Math.round(r.primary_data_share * 100);
+  const added = r.legs.filter(l => l.added).length;
+  const warnings = (r.warnings || []).map(w => `<li>${esc(w)}</li>`).join("");
   $("#result").innerHTML = `
     <p class="answer">This shipment emits <strong>${kg(r.wtw_kg)}</strong> CO₂e well-to-wheel.</p>
+    ${added ? `<p class="warn">${added === 1 ? "A road leg was" : `${added} road legs were`} added to join up the trip; they are marked <em>added</em> below and included in the total.</p>` : ""}
+    ${warnings ? `<div class="warn">Check these, they may make the result too low:<ul>${warnings}</ul></div>` : ""}
     <p class="answer-sub">${fmt(r.weight_kg / 1000, 2)} t over ${fmt(r.tonne_km, 0)} tonne-km:
       ${kg(r.ttw_kg)} from the vehicles, ${kg(r.wtt_kg)} from producing their fuel or electricity,
       ${fmt(r.intensity_g_per_tkm, 1)} g per tonne-km. ${share}% from measured data.</p>
@@ -554,11 +577,12 @@ async function drawMap(r) {
   mapLayer = L.featureGroup().addTo(map);
   const used = new Set();
   let straight = false;
-  legs.forEach((l, i) => {
+  legs.forEach(l => {
     const pts = unwrap(l.path), color = modeColor[l.mode] || "#5A6878", line = l.path.length === 2;
     straight ||= line; used.add(l.mode);
-    L.polyline(pts, { color, weight: 4, opacity: .9, dashArray: line ? "8 8" : null })
-      .bindTooltip(`Leg ${i + 1}, ${modeName[l.mode] || l.mode}: ${fmt(l.distance_km, 0)} km`).addTo(mapLayer);
+    const name = l.added ? "Added road leg" : `Leg ${String(l.leg_id).replace(/^leg-/, "")}, ${modeName[l.mode] || l.mode}`;
+    L.polyline(pts, { color, weight: l.added ? 3 : 4, opacity: l.added ? .7 : .9, dashArray: line ? "8 8" : null })
+      .bindTooltip(`${name}: ${fmt(l.distance_km, 0)} km`).addTo(mapLayer);
     for (const p of [pts[0], pts[pts.length - 1]])
       L.circleMarker(p, { radius: 5, color: "#1D2A38", weight: 2, fillColor: "#fff", fillOpacity: 1 }).addTo(mapLayer);
   });
@@ -616,6 +640,7 @@ function reportQuery(format) {
   if ($("#rfrom").value) q.set("period_from", $("#rfrom").value);
   if ($("#rto").value) q.set("period_to", $("#rto").value);
   if ($("#riso").checked) q.set("declare_iso", "true");
+  if (!$("#rroadlegs").checked) q.set("add_road_legs", "false");
   if (format) q.set("format", format);
   return q.toString();
 }
@@ -693,6 +718,9 @@ function renderReport(r) {
     ${sources ? `<p class="id">Default values from:</p><ul class="notes">${sources}</ul>` : ""}
     ${models ? `<p class="id">Models:</p><ul class="notes">${models}</ul>` : ""}
     ${dafs ? `<h3 class="sub">Distance adjustment factors</h3><ul class="notes">${dafs}</ul>` : ""}
+    ${(c.warnings || []).length ? `<h3 class="sub">Warnings</h3>
+      <div class="scroll"><table class="report-table long-names"><thead><tr><th>Warning</th><th class="num">Shipments</th></tr></thead>
+      <tbody>${c.warnings.map(x => `<tr><td>${esc(x.reason)}</td><td class="num">${x.shipments}</td></tr>`).join("")}</tbody></table></div>` : ""}
     ${c.failed ? `<h3 class="sub">Shipments not calculated</h3>
       <div class="scroll"><table class="report-table long-names"><thead><tr><th>Reason</th><th class="num">Shipments</th></tr></thead>
       <tbody>${(c.failure_reasons || []).map(x => `<tr><td>${esc(x.reason)}</td><td class="num">${x.shipments}</td></tr>`).join("")}</tbody></table></div>

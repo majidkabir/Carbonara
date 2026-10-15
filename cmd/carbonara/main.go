@@ -81,6 +81,8 @@ type common struct {
 	roadRegions                                    string
 	seaNetwork, seaAvoid, seaOpen                  string
 	seaMaxSnapKm, waterwayMaxSnapKm, railMaxSnapKm float64
+	roadLegs                                       bool
+	roadVehicle                                    string
 	ferryVehicle                                   string
 }
 
@@ -111,6 +113,10 @@ func (c *common) register(fs *flag.FlagSet) {
 	fs.StringVar(&c.seaOpen, "sea-open", "", "comma-separated passages to open that are closed by default ("+
 		strings.Join(distance.DefaultAvoid, ",")+")")
 	fs.Float64Var(&c.seaMaxSnapKm, "sea-max-snap-km", 0, "reject sea points farther than this from the network (0 = no limit)")
+	fs.BoolVar(&c.roadLegs, "road-legs", true,
+		"add road legs where legs don't join up or a sea, rail or waterway leg starts or ends off its network")
+	fs.StringVar(&c.roadVehicle, "road-leg-vehicle", "",
+		"vehicle type of added road legs (default: the shipment's first road leg's, else "+calc.DefaultRoadVehicle+")")
 }
 
 func (c *common) dataset() (*factors.Dataset, error) {
@@ -171,7 +177,8 @@ func (c *common) calculator() (calc.Calculator, *factors.Dataset, error) {
 	if len(routed) > 0 {
 		dist = distance.ByMode{Providers: routed, Fallback: dist}
 	}
-	return calc.Calculator{Factors: ds, Distances: dist, FerryVehicle: c.ferryVehicle, Places: places.Codes{}}, ds, nil
+	return calc.Calculator{Factors: ds, Distances: dist, FerryVehicle: c.ferryVehicle, Places: places.Codes{},
+		NoRoadLegs: !c.roadLegs, RoadVehicle: c.roadVehicle}, ds, nil
 }
 
 func (c *common) loadSea() (*distance.SeaNetwork, error) {

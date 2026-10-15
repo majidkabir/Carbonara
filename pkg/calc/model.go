@@ -94,6 +94,10 @@ type Shipment struct {
 	ContainerLoad string    `json:"container_load,omitempty"`
 	Legs          []Leg     `json:"legs"`
 	Hubs          []HubStop `json:"hubs,omitempty"`
+	// AddRoadLegs adds road legs where the legs don't join up or a sea,
+	// rail or waterway leg starts or ends off its network (see connect.go).
+	// nil means on, unless the context says otherwise (WithoutRoadLegs).
+	AddRoadLegs *bool `json:"add_road_legs,omitempty"`
 }
 
 // Factor is an intensity-based emission factor for a mode/vehicle type,
@@ -128,6 +132,14 @@ type HubFactor struct {
 // LegResult is the outcome for one leg.
 type LegResult struct {
 	LegID string `json:"leg_id"`
+	// Added says why the calculator added this road leg (AddedGap or
+	// AddedAccess); empty for the shipment's own legs. Note explains an
+	// added leg, or a leg whose end was moved to a port or terminal; From
+	// and To are set for both.
+	Added string    `json:"added,omitempty"`
+	Note  string    `json:"note,omitempty"`
+	From  *Location `json:"from,omitempty"`
+	To    *Location `json:"to,omitempty"`
 	// Mode and VehicleType are the leg's, as given.
 	Mode        Mode    `json:"mode"`
 	VehicleType string  `json:"vehicle_type,omitempty"`
@@ -213,6 +225,9 @@ type Result struct {
 	PrimaryDataShare float64 `json:"primary_data_share"`
 	// Dataset names the factor dataset used, when the provider reports it.
 	Dataset string `json:"dataset,omitempty"`
+	// Warnings are things left as given that may make the result too low:
+	// gaps between legs not covered, sea legs starting or ending inland.
+	Warnings []string `json:"warnings,omitempty"`
 }
 
 // DatasetNamer is optionally implemented by a FactorProvider.

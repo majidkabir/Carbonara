@@ -230,3 +230,26 @@ func TestFailureReasons(t *testing.T) {
 		t.Fatalf("reasons %+v", r.Coverage.FailureReasons)
 	}
 }
+
+func TestAddedRoadLegsAndWarnings(t *testing.T) {
+	b := New(Meta{})
+	b.Add("a", calc.Result{WeightKg: 1000, Legs: []calc.LegResult{
+		{Mode: calc.Road, Added: calc.AddedGap, DistanceKm: 120.4, TonneKm: 120.4, WTWKg: 10},
+		{Mode: calc.Sea, DistanceKm: 1000, TonneKm: 1000, WTWKg: 10},
+	}}, nil)
+	b.Add("b", calc.Result{WeightKg: 1000, Legs: []calc.LegResult{{Mode: calc.Sea, DistanceKm: 1000, TonneKm: 1000, WTWKg: 10}},
+		Warnings: []string{`leg "x" starts at Munich, 298 km from the sea network; that part is counted as sea distance`}}, nil)
+	b.Add("c", calc.Result{WeightKg: 1000, Legs: []calc.LegResult{{Mode: calc.Sea, DistanceKm: 1000, TonneKm: 1000, WTWKg: 10}},
+		Warnings: []string{`leg "y" starts at Vienna, 346 km from the sea network; that part is counted as sea distance`}}, nil)
+	r := b.Report()
+	c := r.Coverage
+	if c.AddedRoadLegs != 1 || c.AddedShipments != 1 || c.AddedRoadKm != 120.4 || c.Warned != 2 ||
+		len(c.Warnings) != 1 || c.Warnings[0].Shipments != 2 {
+		t.Fatalf("coverage %+v", c)
+	}
+	notes := strings.Join(r.Notes, "\n")
+	if !strings.Contains(notes, "Road legs added by the calculator: 1 (120 km) on 1 shipment,") ||
+		!strings.Contains(notes, "2 shipments have warnings that may make the results too low: 2 × a sea leg starts or ends inland") {
+		t.Errorf("notes:\n%s", notes)
+	}
+}

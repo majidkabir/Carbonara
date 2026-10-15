@@ -1,6 +1,7 @@
 package places
 
 import (
+	"github.com/majidkabir/carbonara/pkg/calc"
 	"testing"
 	"time"
 )
@@ -89,5 +90,67 @@ func BenchmarkSearch(b *testing.B) {
 	ix, _ := Default()
 	for b.Loop() {
 		ix.Search("hamb", nil, 10)
+	}
+}
+
+func TestNear(t *testing.T) {
+	ix, err := Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	munich := calc.Location{Lat: 48.14, Lon: 11.58}
+	got := ix.Near(munich, []string{Rail}, 30, 5)
+	if len(got) == 0 || len(got) > 5 {
+		t.Fatalf("rail places near Munich: %v", got)
+	}
+	last := 0.0
+	for _, l := range got {
+		d := haversine(munich.Lat, munich.Lon, l.Lat, l.Lon)
+		if d > 30 || d < last {
+			t.Errorf("%s at %.1f km: not within 30 km, nearest first", l.Name, d)
+		}
+		last = d
+	}
+	ports := ix.Near(munich, []string{Port, Rail}, 1000, 5000)
+	names := map[string]bool{}
+	for _, l := range ports {
+		names[l.Code] = true
+	}
+	for _, c := range []string{"DEHAM", "DEBRV"} {
+		if !names[c] {
+			t.Errorf("no %s among %d ports with rail within 1000 km of Munich", c, len(ports))
+		}
+	}
+	if len(ix.Near(munich, []string{Port}, 5, 3)) != 0 {
+		t.Errorf("Munich isn't a port")
+	}
+}
+
+func TestSeaports(t *testing.T) {
+	ix, err := Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for c := range seaports {
+		p, ok := ix.Lookup(c)
+		if !ok {
+			t.Errorf("sea port %s isn't in the place list", c)
+			continue
+		}
+		if !p.allKinds([]string{Port, SeaPort}) {
+			t.Errorf("sea port %s (%s) isn't a port: %v", c, p.Name, p.Kinds)
+		}
+	}
+}
+
+func TestCountry(t *testing.T) {
+	ix, _ := Default()
+	for _, c := range []struct {
+		lat, lon float64
+		want     string
+	}{{28.61, 77.21, "IN"}, {48.14, 11.58, "DE"}, {51.92, 4.48, "NL"}, {0, -30, ""}} {
+		if got := ix.Country(calc.Location{Lat: c.lat, Lon: c.lon}); got != c.want {
+			t.Errorf("%v, %v: %q, want %q", c.lat, c.lon, got, c.want)
+		}
 	}
 }

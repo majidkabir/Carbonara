@@ -2,6 +2,7 @@ package distance
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -90,7 +91,8 @@ func TestByMode(t *testing.T) {
 	b := ByMode{Providers: map[calc.Mode]calc.DistanceProvider{calc.Road: o}, Fallback: gc}
 
 	c := calc.Calculator{Factors: fakeFactors{}, Distances: b}
-	res, err := c.Calculate(context.Background(), calc.Shipment{WeightKg: 1000, Legs: []calc.Leg{
+	// Not a chain of legs, so no road legs between them.
+	res, err := c.Calculate(calc.WithoutRoadLegs(context.Background()), calc.Shipment{WeightKg: 1000, Legs: []calc.Leg{
 		{ID: "road", Mode: calc.Road, VehicleType: "x", From: copenhagen, To: hamburg},
 		{ID: "rail", Mode: calc.Rail, VehicleType: "x", From: copenhagen, To: hamburg},
 		{ID: "air", Mode: calc.Air, VehicleType: "x", From: copenhagen, To: hamburg},
@@ -135,7 +137,8 @@ func TestOSRM_Waterway(t *testing.T) {
 	o, _ := NewOSRM(srv.URL)
 	o.Method, o.MaxSnapKm = "osrm_waterway", 10
 	_, err := o.Distance(context.Background(), calc.InlandWaterway, copenhagen, hamburg)
-	if err == nil || !strings.Contains(err.Error(), "destination is 15.5 km from the nearest osrm_waterway network") {
+	var off *calc.OffNetworkError
+	if !errors.As(err, &off) || off.FromOff() || !off.ToOff() || !strings.Contains(err.Error(), "destination is 15.5 km from the waterway network") {
 		t.Errorf("want snap error, got %v", err)
 	}
 	o.MaxSnapKm = 20

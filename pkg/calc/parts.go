@@ -127,7 +127,13 @@ func (c Calculator) Prefetch(ctx context.Context, shipments []Shipment) {
 		if err != nil {
 			continue
 		}
-		for _, l := range s.Legs {
+		legs := append([]Leg(nil), s.Legs...)
+		if c.addRoadLegs(ctx, s) {
+			for _, g := range gapLanes(s.Legs) {
+				legs = append(legs, Leg{Mode: g.Mode, From: g.From, To: g.To})
+			}
+		}
+		for _, l := range legs {
 			if l.DistanceKm > 0 || l.From == (Location{}) || l.To == (Location{}) {
 				continue
 			}

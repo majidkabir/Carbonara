@@ -144,6 +144,16 @@ func (s *Server) limited(h http.HandlerFunc) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), s.Limits.Timeout)
 		defer cancel()
 		w.Header().Set("Cache-Control", "no-store")
+		// ?add_road_legs=false: no road legs added for shipments that don't
+		// say (see calc.Shipment.AddRoadLegs).
+		switch r.URL.Query().Get("add_road_legs") {
+		case "", "true", "1":
+		case "false", "0":
+			ctx = calc.WithoutRoadLegs(ctx)
+		default:
+			writeError(w, http.StatusBadRequest, errors.New("add_road_legs must be true or false"))
+			return
+		}
 		h(w, r.WithContext(ctx))
 	}
 }

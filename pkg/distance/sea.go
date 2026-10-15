@@ -10,6 +10,7 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/majidkabir/carbonara/pkg/calc"
 )
@@ -22,6 +23,10 @@ import (
 type SeaNetwork struct {
 	nodes []calc.Location
 	adj   [][]seaEdge
+	grid  struct {
+		once  sync.Once
+		cells map[[2]int][]int // connected nodes by 1° cell
+	}
 	// Avoid lists passages (the "pass" property) that routes must not use.
 	Avoid map[string]bool
 	// MaxSnapKm rejects points farther than this from the network
@@ -149,17 +154,82 @@ func (n *SeaNetwork) Passes() []string {
 	return out
 }
 
-func (n *SeaNetwork) nearest(p calc.Location) (int, float64) {
-	best, bestKm := -1, math.Inf(1)
-	for i, q := range n.nodes {
-		if len(n.adj[i]) == 0 {
-			continue
+func seaCell(lat, lon float64) [2]int {
+	return [2]int{int(math.Floor(lat)), wrapCell(int(math.Floor(lon)))}
+}
+
+// wrapCell puts a longitude cell in [-180, 180).
+func wrapCell(x int) int { return ((x+180)%360+360)%360 - 180 }
+
+// nearest finds the nearest connected node.
+func (n *SeaNetwork) nearest(p calc.Location) (int, float64) { return n.nearestWithin(p, math.Inf(1)) }
+
+// nearestWithin finds the nearest connected node, searching 1° cells in
+// rings around p until no farther ring can hold a nearer node. Past limit
+// km it may give up early, returning -1 and +Inf.
+func (n *SeaNetwork) nearestWithin(p calc.Location, limit float64) (int, float64) {
+	n.grid.once.Do(func() {
+		n.grid.cells = map[[2]int][]int{}
+		for i, q := range n.nodes {
+			if len(n.adj[i]) > 0 {
+				c := seaCell(q.Lat, q.Lon)
+				n.grid.cells[c] = append(n.grid.cells[c], i)
+			}
 		}
-		if d := Haversine(p, q); d < bestKm {
-			best, bestKm = i, d
+	})
+	best, bestKm := -1, math.Inf(1)
+	brute := func() (int, float64) {
+		for i, q := range n.nodes {
+			if len(n.adj[i]) == 0 {
+				continue
+			}
+			if d := Haversine(p, q); d < bestKm {
+				best, bestKm = i, d
+			}
+		}
+		return best, bestKm
+	}
+	if math.Abs(p.Lat) > 70 {
+		return brute() // near the poles, routes over the pole spoil the rings
+	}
+	c := seaCell(p.Lat, p.Lon)
+	for r := 0; r <= 15; r++ {
+		// A node in ring r is at least r-1 whole cells away in latitude or
+		// longitude. Two points Δλ apart in longitude, both within latitude
+		// φ of the equator, are at least 2/π·cos φ·Δλ apart.
+		if r > 1 {
+			φ := math.Min(90, math.Abs(p.Lat)+float64(r)) * math.Pi / 180
+			if bound := 2 / math.Pi * math.Cos(φ) * float64(r-1) * 111.19; bound > bestKm {
+				return best, bestKm
+			} else if bound > limit {
+				return -1, math.Inf(1)
+			}
+		}
+		for dy := -r; dy <= r; dy++ {
+			for dx := -r; dx <= r; dx++ {
+				if max(abs(dy), abs(dx)) != r {
+					continue
+				}
+				for _, i := range n.grid.cells[[2]int{c[0] + dy, wrapCell(c[1] + dx)}] {
+					if d := Haversine(p, n.nodes[i]); d < bestKm {
+						best, bestKm = i, d
+					}
+				}
+			}
 		}
 	}
-	return best, bestKm
+	if bestKm > limit || 2/math.Pi*math.Cos(math.Min(90, math.Abs(p.Lat)+16)*math.Pi/180)*15*111.19 > limit {
+		return -1, math.Inf(1)
+	}
+	best, bestKm = -1, math.Inf(1)
+	return brute() // far from any node
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
 
 // Distance implements calc.DistanceProvider.
@@ -169,13 +239,8 @@ func (n *SeaNetwork) Distance(ctx context.Context, _ calc.Mode, from, to calc.Lo
 	if a < 0 || b < 0 {
 		return 0, errors.New("sea network: no connected nodes")
 	}
-	if n.MaxSnapKm > 0 {
-		if snapA > n.MaxSnapKm {
-			return 0, fmt.Errorf("sea network: origin is %.0f km from the network (max %.0f)", snapA, n.MaxSnapKm)
-		}
-		if snapB > n.MaxSnapKm {
-			return 0, fmt.Errorf("sea network: destination is %.0f km from the network (max %.0f)", snapB, n.MaxSnapKm)
-		}
+	if e := (&calc.OffNetworkError{Mode: calc.Sea, FromKm: snapA, ToKm: snapB, MaxKm: n.MaxSnapKm}); n.MaxSnapKm > 0 && (e.FromOff() || e.ToOff()) {
+		return 0, e
 	}
 	path, _, err := n.shortest(ctx, a, b, false)
 	if err != nil {
@@ -288,3 +353,9 @@ func (h nodeHeap) Less(i, j int) bool { return h[i].d < h[j].d }
 func (h nodeHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
 func (h *nodeHeap) Push(x any)        { *h = append(*h, x.(nodeDist)) }
 func (h *nodeHeap) Pop() any          { old := *h; x := old[len(old)-1]; *h = old[:len(old)-1]; return x }
+
+// SnapKm implements calc.Snapper: how far a point is from the network.
+func (n *SeaNetwork) SnapKm(_ calc.Mode, p calc.Location, maxKm float64) (float64, bool) {
+	_, km := n.nearestWithin(p, maxKm)
+	return km, len(n.nodes) > 0
+}

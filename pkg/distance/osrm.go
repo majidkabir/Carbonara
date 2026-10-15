@@ -82,7 +82,7 @@ const (
 )
 
 // Route implements calc.Router.
-func (o *OSRM) Route(ctx context.Context, _ calc.Mode, from, to calc.Location) (calc.Route, error) {
+func (o *OSRM) Route(ctx context.Context, m calc.Mode, from, to calc.Location) (calc.Route, error) {
 	key := cacheKey(from, to)
 	// Routes with a path (single calculations, for a map) skip the cache:
 	// cached routes have no path.
@@ -152,16 +152,10 @@ func (o *OSRM) Route(ctx context.Context, _ calc.Mode, from, to calc.Location) (
 	if len(body.Routes) == 0 {
 		return calc.Route{}, errors.New("osrm: no route")
 	}
-	if o.MaxSnapKm > 0 {
-		for i, w := range body.Waypoints {
-			if w.Distance/1000 > o.MaxSnapKm {
-				end := "origin"
-				if i > 0 {
-					end = "destination"
-				}
-				return calc.Route{}, fmt.Errorf("osrm: %s is %.1f km from the nearest %s network edge (limit %.0f km)",
-					end, w.Distance/1000, o.DistanceMethod(""), o.MaxSnapKm)
-			}
+	if o.MaxSnapKm > 0 && len(body.Waypoints) == 2 {
+		e := &calc.OffNetworkError{Mode: m, FromKm: body.Waypoints[0].Distance / 1000, ToKm: body.Waypoints[1].Distance / 1000, MaxKm: o.MaxSnapKm}
+		if e.FromOff() || e.ToOff() {
+			return calc.Route{}, e
 		}
 	}
 	r := calc.Route{Km: body.Routes[0].Distance / 1000}
@@ -248,6 +242,14 @@ func (b ByMode) Route(ctx context.Context, m calc.Mode, from, to calc.Location) 
 	}
 	d, err := p.Distance(ctx, m, from, to)
 	return calc.Route{Km: d}, err
+}
+
+// SnapKm implements calc.Snapper for the modes whose provider does.
+func (b ByMode) SnapKm(m calc.Mode, p calc.Location, maxKm float64) (float64, bool) {
+	if s, ok := b.pick(m).(calc.Snapper); ok {
+		return s.SnapKm(m, p, maxKm)
+	}
+	return 0, false
 }
 
 // DistanceMethod implements calc.DistanceMethoder.

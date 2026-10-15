@@ -41,8 +41,16 @@ type Calculator struct {
 	// FerryVehicle is the sea vehicle type for ferry crossings found on
 	// road routes (default DefaultFerryVehicle).
 	FerryVehicle string
-	// Places turns location codes into coordinates (optional).
+	// Places turns location codes into coordinates (optional). When it is
+	// also a PlaceFinder, legs off their network move to nearby ports and
+	// terminals (see connect.go).
 	Places Resolver
+	// RoadVehicle is the vehicle type of added road legs. Empty: the
+	// shipment's first road leg's, else DefaultRoadVehicle.
+	RoadVehicle string
+	// NoRoadLegs adds no road legs for shipments that don't ask for them
+	// (Shipment.AddRoadLegs); see connect.go.
+	NoRoadLegs bool
 }
 
 // Resolver finds a location by code: a UN/LOCODE or an IATA airport code.
@@ -134,10 +142,23 @@ func (c Calculator) Calculate(ctx context.Context, s Shipment) (Result, error) {
 		res.Dataset = n.DatasetName()
 	}
 
-	for _, leg := range s.Legs {
-		lr, err := c.leg(ctx, tonnes, leg)
+	legs, warnings := c.plan(ctx, s.Legs, c.addRoadLegs(ctx, s))
+	res.Warnings = warnings
+	for _, p := range legs {
+		lr, err := c.leg(ctx, tonnes, p.Leg)
+		if err != nil && p.added != "" {
+			// An added leg that can't be calculated is left out, as it
+			// would have been without adding it.
+			res.Warnings = append(res.Warnings, fmt.Sprintf("%s It couldn't be calculated, so it isn't counted: %v", p.note, err))
+			continue
+		}
 		if err != nil {
-			return Result{}, fmt.Errorf("leg %q: %w", leg.ID, err)
+			return Result{}, fmt.Errorf("leg %q: %w", p.ID, err)
+		}
+		lr.Added, lr.Note = p.added, p.note
+		if p.show {
+			from, to := p.From, p.To
+			lr.From, lr.To = &from, &to
 		}
 		lr.WTTKg = lr.WTWKg - lr.TTWKg
 		if lr.TonneKm > 0 {

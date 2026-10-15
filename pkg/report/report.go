@@ -18,6 +18,7 @@ package report
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -91,6 +92,16 @@ type Coverage struct {
 	Legs           int           `json:"legs"`
 	HubStops       int           `json:"hub_stops"`
 	WeightT        float64       `json:"weight_t"`
+	// AddedRoadLegs are road legs the calculator added (included in Legs
+	// and in all totals): where legs didn't join up, or to and from the port
+	// or terminal a leg off its network was moved to.
+	AddedRoadLegs  int     `json:"added_road_legs,omitempty"`
+	AddedRoadKm    float64 `json:"added_road_km,omitempty"`
+	AddedShipments int     `json:"added_road_leg_shipments,omitempty"`
+	// Warned counts the shipments with warnings, and Warnings the warnings
+	// by kind (calc.Result.Warnings).
+	Warned   int           `json:"warned_shipments,omitempty"`
+	Warnings []ReasonCount `json:"warnings,omitempty"`
 }
 
 // MaxListed caps the failed shipment ids listed in a report.
@@ -125,6 +136,20 @@ func reason(e string) string {
 		b.WriteRune(r)
 	}
 	return b.String()
+}
+
+// warningKind turns a warning into its kind: without the leg ids, places
+// and numbers.
+func warningKind(w string) string {
+	switch {
+	case strings.Contains(w, "isn't counted (adding road legs is off)"):
+		return "legs don't join up; the distance between them isn't counted (adding road legs is off)"
+	case strings.Contains(w, "counted as sea distance"):
+		return "a sea leg starts or ends inland; that part is counted as sea distance"
+	case strings.Contains(w, "couldn't be calculated, so it isn't counted"):
+		return "a road leg to add couldn't be calculated, so it isn't counted"
+	}
+	return reason(w)
 }
 
 // Total is the whole covered transport chain.
@@ -226,6 +251,7 @@ type Builder struct {
 	sources  map[string]float64
 	models   map[string]*modelAcc
 	reasons  map[string]int // failures by reason
+	warnings map[string]int // warnings by kind
 	dafs     map[string]*DAF
 	datasets map[string]bool
 }
@@ -269,6 +295,26 @@ func (b *Builder) Add(id string, r calc.Result, err error) {
 	}
 	b.cov.Calculated++
 	b.cov.WeightT += r.WeightKg / 1000
+	added := false
+	for _, l := range r.Legs {
+		if l.Added != "" {
+			b.cov.AddedRoadLegs++
+			b.cov.AddedRoadKm += l.DistanceKm
+			added = true
+		}
+	}
+	if added {
+		b.cov.AddedShipments++
+	}
+	if len(r.Warnings) > 0 {
+		b.cov.Warned++
+		if b.warnings == nil {
+			b.warnings = map[string]int{}
+		}
+		for _, w := range r.Warnings {
+			b.warnings[warningKind(w)]++
+		}
+	}
 	if r.Dataset != "" {
 		b.datasets[r.Dataset] = true
 	}
@@ -428,6 +474,17 @@ func (b *Builder) Report() Report {
 	if len(b.cov.FailureReasons) > 20 {
 		b.cov.FailureReasons = b.cov.FailureReasons[:20]
 	}
+	b.cov.Warnings = nil
+	for k, n := range b.warnings {
+		b.cov.Warnings = append(b.cov.Warnings, ReasonCount{Reason: k, Shipments: n})
+	}
+	sort.Slice(b.cov.Warnings, func(i, j int) bool {
+		x, y := b.cov.Warnings[i], b.cov.Warnings[j]
+		if x.Shipments != y.Shipments {
+			return x.Shipments > y.Shipments
+		}
+		return x.Reason < y.Reason
+	})
 	r := Report{
 		Title:        b.meta.Title,
 		Organisation: b.meta.Organisation,
@@ -543,6 +600,23 @@ func (b *Builder) notes(r Report) []string {
 		}
 		n = append(n, s+".")
 	}
+	if c := r.Coverage; c.AddedRoadLegs > 0 {
+		n = append(n, fmt.Sprintf("Road legs added by the calculator: %d (%s km) on %s, where the legs given didn't join up, "+
+			"or a sea, rail or waterway leg started or ended off its network and was moved to a nearby port or terminal. "+
+			"They are included in all totals.", c.AddedRoadLegs, strconv.FormatFloat(math.Round(c.AddedRoadKm), 'f', 0, 64),
+			countOf(c.AddedShipments, "shipment", "shipments")))
+	}
+	if c := r.Coverage; c.Warned > 0 {
+		var what []string
+		for i, w := range c.Warnings {
+			if i == 5 {
+				break
+			}
+			what = append(what, strconv.Itoa(w.Shipments)+" × "+w.Reason)
+		}
+		n = append(n, fmt.Sprintf("%s warnings that may make the results too low: %s.",
+			countOf(c.Warned, "shipment has", "shipments have"), strings.Join(what, "; ")))
+	}
 	if r.Total.HubWTWKg > 0 {
 		n = append(n, "Hub emissions are reported well-to-wheel only: the hub factors used carry no split "+
 			"into operational and energy provision emissions. Operational (TTW) and energy provision (WTT) "+
@@ -564,6 +638,13 @@ func (b *Builder) notes(r Report) []string {
 			"category values) was supplied for a leg or hub; their sources are listed.")
 	}
 	return n
+}
+
+func countOf(n int, one, many string) string {
+	if n == 1 {
+		return "1 " + one
+	}
+	return strconv.Itoa(n) + " " + many
 }
 
 func shares(m map[string]float64, total float64) map[string]float64 {

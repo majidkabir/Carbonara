@@ -10,6 +10,7 @@ import (
 	"compress/gzip"
 	_ "embed"
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -232,11 +233,18 @@ func (ix *Index) Resolve(code string) (calc.Location, bool) {
 	if !ok {
 		return calc.Location{}, false
 	}
+	return ix.location(p), true
+}
+
+func (ix *Index) location(p Place) calc.Location {
 	name := p.Name
+	if p.AltName != "" && len(p.Kinds) > 0 && p.Kinds[0] != Airport {
+		name = p.AltName // usually the English name
+	}
 	if p.Code != "" {
 		name += " (" + p.Code + ")"
 	}
-	return calc.Location{Name: name, Code: p.Code, Lat: p.Lat, Lon: p.Lon}, true
+	return calc.Location{Name: name, Code: p.Code, Lat: p.Lat, Lon: p.Lon}
 }
 
 // Codes resolves location codes with the embedded place list, loading it
@@ -249,4 +257,94 @@ func (Codes) Resolve(code string) (calc.Location, bool) {
 		return calc.Location{}, false
 	}
 	return ix.Resolve(code)
+}
+
+// Near returns the places that are all of the given kinds within maxKm of
+// p, nearest first, at most n, as calculator locations. Besides the kinds
+// of place, SeaPort asks for one of the large cargo sea ports.
+func (ix *Index) Near(p calc.Location, kinds []string, maxKm float64, n int) []calc.Location {
+	type hit struct {
+		i  int
+		km float64
+	}
+	var hits []hit
+	dLat := maxKm / 111.0
+	for i := range ix.places {
+		q := &ix.places[i]
+		if math.Abs(q.Lat-p.Lat) > dLat || !q.allKinds(kinds) {
+			continue
+		}
+		if km := haversine(p.Lat, p.Lon, q.Lat, q.Lon); km <= maxKm {
+			hits = append(hits, hit{i, km})
+		}
+	}
+	sort.Slice(hits, func(a, b int) bool { return hits[a].km < hits[b].km })
+	out := make([]calc.Location, 0, min(n, len(hits)))
+	for _, h := range hits[:min(n, len(hits))] {
+		out = append(out, ix.location(ix.places[h.i]))
+	}
+	return out
+}
+
+// SeaPort is the kind Near takes for the large cargo sea ports.
+const SeaPort = "seaport"
+
+func (p *Place) allKinds(want []string) bool {
+	for _, w := range want {
+		found := w == SeaPort && seaports[p.Code]
+		for _, h := range p.Kinds {
+			found = found || h == w
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
+
+func haversine(lat1, lon1, lat2, lon2 float64) float64 {
+	const r = 6371.0088
+	φ1, φ2 := lat1*math.Pi/180, lat2*math.Pi/180
+	dφ, dλ := φ2-φ1, (lon2-lon1)*math.Pi/180
+	a := math.Sin(dφ/2)*math.Sin(dφ/2) + math.Cos(φ1)*math.Cos(φ2)*math.Sin(dλ/2)*math.Sin(dλ/2)
+	return 2 * r * math.Asin(math.Min(1, math.Sqrt(a)))
+}
+
+// Near is Index.Near on the embedded place list.
+func (Codes) Near(p calc.Location, kinds []string, maxKm float64, n int) []calc.Location {
+	ix, err := Default()
+	if err != nil {
+		return nil
+	}
+	return ix.Near(p, kinds, maxKm, n)
+}
+
+// Country is the country of the nearest place within 100 km of p, ""
+// if there is none.
+func (ix *Index) Country(p calc.Location) string {
+	if p.Code != "" && len(p.Code) == 5 {
+		if q, ok := ix.Lookup(p.Code); ok && q.Lat == p.Lat && q.Lon == p.Lon {
+			return q.Country
+		}
+	}
+	best, bestKm := "", 100.0
+	for i := range ix.places {
+		q := &ix.places[i]
+		if math.Abs(q.Lat-p.Lat) > 1 {
+			continue
+		}
+		if km := haversine(p.Lat, p.Lon, q.Lat, q.Lon); km < bestKm {
+			best, bestKm = q.Country, km
+		}
+	}
+	return best
+}
+
+// Country is Index.Country on the embedded place list.
+func (Codes) Country(p calc.Location) string {
+	ix, err := Default()
+	if err != nil {
+		return ""
+	}
+	return ix.Country(p)
 }
