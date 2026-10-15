@@ -56,6 +56,11 @@ paths:
   /v1/calculate:
     post:
       summary: Calculate emissions for one shipment
+      parameters:
+        - name: path
+          in: query
+          schema: { type: boolean, default: false }
+          description: Add each leg's route as GeoJSON [lon, lat] points (legs[].path), for a map. Two points mean a straight line (distance given or estimated).
       requestBody:
         required: true
         content:
@@ -340,6 +345,10 @@ components:
           type: object
           additionalProperties: { type: number }
           description: "Routed km by kind: ferry (road), electrified, not_electrified, electrification_unknown (rail)"
+        path:
+          type: array
+          description: With ?path=true only. The leg's route as GeoJSON [lon, lat] points; two points mean a straight line.
+          items: { type: array, items: { type: number }, minItems: 2, maxItems: 2 }
         parts:
           type: array
           description: Parts calculated separately and included in the leg's totals

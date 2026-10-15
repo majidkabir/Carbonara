@@ -140,6 +140,8 @@ h3.sub { font-size: 1rem; margin: 22px 0 8px; }
 .suggest .none { color: var(--muted); cursor: default; }
 footer.credits { max-width: 1240px; margin: 0 auto; padding: 0 24px 32px; color: var(--muted); font-size: .8rem; }
 footer.credits a { color: var(--blue); }
+.map { height: 340px; border-radius: 6px; border: 1px solid var(--rule); margin: 4px 0 8px; z-index: 0; }
+.map-legend { margin-top: 0; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 </style>
 </head>
@@ -412,7 +414,7 @@ async function calculate(e) {
   const req = buildShipment();
   let res, body;
   try {
-    res = await fetch("v1/calculate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(req) });
+    res = await fetch("v1/calculate?path=true", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(req) });
     body = await res.json();
   } catch (err) {
     $("#error").textContent = "Couldn't reach the Carbonara server. Check it's still running.";
@@ -486,13 +488,74 @@ function render(req, r) {
     <div class="ribbon-labels" aria-hidden="true">${labels}</div>
     <div class="legend"><span><i style="background:var(--ttw)"></i>Vehicle (tank-to-wheel)</span>
       <span><i style="background:var(--wtt)"></i>Fuel and electricity supply (well-to-tank)</span></div>
+    <div id="map" class="map" hidden></div>
+    <div id="map-legend" class="legend map-legend" hidden></div>
     <h3 style="font-size:1rem;margin-bottom:8px">How each number was made</h3>
     <div class="scroll"><table>
       <thead><tr><th>Element</th><th class="num">Distance</th><th>Method</th>
         <th class="num">Vehicle</th><th class="num">Supply</th><th class="num">Total</th></tr></thead>
       <tbody>${rows}</tbody></table></div>
     <details class="json"><summary>Show request and response JSON</summary>
-      <pre>${esc(JSON.stringify(req, null, 2))}</pre><pre>${esc(JSON.stringify(r, null, 2))}</pre></details>`;
+      <pre>${esc(JSON.stringify(req, null, 2))}</pre><pre>${esc(JSON.stringify(r, (k, v) =>
+        k === "path" && Array.isArray(v) ? `[${v.length} points]` : v, 2))}</pre></details>`;
+  drawMap(r);
+}
+
+// ---- Route map (Leaflet, bundled; tiles from OpenStreetMap) ----
+const modeColor = { road: "#1F5E8C", rail: "#8E5BB5", sea: "#1C9C8C", inland_waterway: "#3BA3D0", air: "#E07A1F" };
+let leaflet = null, map = null, mapLayer = null;
+function loadLeaflet() {
+  if (leaflet) return leaflet;
+  leaflet = new Promise((resolve, reject) => {
+    const css = document.createElement("link");
+    css.rel = "stylesheet"; css.href = "static/leaflet.css";
+    document.head.appendChild(css);
+    const js = document.createElement("script");
+    js.src = "static/leaflet.js"; js.onload = () => resolve(window.L); js.onerror = reject;
+    document.head.appendChild(js);
+  });
+  return leaflet;
+}
+// unwrap keeps a line continuous across the antimeridian.
+function unwrap(path) {
+  const out = [];
+  let prev = null;
+  for (const [lon, lat] of path) {
+    let x = lon;
+    if (prev !== null) { while (x - prev > 180) x -= 360; while (x - prev < -180) x += 360; }
+    out.push([lat, x]); prev = x;
+  }
+  return out;
+}
+async function drawMap(r) {
+  const legs = (r.legs || []).filter(l => Array.isArray(l.path) && l.path.length >= 2);
+  const box = $("#map"), legend = $("#map-legend");
+  if (!legs.length) return;
+  let L;
+  try { L = await loadLeaflet(); } catch { return; } // no map, the numbers still stand
+  box.hidden = false;
+  if (map) { map.remove(); map = null; }
+  map = L.map(box, { scrollWheelZoom: false, worldCopyJump: true });
+  map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 18, referrerPolicy: "strict-origin-when-cross-origin",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  }).addTo(map);
+  mapLayer = L.featureGroup().addTo(map);
+  const used = new Set();
+  let straight = false;
+  legs.forEach((l, i) => {
+    const pts = unwrap(l.path), color = modeColor[l.mode] || "#5A6878", line = l.path.length === 2;
+    straight ||= line; used.add(l.mode);
+    L.polyline(pts, { color, weight: 4, opacity: .9, dashArray: line ? "8 8" : null })
+      .bindTooltip(`Leg ${i + 1}, ${modeName[l.mode] || l.mode}: ${fmt(l.distance_km, 0)} km`).addTo(mapLayer);
+    for (const p of [pts[0], pts[pts.length - 1]])
+      L.circleMarker(p, { radius: 5, color: "#1D2A38", weight: 2, fillColor: "#fff", fillOpacity: 1 }).addTo(mapLayer);
+  });
+  map.fitBounds(mapLayer.getBounds(), { padding: [24, 24] });
+  legend.hidden = false;
+  legend.innerHTML = [...used].map(m => `<span><i style="background:${modeColor[m] || "#5A6878"}"></i>${esc(modeName[m] || m)}</span>`).join("") +
+    (straight ? `<span>Dashed: straight line (distance given or estimated, not routed)</span>` : "");
 }
 
 function loadExample() {

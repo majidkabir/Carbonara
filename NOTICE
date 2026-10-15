@@ -29,3 +29,7 @@ This product includes place data (pkg/places/data/places.tsv.gz):
   by UNECE (https://unece.org/trade/uncefact/unlocode), via the datasets/un-locode
   package (https://github.com/datasets/un-locode)
 - airports from OurAirports (https://ourairports.com), public domain
+
+The web page bundles Leaflet 1.9.4 (internal/api/web/leaflet), Copyright (c) 2010-2023
+Volodymyr Agafonkin, Copyright (c) 2010-2011 CloudMade, under the BSD 2-Clause License
+(internal/api/web/leaflet/LICENSE). Map tiles: (c) OpenStreetMap contributors.

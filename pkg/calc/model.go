@@ -165,6 +165,10 @@ type LegResult struct {
 	// RouteParts is the routed distance by kind (e.g. ferry, electrified),
 	// when the distance provider reports it.
 	RouteParts map[string]float64 `json:"route_parts_km,omitempty"`
+	// Path is the leg's route as GeoJSON [lon, lat] points, when asked for
+	// (single calculations only). Two points mean a straight line: the
+	// distance was given or estimated, not routed.
+	Path [][2]float64 `json:"path,omitempty"`
 	// Parts are calculated separately and included in the leg's totals:
 	// a ferry crossing on a road leg, or the electrified track of a rail
 	// leg. Method and Factor above describe the rest of the leg.

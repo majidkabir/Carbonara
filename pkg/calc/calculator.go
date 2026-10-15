@@ -251,10 +251,11 @@ func (c Calculator) weight(s Shipment) (float64, string, error) {
 }
 
 func (c Calculator) leg(ctx context.Context, tonnes float64, leg Leg) (LegResult, error) {
-	dist, method, dtype, routeParts, err := c.distance(ctx, leg)
+	rt, method, dtype, err := c.distance(ctx, leg)
 	if err != nil {
 		return LegResult{}, err
 	}
+	dist, routeParts := rt.Km, rt.Parts
 
 	// Split off parts calculated differently, and calculate the rest of the
 	// leg (mainKm) as usual.
@@ -295,6 +296,10 @@ func (c Calculator) leg(ctx context.Context, tonnes float64, leg Leg) (LegResult
 	lr.DistanceKm, lr.DistanceMethod, lr.DistanceType = dist, method, dtype
 	lr.TonneKm = tonnes * dist
 	lr.RouteParts = routeParts
+	lr.Path = rt.Path
+	if WantPath(ctx) && len(lr.Path) == 0 && !isZero(leg.From) && !isZero(leg.To) {
+		lr.Path = [][2]float64{{leg.From.Lon, leg.From.Lat}, {leg.To.Lon, leg.To.Lat}}
+	}
 	for _, p := range parts {
 		lr.TTWKg += p.TTWKg
 		lr.WTWKg += p.WTWKg
@@ -402,30 +407,28 @@ func (c Calculator) loadLeg(lr LegResult, leg Leg) (LegResult, error) {
 	return lr, nil
 }
 
-func (c Calculator) distance(ctx context.Context, leg Leg) (km float64, method, dtype string, parts map[string]float64, err error) {
+func (c Calculator) distance(ctx context.Context, leg Leg) (rt Route, method, dtype string, err error) {
 	if leg.DistanceKm > 0 {
-		return leg.DistanceKm, DistanceGiven, leg.DistanceType, nil, nil
+		return Route{Km: leg.DistanceKm}, DistanceGiven, leg.DistanceType, nil
 	}
 	if leg.DistanceType != "" {
-		return 0, "", "", nil, fmt.Errorf("%w: distance_type describes distance_km, which is not given", ErrInvalidInput)
+		return Route{}, "", "", fmt.Errorf("%w: distance_type describes distance_km, which is not given", ErrInvalidInput)
 	}
 	if c.Distances == nil {
-		return 0, "", "", nil, errors.New("no distance given and no distance provider")
+		return Route{}, "", "", errors.New("no distance given and no distance provider")
 	}
-	var d float64
 	if r, ok := c.Distances.(Router); ok {
-		var rt Route
 		rt, err = r.Route(ctx, leg.Mode, leg.From, leg.To)
-		d, parts = rt.Km, rt.Parts
 	} else {
-		d, err = c.Distances.Distance(ctx, leg.Mode, leg.From, leg.To)
+		rt.Km, err = c.Distances.Distance(ctx, leg.Mode, leg.From, leg.To)
 	}
 	if err != nil {
-		return 0, "", "", nil, fmt.Errorf("distance: %w", err)
+		return Route{}, "", "", fmt.Errorf("distance: %w", err)
 	}
-	for k, v := range parts {
+	d := rt.Km
+	for k, v := range rt.Parts {
 		if !(v >= 0) || v > d*(1+1e-9) {
-			return 0, "", "", nil, fmt.Errorf("distance: route part %s of %v km in a %v km route", k, v, d)
+			return Route{}, "", "", fmt.Errorf("distance: route part %s of %v km in a %v km route", k, v, d)
 		}
 	}
 	if dm, ok := c.Distances.(DistanceMethoder); ok {
@@ -434,5 +437,5 @@ func (c Calculator) distance(ctx context.Context, leg Leg) (km float64, method, 
 	if dt, ok := c.Distances.(DistanceTyper); ok {
 		dtype = dt.DistanceType(leg.Mode)
 	}
-	return d, method, dtype, parts, nil
+	return rt, method, dtype, nil
 }

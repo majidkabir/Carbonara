@@ -222,3 +222,28 @@ func TestCalculate_LocationCode(t *testing.T) {
 		t.Fatalf("unknown code: %d %v", resp.StatusCode, out)
 	}
 }
+
+func TestCalculate_Path(t *testing.T) {
+	srv := newTestServer(t)
+	body := `{"weight_kg":1000,"legs":[{"mode":"road","vehicle_type":"truck_40t","from":{"lat":55.68,"lon":12.57},"to":{"lat":53.55,"lon":9.99}},{"mode":"road","vehicle_type":"truck_40t","distance_km":40}]}`
+	_, out := post(t, srv.URL+"/v1/calculate?path=true", body)
+	legs := out["legs"].([]any)
+	if p, ok := legs[0].(map[string]any)["path"].([]any); !ok || len(p) != 2 {
+		t.Fatalf("leg 1 path: %v", legs[0].(map[string]any)["path"])
+	}
+	if _, ok := legs[1].(map[string]any)["path"]; ok {
+		t.Error("a leg without coordinates got a path")
+	}
+	_, out = post(t, srv.URL+"/v1/calculate", body)
+	if _, ok := out["legs"].([]any)[0].(map[string]any)["path"]; ok {
+		t.Error("path without asking")
+	}
+	resp, err := http.Get(srv.URL + "/static/leaflet.js")
+	if err != nil || resp.StatusCode != 200 || !strings.Contains(resp.Header.Get("Content-Type"), "javascript") {
+		t.Fatalf("leaflet.js: %v %v", resp, err)
+	}
+	resp.Body.Close()
+	if resp, _ := http.Get(srv.URL + "/static/LICENSE"); resp.StatusCode != 404 {
+		t.Error("other files served from static")
+	}
+}

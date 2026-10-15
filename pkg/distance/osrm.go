@@ -84,12 +84,17 @@ const (
 // Route implements calc.Router.
 func (o *OSRM) Route(ctx context.Context, _ calc.Mode, from, to calc.Location) (calc.Route, error) {
 	key := cacheKey(from, to)
-	o.mu.Lock()
-	if r, ok := o.cache[key]; ok {
+	// Routes with a path (single calculations, for a map) skip the cache:
+	// cached routes have no path.
+	withPath := calc.WantPath(ctx)
+	if !withPath {
+		o.mu.Lock()
+		if r, ok := o.cache[key]; ok {
+			o.mu.Unlock()
+			return r, nil
+		}
 		o.mu.Unlock()
-		return r, nil
 	}
-	o.mu.Unlock()
 
 	profile := o.Profile
 	if profile == "" {
@@ -99,8 +104,12 @@ func (o *OSRM) Route(ctx context.Context, _ calc.Mode, from, to calc.Location) (
 	if len(o.PartModes) > 0 {
 		steps, limit = "true", maxStepsResponse
 	}
-	u := fmt.Sprintf("%s/route/v1/%s/%s?overview=false&alternatives=false&steps=%s&geometries=polyline",
-		o.BaseURL, url.PathEscape(profile), key, steps)
+	overview, geometries := "false", "polyline"
+	if withPath {
+		overview, geometries, limit = "simplified", "geojson", maxStepsResponse
+	}
+	u := fmt.Sprintf("%s/route/v1/%s/%s?overview=%s&alternatives=false&steps=%s&geometries=%s",
+		o.BaseURL, url.PathEscape(profile), key, overview, steps, geometries)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return calc.Route{}, err
@@ -120,7 +129,10 @@ func (o *OSRM) Route(ctx context.Context, _ calc.Mode, from, to calc.Location) (
 		Message string `json:"message"`
 		Routes  []struct {
 			Distance float64 `json:"distance"` // metres
-			Legs     []struct {
+			Geometry struct {
+				Coordinates [][2]float64 `json:"coordinates"`
+			} `json:"geometry"`
+			Legs []struct {
 				Steps []struct {
 					Distance float64 `json:"distance"`
 					Mode     string  `json:"mode"`
@@ -153,6 +165,9 @@ func (o *OSRM) Route(ctx context.Context, _ calc.Mode, from, to calc.Location) (
 		}
 	}
 	r := calc.Route{Km: body.Routes[0].Distance / 1000}
+	if withPath {
+		r.Path = body.Routes[0].Geometry.Coordinates
+	}
 	for _, leg := range body.Routes[0].Legs {
 		for _, st := range leg.Steps {
 			if kind, ok := o.PartModes[st.Mode]; ok && st.Distance > 0 {
@@ -167,6 +182,9 @@ func (o *OSRM) Route(ctx context.Context, _ calc.Mode, from, to calc.Location) (
 		r.Parts[k] = math.Min(v, r.Km)
 	}
 
+	if withPath {
+		return r, nil
+	}
 	o.mu.Lock()
 	if o.cache == nil || len(o.cache) >= maxCacheEntries {
 		o.cache = make(map[string]calc.Route)

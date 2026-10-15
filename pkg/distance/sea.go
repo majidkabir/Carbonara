@@ -177,11 +177,40 @@ func (n *SeaNetwork) Distance(ctx context.Context, _ calc.Mode, from, to calc.Lo
 			return 0, fmt.Errorf("sea network: destination is %.0f km from the network (max %.0f)", snapB, n.MaxSnapKm)
 		}
 	}
-	path, err := n.shortest(ctx, a, b)
+	path, _, err := n.shortest(ctx, a, b, false)
 	if err != nil {
 		return 0, err
 	}
 	return snapA + path + snapB, nil
+}
+
+// Route implements calc.Router: the distance, and when asked for
+// (calc.WithPath) the path: origin, network nodes, destination.
+func (n *SeaNetwork) Route(ctx context.Context, m calc.Mode, from, to calc.Location) (calc.Route, error) {
+	if !calc.WantPath(ctx) {
+		d, err := n.Distance(ctx, m, from, to)
+		return calc.Route{Km: d}, err
+	}
+	a, snapA := n.nearest(from)
+	b, snapB := n.nearest(to)
+	if a < 0 || b < 0 {
+		return calc.Route{}, errors.New("sea network: no connected nodes")
+	}
+	if n.MaxSnapKm > 0 && (snapA > n.MaxSnapKm || snapB > n.MaxSnapKm) {
+		_, err := n.Distance(ctx, m, from, to) // for its error message
+		return calc.Route{}, err
+	}
+	d, nodes, err := n.shortest(ctx, a, b, true)
+	if err != nil {
+		return calc.Route{}, err
+	}
+	path := make([][2]float64, 0, len(nodes)+2)
+	path = append(path, [2]float64{from.Lon, from.Lat})
+	for _, i := range nodes {
+		path = append(path, [2]float64{n.nodes[i].Lon, n.nodes[i].Lat})
+	}
+	path = append(path, [2]float64{to.Lon, to.Lat})
+	return calc.Route{Km: snapA + d + snapB, Path: path}, nil
 }
 
 // DistanceMethod implements calc.DistanceMethoder.
@@ -191,26 +220,45 @@ func (n *SeaNetwork) DistanceMethod(calc.Mode) string { return "sea_network" }
 // maritime network is a shortest feasible distance.
 func (n *SeaNetwork) DistanceType(calc.Mode) string { return calc.DistSFD }
 
-func (n *SeaNetwork) shortest(ctx context.Context, src, dst int) (float64, error) {
+// shortest returns the network distance from src to dst and, with
+// withNodes, the nodes on the way (src and dst included).
+func (n *SeaNetwork) shortest(ctx context.Context, src, dst int, withNodes bool) (float64, []int, error) {
 	if src == dst {
-		return 0, nil
+		return 0, []int{src}, nil
 	}
 	dist := make([]float64, len(n.nodes))
 	for i := range dist {
 		dist[i] = math.Inf(1)
 	}
+	var prev []int
+	if withNodes {
+		prev = make([]int, len(n.nodes))
+		for i := range prev {
+			prev[i] = -1
+		}
+	}
 	dist[src] = 0
 	pq := &nodeHeap{{src, 0}}
 	for steps := 0; pq.Len() > 0; steps++ {
 		if steps%4096 == 0 && ctx.Err() != nil {
-			return 0, ctx.Err()
+			return 0, nil, ctx.Err()
 		}
 		cur := heap.Pop(pq).(nodeDist)
 		if cur.d > dist[cur.node] {
 			continue
 		}
 		if cur.node == dst {
-			return cur.d, nil
+			if !withNodes {
+				return cur.d, nil, nil
+			}
+			var nodes []int
+			for v := dst; v != -1; v = prev[v] {
+				nodes = append(nodes, v)
+			}
+			for i, j := 0, len(nodes)-1; i < j; i, j = i+1, j-1 {
+				nodes[i], nodes[j] = nodes[j], nodes[i]
+			}
+			return cur.d, nodes, nil
 		}
 		for _, e := range n.adj[cur.node] {
 			if e.pass != "" && n.Avoid[e.pass] {
@@ -218,11 +266,14 @@ func (n *SeaNetwork) shortest(ctx context.Context, src, dst int) (float64, error
 			}
 			if nd := cur.d + e.km; nd < dist[e.to] {
 				dist[e.to] = nd
+				if withNodes {
+					prev[e.to] = cur.node
+				}
 				heap.Push(pq, nodeDist{e.to, nd})
 			}
 		}
 	}
-	return 0, errors.New("sea network: no route (check avoided passages)")
+	return 0, nil, errors.New("sea network: no route (check avoided passages)")
 }
 
 type nodeDist struct {

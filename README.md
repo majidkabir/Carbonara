@@ -259,7 +259,7 @@ A bad row fails only its shipment; the rest still calculate.
 
 Below it, **Report** takes a shipments CSV (the `batch` columns), an organisation and a period, and shows the [report](#report-over-many-shipments): totals, modes, hubs, energy carriers, data quality, notes. Download it as Markdown or JSON. `POST /v1/report` takes the CSV directly with `Content-Type: text/csv`, report details in the query (`?organisation=...&period_from=...`).
 
-The page works offline (no external scripts or fonts) and in light or dark mode.
+Each calculation also shows the legs on a map: the route as routed (road, rail, river, sea), or a dashed straight line where the distance was given or estimated. The map uses the bundled Leaflet and OpenStreetMap's tiles; everything else on the page works offline (no external scripts or fonts), in light or dark mode.
 
 ## Streaming (Kafka and pipes)
 
@@ -277,7 +277,7 @@ Each output line is `{"line": n, "shipment_id": "...", "result": {...}}`, or `{"
 
 | Method | Path | |
 |---|---|---|
-| `POST` | `/v1/calculate` | one shipment |
+| `POST` | `/v1/calculate` | one shipment; `?path=true` adds each leg's route as GeoJSON `[lon, lat]` points (`legs[].path`) |
 | `POST` | `/v1/calculate/batch` | `{"shipments": [...]}`, up to 10,000 |
 | `POST` | `/v1/report` | `{"organisation", "period_from", "period_to", "shipments": [...]}`, JSON or `?format=md` |
 | `GET` | `/v1/places?q=rotterdam&kind=port` | find places by name, UN/LOCODE or IATA code |

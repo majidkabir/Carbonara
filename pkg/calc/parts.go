@@ -10,6 +10,8 @@ import (
 type Route struct {
 	Km    float64
 	Parts map[string]float64 // e.g. PartFerry: 18.2
+	// Path is the route as [lon, lat] points, when asked for (WithPath).
+	Path [][2]float64
 }
 
 // Router is optionally implemented by a DistanceProvider that can say what

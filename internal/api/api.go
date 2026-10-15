@@ -4,13 +4,14 @@ package api
 import (
 	"bytes"
 	"context"
-	_ "embed"
+	"embed"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"mime"
 	"net/http"
+	"path"
 	"runtime"
 	"runtime/debug"
 	"strconv"
@@ -29,6 +30,11 @@ var openAPISpec []byte
 
 //go:embed web/index.html
 var indexHTML []byte
+
+// Leaflet 1.9.4 (BSD-2-Clause, web/leaflet/LICENSE) draws routes on a map.
+//
+//go:embed web/leaflet
+var leafletFS embed.FS
 
 const (
 	maxBodyBytes  = 10 << 20 // 10 MiB
@@ -87,9 +93,21 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Content-Security-Policy",
-			"default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'")
+			"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; "+
+				"img-src 'self' data: https://tile.openstreetmap.org")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		_, _ = w.Write(indexHTML)
+	})
+	mux.HandleFunc("GET /static/{file}", func(w http.ResponseWriter, r *http.Request) {
+		name := r.PathValue("file")
+		b, err := leafletFS.ReadFile("web/leaflet/" + name)
+		if err != nil || (name != "leaflet.js" && name != "leaflet.css") {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", mime.TypeByExtension(path.Ext(name)))
+		w.Header().Set("Cache-Control", "public, max-age=604800")
+		_, _ = w.Write(b)
 	})
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
@@ -204,7 +222,11 @@ func (s *Server) calculate(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusRequestEntityTooLarge, err)
 		return
 	}
-	res, err := s.Calc.Calculate(r.Context(), sh)
+	ctx := r.Context()
+	if v := r.URL.Query().Get("path"); v == "true" || v == "1" {
+		ctx = calc.WithPath(ctx) // each leg's route for a map; single calculations only
+	}
+	res, err := s.Calc.Calculate(ctx, sh)
 	if err != nil {
 		writeError(w, calcStatus(err), err)
 		return
