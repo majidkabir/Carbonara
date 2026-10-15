@@ -182,8 +182,8 @@ func (c Calculator) plan(ctx context.Context, legs []Leg, add bool) ([]planned, 
 				}
 			}
 		}
-		if from[i] != nil && to[i] != nil && gcKm(l.From, l.To) <= GapKm {
-			// Both ends went to the same port: no sea, rail or waterway left.
+		if (from[i] != nil || to[i] != nil) && gcKm(l.From, l.To) <= GapKm {
+			// The ends met at one port: no sea, rail or waterway left.
 			fixed[i], from[i], to[i] = legs[i], nil, nil
 		}
 	}
@@ -406,6 +406,8 @@ func (c Calculator) accessPoint(ctx context.Context, m Mode, p, other Location, 
 		r, err := c.route(ctx, m, a, b)
 		var off *OffNetworkError
 		switch {
+		case err == nil && r.Km <= 0:
+			continue // no leg left between the candidate and the other end
 		case err == nil:
 			mainKm = r.Km
 		case errors.As(err, &off) && ((isFrom && off.FromOff()) || (!isFrom && off.ToOff())):
