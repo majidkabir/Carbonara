@@ -247,7 +247,7 @@ footer.credits a { color: var(--blue); }
         <div><label>To lon</label><input name="to_lon" type="number" step="any"></div>
       </div>
     </details>
-    <details><summary>Load and empty running</summary>
+    <details class="only-road"><summary>Load and empty running</summary>
       <p class="hint">For trucks. Replaces the fleet-average factor.</p>
       <div class="row">
         <div><label>Load factor (0–1)</label><input name="load_factor" type="number" min="0" max="1" step="any"></div>
@@ -261,7 +261,7 @@ footer.credits a { color: var(--blue); }
         <div><label>Vehicle tonne-km (shared trip)</label><input name="vehicle_tonne_km" type="number" min="0" step="any"></div>
       </div>
     </details>
-    <details><summary>Electric (energy per tonne-km)</summary>
+    <details class="only-road-rail"><summary>Electric (energy per tonne-km)</summary>
       <div class="row">
         <div><label>kWh per tonne-km</label><input name="energy_kwh_per_tkm" type="number" min="0" step="any"></div>
         <div><label>Country (ISO, e.g. DNK)</label><input name="country" maxlength="3"></div>
@@ -299,7 +299,15 @@ function addLeg(values = {}) {
   list.id = `leg${n}-vehicles`;
   vt.setAttribute("list", list.id);
   node.appendChild(list);
-  const fillList = () => { list.innerHTML = (vehicleLists[mode.value] || []).map(v => `<option value="${esc(v)}">`).join(""); };
+  const fillList = () => {
+    const vs = vehicleLists[mode.value] || [];
+    list.innerHTML = vs.map(v => `<option value="${esc(v)}">`).join("");
+    // A vehicle of another mode can't be right: take this mode's first.
+    if (vs.length && !vs.includes(vt.value.trim())) vt.value = vs[0];
+    // Load model fields are for trucks; energy per tonne-km for road and rail.
+    node.querySelector(".only-road").hidden = mode.value !== "road";
+    node.querySelector(".only-road-rail").hidden = !["road", "rail"].includes(mode.value);
+  };
   mode.addEventListener("change", fillList);
   fillList();
   node.querySelectorAll(".place").forEach(el => placeSearch(el, node));
@@ -398,9 +406,11 @@ function buildShipment() {
       if (fq) l.from.name = fq;
       if (tq) l.to.name = tq;
     }
-    for (const k of ["load_factor", "empty_trip_factor", "energy_kwh_per_tkm"]) { const v = num(f(k)); if (v) l[k] = v; }
+    const keys = l.mode === "road" ? ["load_factor", "empty_trip_factor", "energy_kwh_per_tkm"]
+      : l.mode === "rail" ? ["energy_kwh_per_tkm"] : [];
+    for (const k of keys) { const v = num(f(k)); if (v) l[k] = v; }
     const country = f("country").value.trim();
-    if (country) l.country = country.toUpperCase();
+    if (country && keys.includes("energy_kwh_per_tkm")) l.country = country.toUpperCase();
     const fuel = f("fuel").value.trim();
     if (fuel) l.fuel = { fuel, amount: num(f("fuel_amount")) || 0, vehicle_tonne_km: num(f("vehicle_tonne_km")) };
     s.legs.push(l);
