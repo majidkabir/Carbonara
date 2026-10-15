@@ -65,11 +65,18 @@ func (m LoadModel) Validate() error {
 	return nil
 }
 
-// at interpolates emissions per vehicle-km at load lf.
+// MaxLoadFactor is how far beyond its payload (load 1) a load model is
+// extended, for a load given in tonnes: DESNZ's "100% laden" is an average
+// full load (17.9 t for an articulated truck over 33 t), and 1.6 × that is
+// about a 44 t truck's legal payload.
+const MaxLoadFactor = 1.6
+
+// at interpolates emissions per vehicle-km at load lf, beyond the last
+// point along the last segment.
 func (m LoadModel) at(lf float64) (ttw, wtt float64) {
 	ps := m.Points
 	for i := 1; i < len(ps); i++ {
-		if lf <= ps[i].Load {
+		if lf <= ps[i].Load || i == len(ps)-1 {
 			a, b := ps[i-1], ps[i]
 			t := (lf - a.Load) / (b.Load - a.Load)
 			return a.TTW + t*(b.TTW-a.TTW), a.WTT + t*(b.WTT-a.WTT)
@@ -82,7 +89,12 @@ func (m LoadModel) at(lf float64) (ttw, wtt float64) {
 // PerTonneKm returns TTW and WTT in g CO2e per tonne-km for a load factor
 // and empty trip factor.
 func (m LoadModel) PerTonneKm(lf, etf float64) (ttw, wtt float64, err error) {
-	if lf <= 0 || lf > 1 {
+	return m.perTonneKm(lf, etf, 1)
+}
+
+// perTonneKm is PerTonneKm allowing load factors up to max.
+func (m LoadModel) perTonneKm(lf, etf, max float64) (ttw, wtt float64, err error) {
+	if lf <= 0 || lf > max {
 		return 0, 0, fmt.Errorf("%w: load_factor must be > 0 and <= 1, got %v", ErrInvalidLoad, lf)
 	}
 	if etf < 0 {

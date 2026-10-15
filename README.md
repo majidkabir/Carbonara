@@ -87,12 +87,14 @@ TTW kg = fuel_amount × TTW kg/unit × share
 WTW kg = fuel_amount × (TTW + WTT) kg/unit × share
 ```
 
-**Load model** — when a leg has `load_factor` (and optionally `empty_trip_factor`), for truck classes:
+**Load model** — when a leg has `load_tonnes` or `load_factor` (and optionally `empty_trip_factor`), for truck classes:
 ```
 E(load)  = emissions per vehicle-km at that load (linear between 0%, 50%, 100% laden)
 g/tkm    = (E(load) + empty_trip_factor × E(empty)) / (payload_t × load_factor)
 ```
-This is the capacity-utilisation approach EcoTransIT World and GLEC use, built entirely from DESNZ data: per-km factors at 0/50/100% laden give the load curve, and per-km ÷ per-tonne-km at 100% laden gives each class's payload (e.g. 17.9 t for an artic over 33 t). It reproduces DESNZ's per-tonne-km factors at 50% and 100% load within 0.82% WTW. (DESNZ's own well-to-tank rows per km and per tonne-km disagree by up to 3.6%; the model follows the per-km rows.) Works with aliases like `hgv`, or class ids like `hgv_non_refrigerated_all_diesel/articulated_33t`. Vans have no load data in DESNZ, so no model. Cargo-type presets (bulk/average/volume load and empty-trip values) aren't included: EcoTransIT's values need their permission to reuse.
+This is the capacity-utilisation approach EcoTransIT World and GLEC use, built entirely from DESNZ data: per-km factors at 0/50/100% laden give the load curve, and per-km ÷ per-tonne-km at 100% laden gives each class's payload (e.g. 17.9 t for an artic over 33 t). It reproduces DESNZ's per-tonne-km factors at 50% and 100% load within 0.82% WTW. (DESNZ's own well-to-tank rows per km and per tonne-km disagree by up to 3.6%; the model follows the per-km rows.) Works with aliases like `hgv`, or class ids like `hgv_non_refrigerated_all_diesel/articulated_33t`.
+
+`load_factor` is a share of that payload, DESNZ's average full load, **not** of the truck's rated payload as in EcoTransIT: there a 40 t truck carries about 26 t at 100%, here an artic over 33 t carries 17.9 t, so the same "60%" means fewer tonnes and higher emissions per tonne. To compare with another tool, or when you know the weight, give `load_tonnes` instead: the tonnes on the truck (all cargo, averaged over the loaded km). Loads above the model's payload are real (17.9 t is an average full load, not the legal maximum), so for `load_tonnes` the model is extended along its 50–100% line up to 1.6 × the payload (28.7 t for an artic over 33 t, about a 44 t truck's legal payload), and the factor source says so. Vans have no load data in DESNZ, so no model. Cargo-type presets (bulk/average/volume load and empty-trip values) aren't included: EcoTransIT's values need their permission to reuse.
 
 **Energy** — when a leg has `energy_kwh_per_tkm` and `country` (ISO alpha-3, e.g. `DNK`), for electric trains or trucks: the electricity used per tonne-km × that country's grid intensity, all well-to-tank (nothing is emitted at the vehicle). Grid intensities for 213 countries come from Ember via Our World in Data (2024–2025 values). There's no default energy figure: give your operator's, or your own. For metered kWh use the fuel method with fuel `electricity/DNK`.
 
@@ -256,7 +258,7 @@ Fuels are converted with the selected dataset's fuel factors, including `electri
 | `from_lat`, `from_lon`, `to_lat`, `to_lon` | leg, when `distance_km` is empty |
 | `from_code`, `to_code` | leg, instead of coordinates: a UN/LOCODE (`NLRTM`) or IATA airport code (`CPH`) |
 | `fuel`, `fuel_amount`, `vehicle_tonne_km` | leg, fuel method |
-| `load_factor`, `empty_trip_factor` | leg, load model |
+| `load_tonnes` or `load_factor`, `empty_trip_factor` | leg, load model |
 | `energy_kwh_per_tkm`, `country` | leg, energy method |
 | `hub_id`, `hub_type` | hub stop (row is a hub when `hub_type` is set) |
 

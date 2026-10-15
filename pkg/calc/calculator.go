@@ -341,7 +341,10 @@ func (c Calculator) main(tonnes, dist float64, dtype string, leg Leg) (LegResult
 	lr := LegResult{TonneKm: tonnes * dist}
 
 	methods := 0
-	for _, set := range []bool{leg.Fuel != nil, leg.LoadFactor != 0, leg.EnergyKWhPerTkm != 0} {
+	if leg.LoadFactor != 0 && leg.LoadTonnes != 0 {
+		return LegResult{}, fmt.Errorf("%w: give load_factor or load_tonnes, not both", ErrInvalidLoad)
+	}
+	for _, set := range []bool{leg.Fuel != nil, leg.LoadFactor != 0 || leg.LoadTonnes != 0, leg.EnergyKWhPerTkm != 0} {
 		if set {
 			methods++
 		}
@@ -355,13 +358,13 @@ func (c Calculator) main(tonnes, dist float64, dtype string, leg Leg) (LegResult
 	if leg.EnergyKWhPerTkm != 0 {
 		return c.energyLeg(lr, leg)
 	}
-	if leg.EmptyTripFactor != 0 && leg.LoadFactor == 0 {
-		return LegResult{}, fmt.Errorf("%w: empty_trip_factor needs load_factor", ErrInvalidLoad)
+	if leg.EmptyTripFactor != 0 && leg.LoadFactor == 0 && leg.LoadTonnes == 0 {
+		return LegResult{}, fmt.Errorf("%w: empty_trip_factor needs load_factor or load_tonnes", ErrInvalidLoad)
 	}
 	if leg.Fuel != nil {
 		return c.fuelLeg(lr, *leg.Fuel)
 	}
-	if leg.LoadFactor != 0 {
+	if leg.LoadFactor != 0 || leg.LoadTonnes != 0 {
 		return c.loadLeg(lr, leg)
 	}
 
@@ -418,18 +421,40 @@ func (c Calculator) loadLeg(lr LegResult, leg Leg) (LegResult, error) {
 	if err != nil {
 		return LegResult{}, err
 	}
-	ttw, wtt, err := m.PerTonneKm(leg.LoadFactor, leg.EmptyTripFactor)
+	lf, load := leg.LoadFactor, fmt.Sprintf("load factor %g", leg.LoadFactor)
+	var ttw, wtt float64
+	if leg.LoadTonnes != 0 {
+		// Tonnes on the vehicle, as a share of the model's payload. Loads
+		// above it are real (its "100% laden" is an average full load, not
+		// the legal maximum), so the model is extended linearly up to
+		// MaxLoadFactor.
+		if !(leg.LoadTonnes > 0) {
+			return LegResult{}, fmt.Errorf("%w: load_tonnes must be > 0, got %v", ErrInvalidLoad, leg.LoadTonnes)
+		}
+		lf = leg.LoadTonnes / m.PayloadT
+		if lf > MaxLoadFactor {
+			return LegResult{}, fmt.Errorf("%w: load_tonnes %g t is more than this vehicle's load model goes: %.1f t (%g × its %.1f t payload)",
+				ErrInvalidLoad, leg.LoadTonnes, MaxLoadFactor*m.PayloadT, MaxLoadFactor, m.PayloadT)
+		}
+		load = fmt.Sprintf("load %g t, %.0f%% of the model's payload", leg.LoadTonnes, lf*100)
+		if lf > 1 {
+			load += ", extended beyond its 100% laden"
+		}
+		ttw, wtt, err = m.perTonneKm(lf, leg.EmptyTripFactor, MaxLoadFactor)
+	} else {
+		ttw, wtt, err = m.PerTonneKm(lf, leg.EmptyTripFactor)
+	}
 	if err != nil {
 		return LegResult{}, err
 	}
 	f := Factor{
 		Mode: m.Mode, VehicleType: m.VehicleType, TTW: ttw, WTT: wtt, Year: m.Year,
-		Source: fmt.Sprintf("load model (load factor %g, empty trip factor %g, payload %.1f t) from %s",
-			leg.LoadFactor, leg.EmptyTripFactor, m.PayloadT, m.Source),
+		Source: fmt.Sprintf("load model (%s, empty trip factor %g, payload %.1f t) from %s",
+			load, leg.EmptyTripFactor, m.PayloadT, m.Source),
 	}
 	lr.Method = MethodLoadModel
 	lr.Factor = &f
-	lr.LoadFactor, lr.EmptyTripFactor, lr.PayloadT = leg.LoadFactor, leg.EmptyTripFactor, m.PayloadT
+	lr.LoadFactor, lr.LoadTonnes, lr.EmptyTripFactor, lr.PayloadT = lf, leg.LoadTonnes, leg.EmptyTripFactor, m.PayloadT
 	lr.TTWKg = lr.TonneKm * ttw / 1000
 	lr.WTWKg = lr.TonneKm * f.WTW() / 1000
 	return lr, nil

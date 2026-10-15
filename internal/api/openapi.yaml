@@ -272,11 +272,21 @@ components:
           type: number
           exclusiveMinimum: 0
           maximum: 1
-          description: Share of payload capacity used; switches the leg to the dataset's load model
+          description: >
+            Load as a share of the load model's payload (DESNZ's average full
+            load, e.g. 17.9 t for an artic over 33 t), not of the truck's rated
+            payload; switches the leg to the dataset's load model. Give this or load_tonnes.
+        load_tonnes:
+          type: number
+          exclusiveMinimum: 0
+          description: >
+            Tonnes on the truck (all cargo, average over the loaded km); switches
+            the leg to the load model. Up to 1.6 × the model's payload: above
+            its payload the model is extended linearly.
         empty_trip_factor:
           type: number
           minimum: 0
-          description: Empty km per loaded km (needs load_factor)
+          description: Empty km per loaded km (needs load_factor or load_tonnes)
         energy_kwh_per_tkm:
           type: number
           exclusiveMinimum: 0
@@ -375,7 +385,8 @@ components:
         data_type: { $ref: "#/components/schemas/DataType" }
         energy_kwh_per_tkm: { type: number }
         country: { type: string }
-        load_factor: { type: number }
+        load_factor: { type: number, description: "Load as a share of payload_t (from load_tonnes when that was given)" }
+        load_tonnes: { type: number }
         empty_trip_factor: { type: number }
         payload_t: { type: number }
         factor: { $ref: "#/components/schemas/Factor" }

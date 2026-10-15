@@ -12,7 +12,7 @@
 //	from_lat, from_lon, to_lat, to_lon              leg, used when distance_km is empty
 //	from_code, to_code                              leg, UN/LOCODE or IATA code instead of coordinates
 //	fuel, fuel_amount, vehicle_tonne_km             leg, fuel-based method
-//	load_factor, empty_trip_factor                  leg, load model method
+//	load_factor or load_tonnes, empty_trip_factor   leg, load model method
 //	energy_kwh_per_tkm, country                     leg, energy method
 //	hub_id, hub_type                                hub stop
 package csvio
@@ -243,6 +243,7 @@ func addRow(s *calc.Shipment, row rowReader) error {
 	leg.From = calc.Location{Code: row.str("from_code"), Lat: get("from_lat"), Lon: get("from_lon")}
 	leg.To = calc.Location{Code: row.str("to_code"), Lat: get("to_lat"), Lon: get("to_lon")}
 	leg.LoadFactor = get("load_factor")
+	leg.LoadTonnes = get("load_tonnes")
 	leg.EmptyTripFactor = get("empty_trip_factor")
 	leg.EnergyKWhPerTkm = get("energy_kwh_per_tkm")
 	leg.Country = row.str("country")

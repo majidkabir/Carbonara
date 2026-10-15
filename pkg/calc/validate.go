@@ -27,7 +27,7 @@ func validate(s Shipment) error {
 			where = fmt.Sprintf("leg %d", i+1)
 		}
 		nums := map[string]float64{
-			"distance_km": l.DistanceKm, "load_factor": l.LoadFactor,
+			"distance_km": l.DistanceKm, "load_factor": l.LoadFactor, "load_tonnes": l.LoadTonnes,
 			"empty_trip_factor": l.EmptyTripFactor, "energy_kwh_per_tkm": l.EnergyKWhPerTkm,
 		}
 		if l.Fuel != nil {

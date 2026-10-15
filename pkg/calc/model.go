@@ -38,8 +38,14 @@ type Leg struct {
 	// Fuel, when set, switches the leg to the fuel-based (primary data) method.
 	Fuel *FuelUse `json:"fuel,omitempty"`
 	// LoadFactor (0..1] switches the leg to the dataset's load model for the
-	// vehicle, with EmptyTripFactor empty km per loaded km.
+	// vehicle, with EmptyTripFactor empty km per loaded km. It is the share
+	// of the load model's payload (LegResult.PayloadT; DESNZ's "100% laden",
+	// 17.9 t for an articulated truck over 33 t), not of the vehicle's rated
+	// payload as in EcoTransIT. LoadTonnes instead gives the tonnes on the
+	// vehicle (all cargo, average over the loaded km), which means the same
+	// in any tool; give one or the other.
 	LoadFactor      float64 `json:"load_factor,omitempty"`
+	LoadTonnes      float64 `json:"load_tonnes,omitempty"`
 	EmptyTripFactor float64 `json:"empty_trip_factor,omitempty"`
 	// EnergyKWhPerTkm with Country switches the leg to the energy method:
 	// electricity per tonne-km times the country's grid intensity.
@@ -168,7 +174,10 @@ type LegResult struct {
 	FuelFactor      *FuelFactor `json:"fuel_factor,omitempty"`
 	AllocationShare float64     `json:"allocation_share,omitempty"`
 	// Set for the load model method: the inputs used.
+	// LoadFactor is the load as a share of PayloadT, the model's payload
+	// ("100% laden"); LoadTonnes is set when the input gave tonnes.
 	LoadFactor      float64 `json:"load_factor,omitempty"`
+	LoadTonnes      float64 `json:"load_tonnes,omitempty"`
 	EmptyTripFactor float64 `json:"empty_trip_factor,omitempty"`
 	PayloadT        float64 `json:"payload_t,omitempty"`
 	// Set for the energy method.

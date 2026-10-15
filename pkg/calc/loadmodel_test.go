@@ -110,3 +110,42 @@ func TestCalculate_LoadModel(t *testing.T) {
 		t.Errorf("want ErrInvalidLoad without models, got %v", err)
 	}
 }
+
+func TestCalculate_LoadTonnes(t *testing.T) {
+	c := Calculator{Factors: withModels{testFactors}}
+	ctx := context.Background()
+	calc := func(leg Leg) (LegResult, error) {
+		leg.ID, leg.Mode, leg.VehicleType, leg.DistanceKm = "l", Road, "truck", 100
+		r, err := c.Calculate(ctx, Shipment{WeightKg: 10_000, Legs: []Leg{leg}})
+		if err != nil {
+			return LegResult{}, err
+		}
+		return r.Legs[0], nil
+	}
+	// 10 t on a truck with a 20 t payload is load factor 0.5.
+	byLF, err1 := calc(Leg{LoadFactor: 0.5, EmptyTripFactor: 0.5})
+	byT, err2 := calc(Leg{LoadTonnes: 10, EmptyTripFactor: 0.5})
+	if err1 != nil || err2 != nil || !approx(byT.WTWKg, byLF.WTWKg) || byT.LoadFactor != 0.5 || byT.LoadTonnes != 10 {
+		t.Fatalf("tonnes vs factor: %v %v, %+v vs %+v", err1, err2, byT, byLF)
+	}
+	// 30 t is beyond the 20 t payload: the model goes on along its last
+	// segment: 600 + 1.5 × 400 = 1200 g/vkm TTW, 100 + 1.5 × 100 = 250 WTT,
+	// per 30 t: 40 and 8.33 g/tkm; 10 t × 100 km: 40 kg TTW.
+	over, err := calc(Leg{LoadTonnes: 30})
+	if err != nil || !approx(over.TTWKg, 40) || !approx(over.WTWKg, 40+250.0/30) || over.LoadFactor != 1.5 {
+		t.Errorf("30 t: %v %+v", err, over)
+	}
+	for name, leg := range map[string]Leg{
+		"beyond 1.6 × payload": {LoadTonnes: 33},
+		"negative":             {LoadTonnes: -1},
+		"both":                 {LoadTonnes: 10, LoadFactor: 0.5},
+	} {
+		if _, err := calc(leg); !errors.Is(err, ErrInvalidLoad) {
+			t.Errorf("%s: want ErrInvalidLoad, got %v", name, err)
+		}
+	}
+	// A load factor above 1 is still refused: it is a share of the payload.
+	if _, err := calc(Leg{LoadFactor: 1.2}); !errors.Is(err, ErrInvalidLoad) {
+		t.Errorf("load factor 1.2: %v", err)
+	}
+}

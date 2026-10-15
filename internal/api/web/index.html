@@ -265,11 +265,13 @@ footer.credits a { color: var(--blue); }
       </div>
     </details>
     <details class="only-road"><summary>Load and empty running</summary>
-      <p class="hint">For trucks. Replaces the fleet-average factor.</p>
+      <p class="hint">For trucks. Replaces the fleet-average factor. Give the tonnes on the truck, or a load factor.</p>
       <div class="row">
-        <div><label>Load factor (0–1)</label><input name="load_factor" type="number" min="0" max="1" step="any"></div>
+        <div><label>Load on the truck (t)</label><input name="load_tonnes" type="number" min="0" step="any"></div>
+        <div><label>or load factor (0–1)</label><input name="load_factor" type="number" min="0" max="1" step="any"></div>
         <div><label>Empty km per loaded km</label><input name="empty_trip_factor" type="number" min="0" step="any"></div>
       </div>
+      <p class="hint payload-hint"></p>
     </details>
     <details><summary>Measured fuel</summary>
       <div class="row">
@@ -292,6 +294,18 @@ footer.credits a { color: var(--blue); }
 const $ = (s, el = document) => el.querySelector(s);
 const legsEl = $("#legs");
 let vehicleLists = {};
+let vehicleNames = {}, loadModels = []; // alias -> dataset vehicle type; road load models
+
+// payloadHint says what a load factor of 1 is for the leg's vehicle.
+function payloadHint(node) {
+  const el = node.querySelector(".payload-hint");
+  const vt = node.querySelector('[name="vehicle_type"]').value.trim();
+  const full = vehicleNames[vt] || vt;
+  const m = loadModels.find(m => full === m.vehicle_type || full.startsWith(m.vehicle_type + "/"));
+  el.textContent = m ? `Load factor 1 is ${fmt(m.payload_t, 1)} t for this vehicle: the dataset's average full load, not ` +
+    `the truck's rated payload. EcoTransIT's load factor is a share of the rated payload (more tonnes), so to ` +
+    `compare, give the tonnes.` : "";
+}
 
 const fmt = (v, d = 1) => Number(v).toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
 const kg = v => v >= 10000 ? fmt(v / 1000, 2) + " t" : fmt(v, 1) + " kg";
@@ -324,9 +338,12 @@ function addLeg(values = {}) {
     // Load model fields are for trucks; energy per tonne-km for road and rail.
     node.querySelector(".only-road").hidden = mode.value !== "road";
     node.querySelector(".only-road-rail").hidden = !["road", "rail"].includes(mode.value);
+    payloadHint(node);
   };
   mode.addEventListener("change", fillList);
   fillList();
+  for (const ev of ["input", "change"]) vt.addEventListener(ev, () => payloadHint(node));
+  payloadHint(node);
   node.querySelectorAll(".place").forEach(el => placeSearch(el, node));
   node.querySelector(".remove").addEventListener("click", () => { node.remove(); renumber(); });
   node.querySelectorAll("details").forEach(d => {
@@ -423,7 +440,7 @@ function buildShipment() {
       if (fq) l.from.name = fq;
       if (tq) l.to.name = tq;
     }
-    const keys = l.mode === "road" ? ["load_factor", "empty_trip_factor", "energy_kwh_per_tkm"]
+    const keys = l.mode === "road" ? ["load_tonnes", "load_factor", "empty_trip_factor", "energy_kwh_per_tkm"]
       : l.mode === "rail" ? ["energy_kwh_per_tkm"] : [];
     for (const k of keys) { const v = num(f(k)); if (v) l[k] = v; }
     const country = f("country").value.trim();
@@ -626,10 +643,12 @@ async function loadFactors() {
     const d = await (await fetch("v1/factors")).json();
     $("#dataset").textContent = `Factors: ${d.name}`;
     const lists = {};
-    for (const a of d.vehicle_aliases || []) (lists[a.mode] ||= []).push(a.alias);
+    for (const a of d.vehicle_aliases || []) { (lists[a.mode] ||= []).push(a.alias); vehicleNames[a.alias] = a.vehicle_type; }
+    loadModels = (d.load_models || []).filter(m => m.mode === "road");
     for (const f of d.legs || []) (lists[f.mode] ||= []).push(f.vehicle_type);
     vehicleLists = lists;
     document.querySelectorAll('[name="mode"]').forEach(m => m.dispatchEvent(new Event("change")));
+    document.querySelectorAll(".leg").forEach(payloadHint);
   } catch { /* suggestions are optional */ }
 }
 
