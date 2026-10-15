@@ -89,9 +89,12 @@ type Coverage struct {
 	// FailureReasons counts all failures by reason.
 	Failures       []Failure     `json:"failures,omitempty"`
 	FailureReasons []ReasonCount `json:"failure_reasons,omitempty"`
-	Legs           int           `json:"legs"`
-	HubStops       int           `json:"hub_stops"`
-	WeightT        float64       `json:"weight_t"`
+	// RetryableFailed counts the failures that weren't the input's fault (a
+	// routing service didn't answer, after retries): run them again.
+	RetryableFailed int     `json:"retryable_failed,omitempty"`
+	Legs            int     `json:"legs"`
+	HubStops        int     `json:"hub_stops"`
+	WeightT         float64 `json:"weight_t"`
 	// AddedRoadLegs are road legs the calculator added (included in Legs
 	// and in all totals): where legs didn't join up, or to and from the port
 	// or terminal a leg off its network was moved to.
@@ -111,12 +114,14 @@ const MaxListed = 100
 type Failure struct {
 	ShipmentID string `json:"shipment_id"`
 	Error      string `json:"error"`
+	Retryable  bool   `json:"retryable,omitempty"`
 }
 
 // ReasonCount is how many shipments failed for one reason.
 type ReasonCount struct {
 	Reason    string `json:"reason"`
 	Shipments int    `json:"shipments"`
+	Retryable bool   `json:"retryable,omitempty"` // failures only: see Coverage.RetryableFailed
 }
 
 // reason turns an error into a reason shared by similar failures: numbers
@@ -238,22 +243,23 @@ type DAF struct {
 
 // Builder accumulates results. It is not safe for concurrent use.
 type Builder struct {
-	meta     Meta
-	now      func() time.Time
-	cov      Coverage
-	tot      Total
-	modes    map[calc.Mode]*Mode
-	modeDist map[calc.Mode]map[string]float64
-	dist     map[string]float64
-	hubs     map[string]*Hub
-	energy   map[string]*Energy
-	byType   map[string]float64
-	sources  map[string]float64
-	models   map[string]*modelAcc
-	reasons  map[string]int // failures by reason
-	warnings map[string]int // warnings by kind
-	dafs     map[string]*DAF
-	datasets map[string]bool
+	meta      Meta
+	now       func() time.Time
+	cov       Coverage
+	tot       Total
+	modes     map[calc.Mode]*Mode
+	modeDist  map[calc.Mode]map[string]float64
+	dist      map[string]float64
+	hubs      map[string]*Hub
+	energy    map[string]*Energy
+	byType    map[string]float64
+	sources   map[string]float64
+	models    map[string]*modelAcc
+	reasons   map[string]int  // failures by reason
+	retryable map[string]bool // reasons that are temporary
+	warnings  map[string]int  // warnings by kind
+	dafs      map[string]*DAF
+	datasets  map[string]bool
 }
 
 type modelAcc struct {
@@ -283,14 +289,24 @@ func (b *Builder) Add(id string, r calc.Result, err error) {
 	b.cov.Shipments++
 	if err != nil {
 		b.cov.Failed++
+		retry := calc.Temporary(err)
+		if retry {
+			b.cov.RetryableFailed++
+		}
 		if len(b.cov.FailedIDs) < MaxListed {
 			b.cov.FailedIDs = append(b.cov.FailedIDs, id)
-			b.cov.Failures = append(b.cov.Failures, Failure{ShipmentID: id, Error: err.Error()})
+			b.cov.Failures = append(b.cov.Failures, Failure{ShipmentID: id, Error: err.Error(), Retryable: retry})
 		}
 		if b.reasons == nil {
 			b.reasons = map[string]int{}
 		}
 		b.reasons[reason(err.Error())]++
+		if retry {
+			if b.retryable == nil {
+				b.retryable = map[string]bool{}
+			}
+			b.retryable[reason(err.Error())] = true
+		}
 		return
 	}
 	b.cov.Calculated++
@@ -462,7 +478,7 @@ func (b *Builder) model(l calc.LegResult) {
 func (b *Builder) Report() Report {
 	b.cov.FailureReasons = nil
 	for k, n := range b.reasons {
-		b.cov.FailureReasons = append(b.cov.FailureReasons, ReasonCount{Reason: k, Shipments: n})
+		b.cov.FailureReasons = append(b.cov.FailureReasons, ReasonCount{Reason: k, Shipments: n, Retryable: b.retryable[k]})
 	}
 	sort.Slice(b.cov.FailureReasons, func(i, j int) bool {
 		x, y := b.cov.FailureReasons[i], b.cov.FailureReasons[j]
@@ -599,6 +615,10 @@ func (b *Builder) notes(r Report) []string {
 			s += ". Reasons: " + strings.Join(why, "; ")
 		}
 		n = append(n, s+".")
+		if k := r.Coverage.RetryableFailed; k > 0 {
+			n = append(n, fmt.Sprintf("%s for a temporary reason (a routing service didn't answer, also when tried again), "+
+				"not because of the data: calculating them again later should work.", countOf(k, "shipment failed", "shipments failed")))
+		}
 	}
 	if c := r.Coverage; c.AddedRoadLegs > 0 {
 		n = append(n, fmt.Sprintf("Road legs added by the calculator: %d (%s km) on %s, where the legs given didn't join up, "+

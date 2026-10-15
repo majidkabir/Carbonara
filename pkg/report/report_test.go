@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"reflect"
 	"strings"
@@ -225,7 +226,7 @@ func TestFailureReasons(t *testing.T) {
 	if len(r.Coverage.Failures) != 3 || r.Coverage.Failures[0].ShipmentID != "a" {
 		t.Fatalf("failures %+v", r.Coverage.Failures)
 	}
-	want := []ReasonCount{{"leg #: from is # km from the nearest rail line (max # km)", 2}, {"unknown vehicle", 1}}
+	want := []ReasonCount{{Reason: "leg #: from is # km from the nearest rail line (max # km)", Shipments: 2}, {Reason: "unknown vehicle", Shipments: 1}}
 	if !reflect.DeepEqual(r.Coverage.FailureReasons, want) {
 		t.Fatalf("reasons %+v", r.Coverage.FailureReasons)
 	}
@@ -251,5 +252,24 @@ func TestAddedRoadLegsAndWarnings(t *testing.T) {
 	if !strings.Contains(notes, "Road legs added by the calculator: 1 (120 km) on 1 shipment,") ||
 		!strings.Contains(notes, "2 shipments have warnings that may make the results too low: 2 × a sea leg starts or ends inland") {
 		t.Errorf("notes:\n%s", notes)
+	}
+}
+
+func TestRetryableFailures(t *testing.T) {
+	b := New(Meta{})
+	b.Add("a", calc.Result{}, fmt.Errorf("leg \"x\": distance: osrm: %w (connection refused)", calc.ErrTemporary))
+	b.Add("b", calc.Result{}, errors.New("unknown vehicle"))
+	r := b.Report()
+	c := r.Coverage
+	if c.Failed != 2 || c.RetryableFailed != 1 || !c.Failures[0].Retryable || c.Failures[1].Retryable {
+		t.Fatalf("coverage %+v", c)
+	}
+	for _, x := range c.FailureReasons {
+		if x.Retryable != strings.Contains(x.Reason, "temporary") {
+			t.Errorf("reason %+v", x)
+		}
+	}
+	if !strings.Contains(strings.Join(r.Notes, "\n"), "1 shipment failed for a temporary reason") {
+		t.Errorf("notes %q", r.Notes)
 	}
 }

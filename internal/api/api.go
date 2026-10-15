@@ -194,6 +194,8 @@ func (s *Server) checkSize(sh calc.Shipment) error {
 // calcStatus maps a calculation error to an HTTP status.
 func calcStatus(err error) int {
 	switch {
+	case calc.Temporary(err):
+		return http.StatusServiceUnavailable // not the input's fault: try again
 	case errors.Is(err, context.DeadlineExceeded):
 		return http.StatusGatewayTimeout
 	case errors.Is(err, context.Canceled):
@@ -236,7 +238,7 @@ func (s *Server) calculate(w http.ResponseWriter, r *http.Request) {
 	if v := r.URL.Query().Get("path"); v == "true" || v == "1" {
 		ctx = calc.WithPath(ctx) // each leg's route for a map; single calculations only
 	}
-	res, err := s.Calc.Calculate(ctx, sh)
+	res, err := s.Calc.CalculateRetrying(ctx, sh)
 	if err != nil {
 		writeError(w, calcStatus(err), err)
 		return
@@ -295,12 +297,17 @@ type BatchItem struct {
 	ShipmentID string       `json:"shipment_id"`
 	Result     *calc.Result `json:"result,omitempty"`
 	Error      string       `json:"error,omitempty"`
+	// Retryable marks a failure that isn't the input's fault (a routing
+	// service didn't answer, after retries): sending it again can work.
+	Retryable bool `json:"retryable,omitempty"`
 }
 
 // BatchResponse is the body returned by POST /v1/calculate/batch.
 type BatchResponse struct {
 	Results []BatchItem `json:"results"`
 	Failed  int         `json:"failed"`
+	// Retryable counts the failures worth sending again (BatchItem.Retryable).
+	Retryable int `json:"retryable,omitempty"`
 }
 
 func (s *Server) calculateBatch(w http.ResponseWriter, r *http.Request) {
@@ -312,8 +319,11 @@ func (s *Server) calculateBatch(w http.ResponseWriter, r *http.Request) {
 	ok := s.each(w, r, req.Shipments, func(id string, res calc.Result, err error) {
 		item := BatchItem{ShipmentID: id}
 		if err != nil {
-			item.Error = err.Error()
+			item.Error, item.Retryable = err.Error(), calc.Temporary(err)
 			resp.Failed++
+			if item.Retryable {
+				resp.Retryable++
+			}
 		} else {
 			item.Result = &res
 		}
@@ -362,7 +372,7 @@ func (s *Server) each(w http.ResponseWriter, r *http.Request, shipments []calc.S
 			defer wg.Done()
 			for i := range next {
 				if results[i].err == nil {
-					results[i].res, results[i].err = s.Calc.Calculate(ctx, shipments[i])
+					results[i].res, results[i].err = s.Calc.CalculateRetrying(ctx, shipments[i])
 				}
 				results[i].done = ctx.Err() == nil
 			}
@@ -473,7 +483,7 @@ func (s *Server) report(w http.ResponseWriter, r *http.Request) {
 		}
 		item := BatchItem{ShipmentID: id}
 		if err != nil {
-			item.Error = err.Error()
+			item.Error, item.Retryable = err.Error(), calc.Temporary(err)
 		} else {
 			item.Result = &res
 		}
@@ -552,6 +562,9 @@ type errorBody struct {
 }
 
 func writeError(w http.ResponseWriter, status int, err error) {
+	if status == http.StatusServiceUnavailable && w.Header().Get("Retry-After") == "" {
+		w.Header().Set("Retry-After", "5")
+	}
 	writeJSON(w, status, errorBody{Error: err.Error()})
 }
 

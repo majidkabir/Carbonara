@@ -245,7 +245,7 @@ func runCalc(args []string) error {
 	if err := json.NewDecoder(f).Decode(&s); err != nil {
 		return fmt.Errorf("parse shipment: %w", err)
 	}
-	res, err := calculator.Calculate(context.Background(), s)
+	res, err := calculator.CalculateRetrying(context.Background(), s)
 	if err != nil {
 		return err
 	}

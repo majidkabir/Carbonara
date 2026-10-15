@@ -120,9 +120,15 @@ func (o *OSRM) Route(ctx context.Context, m calc.Mode, from, to calc.Location) (
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return calc.Route{}, fmt.Errorf("osrm: %w", err)
+		if ctx.Err() != nil {
+			return calc.Route{}, fmt.Errorf("osrm: %w", ctx.Err())
+		}
+		// Not reachable, reset or too slow: it may answer next time.
+		return calc.Route{}, fmt.Errorf("osrm: %w (%v)", calc.ErrTemporary, err)
 	}
 	defer resp.Body.Close()
+	// An overloaded or restarting server, or a proxy in front of it.
+	busy := resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500
 
 	var body struct {
 		Code    string `json:"code"`
@@ -144,9 +150,17 @@ func (o *OSRM) Route(ctx context.Context, m calc.Mode, from, to calc.Location) (
 		} `json:"waypoints"`
 	}
 	if err := json.NewDecoder(io.LimitReader(resp.Body, limit)).Decode(&body); err != nil {
+		if busy || resp.StatusCode == http.StatusOK { // cut off or garbled on the way
+			return calc.Route{}, fmt.Errorf("osrm: %w (HTTP %d, unreadable response: %v)", calc.ErrTemporary, resp.StatusCode, err)
+		}
 		return calc.Route{}, fmt.Errorf("osrm: HTTP %d, unreadable response: %w", resp.StatusCode, err)
 	}
 	if body.Code != "Ok" {
+		// NoRoute, NoSegment, InvalidQuery and the like are answers about
+		// the input; an error with a 5xx status is the server's.
+		if busy {
+			return calc.Route{}, fmt.Errorf("osrm: %w (HTTP %d, %s: %s)", calc.ErrTemporary, resp.StatusCode, body.Code, body.Message)
+		}
 		return calc.Route{}, fmt.Errorf("osrm: %s: %s", body.Code, body.Message)
 	}
 	if len(body.Routes) == 0 {

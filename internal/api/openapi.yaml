@@ -80,7 +80,7 @@ paths:
         "413": { $ref: "#/components/responses/Error" }
         "422": { $ref: "#/components/responses/Error" }
         "500": { $ref: "#/components/responses/Error" }
-        "503": { $ref: "#/components/responses/Busy" }
+        "503": { $ref: "#/components/responses/Busy", description: "Busy, or a routing service didn't answer (also when tried again): try again after Retry-After" }
         "504": { $ref: "#/components/responses/Error" }
   /v1/calculate/batch:
     post:
@@ -111,6 +111,7 @@ paths:
                 type: object
                 properties:
                   failed: { type: integer }
+                  retryable: { type: integer, description: Failures worth sending again }
                   results:
                     type: array
                     items:
@@ -119,6 +120,7 @@ paths:
                         shipment_id: { type: string }
                         result: { $ref: "#/components/schemas/Result" }
                         error: { type: string }
+                        retryable: { type: boolean, description: "The failure isn't the input's fault (a routing service didn't answer, also when tried again): send it again" }
         "400": { $ref: "#/components/responses/Error" }
         "413": { $ref: "#/components/responses/Error" }
         "500": { $ref: "#/components/responses/Error" }
@@ -508,6 +510,7 @@ components:
             calculated: { type: integer }
             failed: { type: integer }
             failed_ids: { type: array, items: { type: string }, description: First 100 }
+            retryable_failed: { type: integer, description: "Failures that weren't the data's fault (a routing service didn't answer, also when tried again): calculate them again" }
             legs: { type: integer }
             hub_stops: { type: integer }
             weight_t: { type: number }

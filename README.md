@@ -260,7 +260,7 @@ Fuels are converted with the selected dataset's fuel factors, including `electri
 | `energy_kwh_per_tkm`, `country` | leg, energy method |
 | `hub_id`, `hub_type` | hub stop (row is a hub when `hub_type` is set) |
 
-A bad row fails only its shipment; the rest still calculate.
+A bad row fails only its shipment; the rest still calculate. Only failures caused by the data are final: when a shipment fails because a routing service didn't answer (unreachable, timed out, overloaded or restarting), it is tried again after 1 s and 3 s. If it still fails, it is marked `retryable` (batch results, reports' `retryable_failed`, HTTP 503 with `Retry-After` for a single shipment), so you know to send it again rather than fix it.
 
 `batch` streams: it reads one shipment at a time and calculates in parallel (`-workers`, default one per CPU), writing results in input order. Memory stays flat — a million rows used about 50 MB. This needs each shipment's rows next to each other (sorted or grouped by `shipment_id`); split-up shipments are reported per shipment. For unsorted files use `-ungrouped`, which loads the whole file.
 

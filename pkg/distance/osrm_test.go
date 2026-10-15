@@ -176,3 +176,40 @@ func TestOSRM_RouteParts(t *testing.T) {
 		t.Errorf("fallback %+v %v", r, err)
 	}
 }
+
+func TestOSRM_TemporaryOrNot(t *testing.T) {
+	var calls int32
+	var path string
+	for _, c := range []struct {
+		name, body string
+		status     int
+		temporary  bool
+	}{
+		{"no route", `{"code":"NoRoute","message":"Impossible route"}`, 400, false},
+		{"no segment", `{"code":"NoSegment","message":"Could not find a matching segment"}`, 400, false},
+		{"bad gateway", `<html>bad gateway</html>`, 502, true},
+		{"busy", `{"code":"TooBusy"}`, 503, true},
+		{"rate limited", ``, 429, true},
+		{"cut off", `{"code":"Ok","routes":[{"dist`, 200, true},
+		{"bad request page", `<html>no</html>`, 400, false},
+	} {
+		srv := fakeOSRM(t, c.body, c.status, &calls, &path)
+		o, _ := NewOSRM(srv.URL)
+		_, err := o.Distance(context.Background(), calc.Road, copenhagen, hamburg)
+		if err == nil || calc.Temporary(err) != c.temporary {
+			t.Errorf("%s: error %v, temporary %v, want %v", c.name, err, calc.Temporary(err), c.temporary)
+		}
+		srv.Close()
+	}
+	// Nothing listening.
+	o, _ := NewOSRM("http://127.0.0.1:1")
+	if _, err := o.Distance(context.Background(), calc.Road, copenhagen, hamburg); !calc.Temporary(err) {
+		t.Errorf("unreachable: %v, want temporary", err)
+	}
+	// A cancelled request isn't the server's fault, nor worth retrying.
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := o.Distance(ctx, calc.Road, copenhagen, hamburg); calc.Temporary(err) || !errors.Is(err, context.Canceled) {
+		t.Errorf("cancelled: %v", err)
+	}
+}

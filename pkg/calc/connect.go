@@ -138,7 +138,9 @@ type moved struct {
 
 // plan returns the legs to calculate: the shipment's, with the added road
 // legs and moved ends when add is set, and the warnings.
-func (c Calculator) plan(ctx context.Context, legs []Leg, add bool) ([]planned, []string) {
+// A temporary failure (ErrTemporary) while looking stops it: the result
+// would depend on it.
+func (c Calculator) plan(ctx context.Context, legs []Leg, add bool) ([]planned, []string, error) {
 	var warnings []string
 	out := make([]planned, 0, len(legs))
 	fixed := make([]Leg, len(legs))
@@ -155,15 +157,26 @@ func (c Calculator) plan(ctx context.Context, legs []Leg, add bool) ([]planned, 
 		default:
 			continue
 		}
-		offFrom, offTo := c.offNetwork(ctx, *l)
+		offFrom, offTo, err := c.offNetwork(ctx, *l)
+		if err != nil {
+			return nil, nil, err
+		}
 		if offFrom > 0 && add {
-			if p, ok := c.accessPoint(ctx, l.Mode, l.From, l.To, true); ok {
+			p, ok, err := c.accessPoint(ctx, l.Mode, l.From, l.To, true)
+			if err != nil {
+				return nil, nil, err
+			}
+			if ok {
 				from[i] = &moved{to: p, offKm: offFrom}
 				l.From = p
 			}
 		}
 		if offTo > 0 && add {
-			if p, ok := c.accessPoint(ctx, l.Mode, l.To, l.From, false); ok {
+			p, ok, err := c.accessPoint(ctx, l.Mode, l.To, l.From, false)
+			if err != nil {
+				return nil, nil, err
+			}
+			if ok {
 				to[i] = &moved{to: p, offKm: offTo}
 				l.To = p
 			}
@@ -263,16 +276,16 @@ func (c Calculator) plan(ctx context.Context, legs []Leg, add bool) ([]planned, 
 		road(fixed[last].To, legs[last].To, AddedAccess, fmt.Sprintf("Added road from %s to %s: leg %s ends at %s instead of %s, %.0f km from the %s network.",
 			place(fixed[last].To), place(legs[last].To), legID(legs[last], last), place(fixed[last].To), place(legs[last].To), to[last].offKm, network(legs[last].Mode)))
 	}
-	return out, warnings
+	return out, warnings, nil
 }
 
 // offNetwork says how far each end of a sea, rail or waterway leg is off
 // its network, 0 for an end that is on it (or when it can't tell).
-func (c Calculator) offNetwork(ctx context.Context, l Leg) (fromKm, toKm float64) {
+func (c Calculator) offNetwork(ctx context.Context, l Leg) (fromKm, toKm float64, err error) {
 	if l.Mode == Sea {
 		s, ok := c.Distances.(Snapper)
 		if !ok {
-			return 0, 0
+			return 0, 0, nil
 		}
 		off := func(p Location) float64 {
 			km, ok := s.SnapKm(Sea, p, math.Inf(1))
@@ -281,12 +294,15 @@ func (c Calculator) offNetwork(ctx context.Context, l Leg) (fromKm, toKm float64
 			}
 			return km
 		}
-		return off(l.From), off(l.To)
+		return off(l.From), off(l.To), nil
 	}
-	_, err := c.route(ctx, l.Mode, l.From, l.To)
+	_, err = c.route(ctx, l.Mode, l.From, l.To)
+	if Temporary(err) {
+		return 0, 0, err
+	}
 	var off *OffNetworkError
 	if !errors.As(err, &off) {
-		return 0, 0
+		return 0, 0, nil
 	}
 	if off.FromOff() {
 		fromKm = off.FromKm
@@ -294,7 +310,7 @@ func (c Calculator) offNetwork(ctx context.Context, l Leg) (fromKm, toKm float64
 	if off.ToOff() {
 		toKm = off.ToKm
 	}
-	return fromKm, toKm
+	return fromKm, toKm, nil
 }
 
 // atSeaPort says whether p is at (within 10 km of) a sea port: a large
@@ -333,10 +349,10 @@ func (c Calculator) route(ctx context.Context, m Mode, from, to Location) (Route
 // the leg's mode (shippers go to a port nearer by road unless the sea
 // route from a farther one is much shorter) and a border crossing on the
 // road as borderKm.
-func (c Calculator) accessPoint(ctx context.Context, m Mode, p, other Location, isFrom bool) (Location, bool) {
+func (c Calculator) accessPoint(ctx context.Context, m Mode, p, other Location, isFrom bool) (Location, bool, error) {
 	f, ok := c.Places.(PlaceFinder)
 	if !ok {
-		return Location{}, false
+		return Location{}, false, nil
 	}
 	const (
 		roadDetour = 1.2 // road km per great-circle km, roughly
@@ -394,8 +410,8 @@ func (c Calculator) accessPoint(ctx context.Context, m Mode, p, other Location, 
 	}
 	var good []scored
 	for _, q := range cands {
-		if ctx.Err() != nil {
-			return Location{}, false
+		if err := ctx.Err(); err != nil {
+			return Location{}, false, err
 		}
 		a, b := q, other
 		if !isFrom {
@@ -405,6 +421,8 @@ func (c Calculator) accessPoint(ctx context.Context, m Mode, p, other Location, 
 		r, err := c.route(ctx, m, a, b)
 		var off *OffNetworkError
 		switch {
+		case Temporary(err):
+			return Location{}, false, err
 		case err == nil && r.Km <= 0:
 			continue // no leg left between the candidate and the other end
 		case err == nil:
@@ -429,11 +447,15 @@ func (c Calculator) accessPoint(ctx context.Context, m Mode, p, other Location, 
 		if !isFrom {
 			a, b = s.q, p
 		}
-		if _, err := c.route(ctx, Road, a, b); err == nil {
-			return s.q, true
+		_, err := c.route(ctx, Road, a, b)
+		if err == nil {
+			return s.q, true, nil
+		}
+		if Temporary(err) {
+			return Location{}, false, err
 		}
 	}
-	return Location{}, false
+	return Location{}, false, nil
 }
 
 func contains(ls []Location, q Location) bool {

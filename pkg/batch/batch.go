@@ -86,7 +86,7 @@ func Process(ctx context.Context, c calc.Calculator, src Source, workers int, si
 			for j := range jobs {
 				r := result{job: j, err: j.item.Err}
 				if r.err == nil {
-					r.res, r.err = c.Calculate(ctx, j.item.Shipment)
+					r.res, r.err = c.CalculateRetrying(ctx, j.item.Shipment)
 				}
 				results <- r
 			}

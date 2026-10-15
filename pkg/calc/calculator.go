@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 )
 
 // FactorProvider supplies emission factors.
@@ -51,6 +52,9 @@ type Calculator struct {
 	// NoRoadLegs adds no road legs for shipments that don't ask for them
 	// (Shipment.AddRoadLegs); see connect.go.
 	NoRoadLegs bool
+	// RetryWaits are the pauses before CalculateRetrying tries again after
+	// a temporary failure (nil: DefaultRetryWaits; empty: no retries).
+	RetryWaits []time.Duration
 }
 
 // Resolver finds a location by code: a UN/LOCODE or an IATA airport code.
@@ -142,11 +146,14 @@ func (c Calculator) Calculate(ctx context.Context, s Shipment) (Result, error) {
 		res.Dataset = n.DatasetName()
 	}
 
-	legs, warnings := c.plan(ctx, s.Legs, c.addRoadLegs(ctx, s))
+	legs, warnings, err := c.plan(ctx, s.Legs, c.addRoadLegs(ctx, s))
+	if err != nil {
+		return Result{}, err
+	}
 	res.Warnings = warnings
 	for _, p := range legs {
 		lr, err := c.leg(ctx, tonnes, p.Leg)
-		if err != nil && p.added != "" {
+		if err != nil && p.added != "" && !Temporary(err) {
 			// An added leg that can't be calculated is left out, as it
 			// would have been without adding it.
 			res.Warnings = append(res.Warnings, fmt.Sprintf("%s It couldn't be calculated, so it isn't counted: %v", p.note, err))

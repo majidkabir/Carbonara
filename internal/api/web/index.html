@@ -731,7 +731,8 @@ function renderReport(r) {
     <p class="answer-sub">${r.organisation ? esc(r.organisation) + ", " : ""}${period}. ${fmt(t.tonne_km, 0)} tonne-km,
       ${fmt(t.intensity_g_per_tkm, 1)} g per tonne-km. Transport: ${kg(t.ttw_kg)} from the vehicles and ${kg(t.wtt_kg)} from
       producing their energy${t.hub_wtw_kg ? `; hubs ${kg(t.hub_wtw_kg)}` : ""}.
-      ${c.failed ? `<strong>${c.failed} of ${c.shipments} shipments excluded</strong> (see below).` : ""}</p>
+      ${c.failed ? `<strong>${c.failed} of ${c.shipments} shipments excluded</strong> (see below).` : ""}
+      ${c.retryable_failed ? `<strong>${c.retryable_failed} of them failed for a temporary reason, not the data: make the report again.</strong>` : ""}</p>
     <div class="actions"><button type="button" class="btn" id="dl-md">Report as Markdown</button>
       <button type="button" class="btn" id="dl-json">Report as JSON</button></div>
     ${(r.results || []).length ? `<p class="id">Each shipment's full calculation, as for a single shipment above:</p>
@@ -759,7 +760,7 @@ function renderReport(r) {
       <tbody>${c.warnings.map(x => `<tr><td>${esc(x.reason)}</td><td class="num">${x.shipments}</td></tr>`).join("")}</tbody></table></div>` : ""}
     ${c.failed ? `<h3 class="sub">Shipments not calculated</h3>
       <div class="scroll"><table class="report-table long-names"><thead><tr><th>Reason</th><th class="num">Shipments</th></tr></thead>
-      <tbody>${(c.failure_reasons || []).map(x => `<tr><td>${esc(x.reason)}</td><td class="num">${x.shipments}</td></tr>`).join("")}</tbody></table></div>
+      <tbody>${(c.failure_reasons || []).map(x => `<tr><td>${esc(x.reason)}${x.retryable ? `<br><span class="dtype added">temporary: make the report again</span>` : ""}</td><td class="num">${x.shipments}</td></tr>`).join("")}</tbody></table></div>
       <details class="json"><summary>First ${(c.failures || []).length} by shipment</summary>
       <div class="scroll"><table class="report-table long-names"><tbody>${(c.failures || []).map(x =>
         `<tr><td>${esc(x.shipment_id)}</td><td>${esc(x.error)}</td></tr>`).join("")}</tbody></table></div></details>` : ""}
@@ -779,7 +780,7 @@ function resultsCSV(results) {
   const cols = ["shipment_id", "weight_kg", "shipment_wtw_kg", "row", "leg_id", "added", "mode", "vehicle_type", "factor",
     "from", "from_lat", "from_lon", "to", "to_lat", "to_lon", "distance_km", "distance_method", "distance_type", "daf",
     "tonne_km", "method", "data_type", "ttw_kg", "wtt_kg", "wtw_kg", "intensity_g_per_tkm", "factor_source", "parts",
-    "note", "warnings", "error"];
+    "note", "warnings", "error", "retryable"];
   const cell = v => {
     if (v === undefined || v === null) return "";
     if (typeof v === "number") return Number.isFinite(v) ? String(Math.round(v * 1e4) / 1e4) : "";
@@ -791,7 +792,7 @@ function resultsCSV(results) {
   const row = o => lines.push(cols.map(c => cell(o[c])).join(","));
   for (const it of results) {
     const res = it.result;
-    if (!res) { row({ shipment_id: it.shipment_id, error: it.error }); continue; }
+    if (!res) { row({ shipment_id: it.shipment_id, error: it.error, retryable: it.retryable ? "yes" : "no" }); continue; }
     const base = { shipment_id: it.shipment_id, weight_kg: res.weight_kg, shipment_wtw_kg: res.wtw_kg,
       warnings: (res.warnings || []).join(" | ") };
     for (const l of res.legs || []) {
