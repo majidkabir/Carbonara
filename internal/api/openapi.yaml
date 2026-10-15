@@ -141,6 +141,14 @@ paths:
           in: query
           schema: { type: string, enum: [json, md] }
           description: md returns Markdown
+        - name: results
+          in: query
+          schema: { type: boolean, default: false }
+          description: Also return each shipment's full result (results[], as in a batch, in input order)
+        - name: markdown
+          in: query
+          schema: { type: boolean, default: false }
+          description: Also return the report as Markdown (markdown), alongside the JSON
       requestBody:
         required: true
         content:
@@ -342,8 +350,8 @@ components:
           enum: [gap, access]
           description: "Set on road legs the calculator added: gap (the legs didn't join up) or access (to or from the port or terminal a leg was moved to)"
         note: { type: string, description: Why the leg was added, or where its end was moved to }
-        from: { $ref: "#/components/schemas/Location", description: Set on added and moved legs }
-        to: { $ref: "#/components/schemas/Location", description: Set on added and moved legs }
+        from: { $ref: "#/components/schemas/Location", description: "Where the leg was calculated from (moved for a leg moved to a port or terminal), when known" }
+        to: { $ref: "#/components/schemas/Location", description: Where the leg was calculated to, when known }
         mode: { $ref: "#/components/schemas/Mode" }
         vehicle_type: { type: string }
         distance_km: { type: number }

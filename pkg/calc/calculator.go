@@ -156,7 +156,7 @@ func (c Calculator) Calculate(ctx context.Context, s Shipment) (Result, error) {
 			return Result{}, fmt.Errorf("leg %q: %w", p.ID, err)
 		}
 		lr.Added, lr.Note = p.added, p.note
-		if p.show {
+		if !isZero(p.From) && !isZero(p.To) {
 			from, to := p.From, p.To
 			lr.From, lr.To = &from, &to
 		}

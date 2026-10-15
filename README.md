@@ -268,7 +268,7 @@ A bad row fails only its shipment; the rest still calculate.
 
 `carbonara serve` also serves a page at `/`: enter a shipment leg by leg, picking each leg's start and end by name or code (cities, ports, rail and road terminals, airports; the list follows the mode), and see its emissions, a bar of each leg's share split into vehicle and fuel-supply emissions, and for every number the distance method, calculation method, data type and factor source. It opens with a worked example.
 
-Below it, **Report** takes a shipments CSV (the `batch` columns), an organisation and a period, and shows the [report](#report-over-many-shipments): totals, modes, hubs, energy carriers, data quality, notes. Download it as Markdown or JSON. `POST /v1/report` takes the CSV directly with `Content-Type: text/csv`, report details in the query (`?organisation=...&period_from=...`).
+Below it, **Report** takes a shipments CSV (the `batch` columns), an organisation and a period, and shows the [report](#report-over-many-shipments): totals, modes, hubs, energy carriers, data quality, notes. Download it as Markdown or JSON, and each shipment's full calculation as CSV (a row per leg and hub: distance and how it was found, method, data type, emissions, factor source, notes on added legs) or JSON, all from the one calculation. `POST /v1/report` takes the CSV directly with `Content-Type: text/csv`, report details in the query (`?organisation=...&period_from=...`).
 
 Each calculation also shows the legs on a map: the route as routed (road, rail, river, sea), or a dashed straight line where the distance was given or estimated. The map uses the bundled Leaflet and OpenStreetMap's tiles; everything else on the page works offline (no external scripts or fonts), in light or dark mode.
 

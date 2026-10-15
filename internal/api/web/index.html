@@ -643,7 +643,6 @@ EX-3,450,L1,air,air_freight,6100,actual,,,,
 EX-4,250000,L1,inland_waterway,barge,220,sfd,,,,
 EX-5,0,L1,road,hgv,10,,,,,
 `;
-let reportInput = null; // { body, type } of the last report request
 
 function reportQuery(format) {
   const q = new URLSearchParams();
@@ -654,6 +653,7 @@ function reportQuery(format) {
   if ($("#riso").checked) q.set("declare_iso", "true");
   if (!$("#rroadlegs").checked) q.set("add_road_legs", "false");
   if (format) q.set("format", format);
+  else { q.set("results", "true"); q.set("markdown", "true"); } // all downloads from one calculation
   return q.toString();
 }
 
@@ -700,7 +700,6 @@ async function makeReport(e, body) {
     reportBusy = false;
   }
   if (!res.ok) { $("#rerror").textContent = r.error || `Request failed (HTTP ${res.status}).`; return; }
-  reportInput = body;
   renderReport(r);
 }
 
@@ -733,8 +732,11 @@ function renderReport(r) {
       ${fmt(t.intensity_g_per_tkm, 1)} g per tonne-km. Transport: ${kg(t.ttw_kg)} from the vehicles and ${kg(t.wtt_kg)} from
       producing their energy${t.hub_wtw_kg ? `; hubs ${kg(t.hub_wtw_kg)}` : ""}.
       ${c.failed ? `<strong>${c.failed} of ${c.shipments} shipments excluded</strong> (see below).` : ""}</p>
-    <div class="actions"><button type="button" class="btn" id="dl-md">Download Markdown</button>
-      <button type="button" class="btn" id="dl-json">Download JSON</button></div>
+    <div class="actions"><button type="button" class="btn" id="dl-md">Report as Markdown</button>
+      <button type="button" class="btn" id="dl-json">Report as JSON</button></div>
+    ${(r.results || []).length ? `<p class="id">Each shipment's full calculation, as for a single shipment above:</p>
+    <div class="actions"><button type="button" class="btn" id="dl-rcsv">Shipments as CSV (a row per leg)</button>
+      <button type="button" class="btn" id="dl-rjson">Shipments as JSON</button></div>` : ""}
     <h3 class="sub">By mode of transport</h3>
     <div class="scroll"><table class="report-table"><thead><tr><th>Mode</th><th class="num">Tonne-km</th><th>Distance type</th>
       <th class="num">Vehicle</th><th class="num">Supply</th><th class="num">Total</th><th class="num">g/tkm</th></tr></thead>
@@ -763,20 +765,56 @@ function renderReport(r) {
         `<tr><td>${esc(x.shipment_id)}</td><td>${esc(x.error)}</td></tr>`).join("")}</tbody></table></div></details>` : ""}
     ${notes ? `<h3 class="sub">Notes, omissions and deviations</h3><ul class="notes">${notes}</ul>` : ""}
     <p class="statement">${esc(r.statement)}</p>`;
-  $("#dl-json").addEventListener("click", () => download(JSON.stringify(r, null, 2), "application/json", "json"));
-  $("#dl-md").addEventListener("click", async () => {
-    try {
-      const res = await postReport(reportInput, "md");
-      if (!res.ok) throw new Error();
-      download(await res.text(), "text/markdown", "md");
-    } catch { $("#rerror").textContent = "Couldn't make the Markdown file."; }
-  });
+  const { results, markdown, ...rep } = r;
+  $("#dl-json").addEventListener("click", () => download(JSON.stringify(rep, null, 2), "application/json", "emissions-report.json"));
+  $("#dl-md").addEventListener("click", () => download(markdown || "", "text/markdown", "emissions-report.md"));
+  if ((results || []).length) {
+    $("#dl-rcsv").addEventListener("click", () => download("\ufeff" + resultsCSV(results), "text/csv", "emissions-by-shipment.csv"));
+    $("#dl-rjson").addEventListener("click", () => download(JSON.stringify(results, null, 2), "application/json", "emissions-by-shipment.json"));
+  }
 }
 
-function download(text, type, ext) {
+// resultsCSV writes each shipment's legs and hubs, a row each, with how every number was made.
+function resultsCSV(results) {
+  const cols = ["shipment_id", "weight_kg", "shipment_wtw_kg", "row", "leg_id", "added", "mode", "vehicle_type", "factor",
+    "from", "from_lat", "from_lon", "to", "to_lat", "to_lon", "distance_km", "distance_method", "distance_type", "daf",
+    "tonne_km", "method", "data_type", "ttw_kg", "wtt_kg", "wtw_kg", "intensity_g_per_tkm", "factor_source", "parts",
+    "note", "warnings", "error"];
+  const cell = v => {
+    if (v === undefined || v === null) return "";
+    if (typeof v === "number") return Number.isFinite(v) ? String(Math.round(v * 1e4) / 1e4) : "";
+    let t = String(v);
+    if (/^[=+\-@\t\r]/.test(t)) t = "'" + t; // not a formula in a spreadsheet
+    return /[",\n\r]/.test(t) ? `"${t.replaceAll('"', '""')}"` : t;
+  };
+  const lines = [cols.join(",")];
+  const row = o => lines.push(cols.map(c => cell(o[c])).join(","));
+  for (const it of results) {
+    const res = it.result;
+    if (!res) { row({ shipment_id: it.shipment_id, error: it.error }); continue; }
+    const base = { shipment_id: it.shipment_id, weight_kg: res.weight_kg, shipment_wtw_kg: res.wtw_kg,
+      warnings: (res.warnings || []).join(" | ") };
+    for (const l of res.legs || []) {
+      const f = l.factor || l.fuel_factor || {};
+      row({ ...base, row: "leg", leg_id: l.leg_id, added: l.added, mode: l.mode, vehicle_type: l.vehicle_type, factor: f.vehicle_type || f.fuel,
+        from: l.from && (l.from.name || l.from.code), from_lat: l.from && l.from.lat, from_lon: l.from && l.from.lon,
+        to: l.to && (l.to.name || l.to.code), to_lat: l.to && l.to.lat, to_lon: l.to && l.to.lon,
+        distance_km: l.distance_km, distance_method: l.distance_method, distance_type: l.distance_type, daf: l.daf,
+        tonne_km: l.tonne_km, method: l.method, data_type: l.data_type, ttw_kg: l.ttw_kg, wtt_kg: l.wtt_kg, wtw_kg: l.wtw_kg,
+        intensity_g_per_tkm: l.intensity_g_per_tkm, factor_source: f.source,
+        parts: (l.parts || []).map(p => `${p.kind} ${Math.round(p.distance_km * 10) / 10} km ${Math.round(p.wtw_kg * 100) / 100} kg`).join("; "),
+        note: l.note });
+    }
+    for (const h of res.hubs || [])
+      row({ ...base, row: "hub", leg_id: h.hub_id, vehicle_type: h.hub_type, wtw_kg: h.wtw_kg, data_type: h.data_type, factor_source: h.source });
+  }
+  return lines.join("\r\n") + "\r\n";
+}
+
+function download(text, type, name) {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([text], { type }));
-  a.download = `emissions-report.${ext}`;
+  a.download = name;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }

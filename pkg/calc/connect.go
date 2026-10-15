@@ -128,7 +128,6 @@ type planned struct {
 	Leg
 	added string // AddedGap, AddedAccess or "" for the shipment's own legs
 	note  string
-	show  bool // report From and To (added or moved)
 }
 
 // moved is a leg end moved to a port or terminal.
@@ -210,7 +209,7 @@ func (c Calculator) plan(ctx context.Context, legs []Leg, add bool) ([]planned, 
 		}
 		ids[id] = true
 		out = append(out, planned{Leg: Leg{ID: id, Mode: Road, VehicleType: vehicle, From: a, To: b},
-			added: kind, note: note, show: true})
+			added: kind, note: note})
 	}
 
 	for i, l := range fixed {
@@ -256,7 +255,7 @@ func (c Calculator) plan(ctx context.Context, legs []Leg, add bool) ([]planned, 
 				place(l.To), place(legs[i].To), to[i].offKm, network(l.Mode)))
 		}
 		if len(notes) > 0 {
-			p.note, p.show = strings.Join(notes, " "), true
+			p.note = strings.Join(notes, " ")
 		}
 		out = append(out, p)
 	}

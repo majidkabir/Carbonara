@@ -184,6 +184,40 @@ func TestReport_CSV(t *testing.T) {
 	}
 }
 
+func TestReport_WithResultsAndMarkdown(t *testing.T) {
+	srv := newTestServer(t)
+	csv := "shipment_id,weight_kg,mode,vehicle_type,distance_km\nB,1000,road,truck_40t,abc\nA,10000,road,truck_40t,500\nC,2000,road,truck_40t,100\n"
+	resp, err := http.Post(srv.URL+"/v1/report?results=true&markdown=true", "text/csv", strings.NewReader(csv))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	var out ReportResponse
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != 200 || out.Coverage.Shipments != 3 || !strings.Contains(out.Markdown, "# ") || len(out.Results) != 3 {
+		t.Fatalf("status %d, coverage %+v, markdown %d bytes, %d results", resp.StatusCode, out.Coverage, len(out.Markdown), len(out.Results))
+	}
+	// File order, the failed row included.
+	for i, want := range []string{"B", "A", "C"} {
+		if out.Results[i].ShipmentID != want {
+			t.Errorf("result %d is %s, want %s", i, out.Results[i].ShipmentID, want)
+		}
+	}
+	if out.Results[0].Error == "" || out.Results[1].Result == nil || out.Results[1].Result.WTWKg != 375 || len(out.Results[1].Result.Legs) != 1 {
+		t.Errorf("results: %+v", out.Results)
+	}
+	// Without the flags, the report alone.
+	r, _ := http.Post(srv.URL+"/v1/report", "text/csv", strings.NewReader(csv))
+	var plain map[string]any
+	_ = json.NewDecoder(r.Body).Decode(&plain)
+	r.Body.Close()
+	if _, ok := plain["results"]; ok {
+		t.Error("results without ?results=true")
+	}
+}
+
 func TestPlaces(t *testing.T) {
 	srv := newTestServer(t)
 	resp, err := http.Get(srv.URL + "/v1/places?q=rotterdam&kind=port&limit=3")

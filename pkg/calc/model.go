@@ -134,8 +134,8 @@ type LegResult struct {
 	LegID string `json:"leg_id"`
 	// Added says why the calculator added this road leg (AddedGap or
 	// AddedAccess); empty for the shipment's own legs. Note explains an
-	// added leg, or a leg whose end was moved to a port or terminal; From
-	// and To are set for both.
+	// added leg, or a leg whose end was moved to a port or terminal. From
+	// and To are where the leg was calculated from and to, when known.
 	Added string    `json:"added,omitempty"`
 	Note  string    `json:"note,omitempty"`
 	From  *Location `json:"from,omitempty"`

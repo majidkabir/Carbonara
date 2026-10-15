@@ -400,12 +400,22 @@ type ReportRequest struct {
 	Shipments []calc.Shipment `json:"shipments"`
 }
 
+// ReportResponse is the body returned by POST /v1/report: the report, and
+// with ?markdown=true its Markdown, with ?results=true each shipment's
+// full result (as in a batch, in input order).
+type ReportResponse struct {
+	report.Report
+	Markdown string      `json:"markdown,omitempty"`
+	Results  []BatchItem `json:"results,omitempty"`
+}
+
 // maxMetaLen caps each free-text report field.
 const maxMetaLen = 1000
 
 func (s *Server) report(w http.ResponseWriter, r *http.Request) {
 	var req ReportRequest
 	var parseErrs []csvio.Item // CSV shipments that failed to parse
+	var csvOrder []string      // CSV shipment ids in file order
 	if ct, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type")); ct == "text/csv" {
 		// A shipments CSV as the body, report details in the query.
 		q := r.URL.Query()
@@ -429,6 +439,7 @@ func (s *Server) report(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		for _, it := range items {
+			csvOrder = append(csvOrder, it.Shipment.ID)
 			if it.Err != nil {
 				parseErrs = append(parseErrs, it)
 			} else {
@@ -452,14 +463,61 @@ func (s *Server) report(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	b := report.New(m)
-	for _, it := range parseErrs {
-		b.Add(it.Shipment.ID, calc.Result{}, it.Err)
+	q := r.URL.Query()
+	withResults := q.Get("results") == "true"
+	byID := map[string]BatchItem{}
+	add := func(id string, res calc.Result, err error) {
+		b.Add(id, res, err)
+		if !withResults {
+			return
+		}
+		item := BatchItem{ShipmentID: id}
+		if err != nil {
+			item.Error = err.Error()
+		} else {
+			item.Result = &res
+		}
+		byID[id] = item
 	}
-	if !s.each(w, r, req.Shipments, b.Add) {
+	for _, it := range parseErrs {
+		add(it.Shipment.ID, calc.Result{}, it.Err)
+	}
+	if !s.each(w, r, req.Shipments, add) {
 		return
 	}
 	rep := b.Report()
-	if r.URL.Query().Get("format") == "md" {
+	if q.Get("format") != "md" && (withResults || q.Get("markdown") == "true") {
+		resp := ReportResponse{Report: rep}
+		if q.Get("markdown") == "true" {
+			var buf bytes.Buffer
+			if err := report.WriteMarkdown(&buf, rep); err != nil {
+				writeError(w, http.StatusInternalServerError, err)
+				return
+			}
+			resp.Markdown = buf.String()
+		}
+		if withResults {
+			// In input order: the CSV's (failed rows included), or the JSON's.
+			ids := make([]string, 0, len(byID))
+			if len(csvOrder) > 0 {
+				ids = csvOrder
+			} else {
+				for _, sh := range req.Shipments {
+					ids = append(ids, sh.ID)
+				}
+			}
+			resp.Results = make([]BatchItem, 0, len(ids))
+			for _, id := range ids {
+				if it, ok := byID[id]; ok {
+					resp.Results = append(resp.Results, it)
+					delete(byID, id) // a repeated id once
+				}
+			}
+		}
+		writeJSON(w, http.StatusOK, resp)
+		return
+	}
+	if q.Get("format") == "md" {
 		var buf bytes.Buffer
 		if err := report.WriteMarkdown(&buf, rep); err != nil {
 			writeError(w, http.StatusInternalServerError, err)
