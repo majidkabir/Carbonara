@@ -36,9 +36,36 @@ type OSRM struct {
 	// calc route part kinds (e.g. calc.PartFerry). When set, routes are
 	// fetched with steps and Route reports the km of each part.
 	PartModes map[string]string
+	// MaxInFlight caps the requests to this server at a time (default
+	// DefaultMaxInFlight). More would only queue inside OSRM and time out
+	// when many big batches run at once; here they wait their turn, with
+	// the request's timeout counting from when it is sent.
+	MaxInFlight int
 
-	mu    sync.Mutex
-	cache map[string]calc.Route
+	mu      sync.Mutex
+	cache   map[string]calc.Route
+	semOnce sync.Once
+	sem     chan struct{}
+}
+
+// DefaultMaxInFlight is OSRM.MaxInFlight's default.
+const DefaultMaxInFlight = 32
+
+// acquire waits for a request slot; release with the returned func.
+func (o *OSRM) acquire(ctx context.Context) (func(), error) {
+	o.semOnce.Do(func() {
+		n := o.MaxInFlight
+		if n <= 0 {
+			n = DefaultMaxInFlight
+		}
+		o.sem = make(chan struct{}, n)
+	})
+	select {
+	case o.sem <- struct{}{}:
+		return func() { <-o.sem }, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 }
 
 // RoadParts reports ferry crossings on road routes (OSRM's car profile
@@ -118,7 +145,12 @@ func (o *OSRM) Route(ctx context.Context, m calc.Mode, from, to calc.Location) (
 	if client == nil {
 		client = &http.Client{Timeout: 10 * time.Second}
 	}
+	release, err := o.acquire(ctx)
+	if err != nil {
+		return calc.Route{}, fmt.Errorf("osrm: %w", err)
+	}
 	resp, err := client.Do(req)
+	release()
 	if err != nil {
 		if ctx.Err() != nil {
 			return calc.Route{}, fmt.Errorf("osrm: %w", ctx.Err())

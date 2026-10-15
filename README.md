@@ -303,7 +303,7 @@ Each output line is `{"line": n, "shipment_id": "...", "result": {...}}`, or `{"
 
 A leg's `from` and `to` can be a code instead of coordinates: `{"code": "NLRTM"}` (UN/LOCODE) or `{"code": "CPH"}` (IATA); in CSV, `from_code` and `to_code`. The place list is embedded (about 160,000 places: GeoNames cities of 5,000 people or more, UN/LOCODE transport locations with coordinates, airports with IATA codes) and rebuilt monthly by `tools/gazetteer`; searches need no outside service.
 
-Protections for running it on a network: at most `-max-concurrent` calculation requests at once (default 4 × CPUs; more get `503` with `Retry-After`), a `-request-timeout` per request (default 30 s, then `504`), `-max-legs` per shipment (default 100), 10 MiB bodies, 10,000 shipments per batch, panics answered with `500` without taking the server down, and `nosniff`/`no-store` headers. There's no authentication: put it behind your own gateway if it faces the internet.
+Protections for running it on a network: at most `-max-concurrent` calculation requests at once (default 4 × CPUs; more get `503` with `Retry-After`), a `-request-timeout` per request (default 30 s, then `504`), `-max-legs` per shipment (default 100), big batches taking turns (batches and reports of `-big-batch` shipments or more, default 1,000, run `-big-concurrent` at a time, default 2; the rest wait in line, first come first served), at most 32 requests at a time to each OSRM server (the rest wait instead of timing out), 10 MiB bodies, 10,000 shipments per batch, panics answered with `500` without taking the server down, and `nosniff`/`no-store` headers. There's no authentication: put it behind your own gateway if it faces the internet.
 
 ## Factor datasets
 

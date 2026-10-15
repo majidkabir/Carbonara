@@ -24,6 +24,8 @@ func runServe(args []string) error {
 	timeout := fs.Duration("request-timeout", 30*time.Second, "time limit per calculation request; past it 504")
 	maxLegs := fs.Int("max-legs", 100, "legs (and hubs) allowed per shipment")
 	batchWorkers := fs.Int("batch-workers", 0, "shipments of one batch or report calculated at once (default 4 x CPUs; raise it when routing through OSRM)")
+	bigBatch := fs.Int("big-batch", 1000, "batches and reports of this many shipments or more take turns")
+	bigConcurrent := fs.Int("big-concurrent", 2, "big batches calculated at once; the rest wait in line")
 	_ = fs.Parse(args)
 
 	calculator, ds, err := c.calculator()
@@ -39,7 +41,8 @@ func runServe(args []string) error {
 	srv := &http.Server{
 		Addr: *addr,
 		Handler: (&api.Server{Calc: calculator, Factors: ds, Log: log,
-			Limits: api.Limits{MaxConcurrent: *maxConcurrent, Timeout: *timeout, MaxLegs: *maxLegs, BatchWorkers: *batchWorkers}}).Handler(),
+			Limits: api.Limits{MaxConcurrent: *maxConcurrent, Timeout: *timeout, MaxLegs: *maxLegs, BatchWorkers: *batchWorkers,
+				BigBatch: *bigBatch, BigConcurrent: *bigConcurrent}}).Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      *timeout + 30*time.Second, // room to write the 504 after a timeout

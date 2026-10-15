@@ -3,11 +3,14 @@ package distance
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/majidkabir/carbonara/pkg/calc"
 )
@@ -211,5 +214,41 @@ func TestOSRM_TemporaryOrNot(t *testing.T) {
 	cancel()
 	if _, err := o.Distance(ctx, calc.Road, copenhagen, hamburg); calc.Temporary(err) || !errors.Is(err, context.Canceled) {
 		t.Errorf("cancelled: %v", err)
+	}
+}
+
+// No more than MaxInFlight requests reach the server at a time; the rest
+// wait their turn instead of timing out.
+func TestOSRM_MaxInFlight(t *testing.T) {
+	var now, peak int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n := atomic.AddInt32(&now, 1)
+		for {
+			p := atomic.LoadInt32(&peak)
+			if n <= p || atomic.CompareAndSwapInt32(&peak, p, n) {
+				break
+			}
+		}
+		time.Sleep(5 * time.Millisecond)
+		atomic.AddInt32(&now, -1)
+		_, _ = io.WriteString(w, `{"code":"Ok","routes":[{"distance":1000}]}`)
+	}))
+	defer srv.Close()
+	o, _ := NewOSRM(srv.URL)
+	o.MaxInFlight = 3
+	var wg sync.WaitGroup
+	for i := 0; i < 40; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			to := calc.Location{Lat: 50 + float64(i)/100, Lon: 10}
+			if _, err := o.Distance(context.Background(), calc.Road, copenhagen, to); err != nil {
+				t.Error(err)
+			}
+		}(i)
+	}
+	wg.Wait()
+	if peak > 3 || peak < 2 {
+		t.Errorf("peak %d requests at a time, want at most 3", peak)
 	}
 }

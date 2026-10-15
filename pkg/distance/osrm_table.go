@@ -170,7 +170,12 @@ func (o *OSRM) table(ctx context.Context, coords []string, nSrc int, exclude str
 	if client == nil {
 		client = &http.Client{Timeout: 30 * time.Second}
 	}
+	release, err := o.acquire(ctx)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	resp, err := client.Do(req)
+	release()
 	if err != nil {
 		return nil, nil, nil, err
 	}

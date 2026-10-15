@@ -52,6 +52,7 @@ type Server struct {
 	Limits Limits
 
 	sem chan struct{}
+	big chan struct{} // turns for big batches (Limits.BigBatch)
 }
 
 // Limits protect the server from overload. Zero values use the defaults.
@@ -68,6 +69,12 @@ type Limits struct {
 	Timeout time.Duration
 	// MaxLegs bounds legs (and hubs) per shipment. Default 100.
 	MaxLegs int
+	// Batches and reports of BigBatch shipments or more (default 1,000)
+	// take turns: at most BigConcurrent (default 2) run at once, the rest
+	// wait in line, first come first served, within their Timeout. Running
+	// them all at once would only make every one of them slow.
+	BigBatch      int
+	BigConcurrent int
 }
 
 func (l Limits) withDefaults() Limits {
@@ -83,6 +90,12 @@ func (l Limits) withDefaults() Limits {
 	if l.MaxLegs <= 0 {
 		l.MaxLegs = 100
 	}
+	if l.BigBatch <= 0 {
+		l.BigBatch = 1000
+	}
+	if l.BigConcurrent <= 0 {
+		l.BigConcurrent = 2
+	}
 	return l
 }
 
@@ -90,6 +103,7 @@ func (l Limits) withDefaults() Limits {
 func (s *Server) Handler() http.Handler {
 	s.Limits = s.Limits.withDefaults()
 	s.sem = make(chan struct{}, s.Limits.MaxConcurrent)
+	s.big = make(chan struct{}, s.Limits.BigConcurrent)
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -361,6 +375,16 @@ func (s *Server) each(w http.ResponseWriter, r *http.Request, shipments []calc.S
 		return false
 	}
 	ctx := r.Context()
+	if len(shipments) >= s.Limits.BigBatch {
+		// Wait for a turn: big batches run BigConcurrent at a time.
+		select {
+		case s.big <- struct{}{}:
+			defer func() { <-s.big }()
+		case <-ctx.Done():
+			writeError(w, http.StatusServiceUnavailable, fmt.Errorf("other big files are being calculated and this one didn't get its turn in time; try again in a few minutes"))
+			return false
+		}
+	}
 	type out struct {
 		res  calc.Result
 		err  error
