@@ -8,6 +8,7 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,6 +21,10 @@ import (
 // distinct origins and destinations that is up to 100 coordinates,
 // OSRM's default --max-table-size.
 const TableChunk = 50
+
+// MaxTableWaste is how many table cells per wanted lane a chunk may cost
+// before Prefetch leaves its lanes to single routes.
+const MaxTableWaste = 4
 
 // tableParallel is how many table requests run at once.
 const tableParallel = 4
@@ -49,6 +54,11 @@ func (o *OSRM) Prefetch(ctx context.Context, lanes []calc.Lane) {
 		}
 	}
 	o.mu.Unlock()
+	// Lanes from the same origin share a table row: group them.
+	sort.SliceStable(todo, func(i, j int) bool {
+		a, b := todo[i].From, todo[j].From
+		return a.Lat < b.Lat || (a.Lat == b.Lat && a.Lon < b.Lon)
+	})
 
 	sem := make(chan struct{}, tableParallel)
 	var wg sync.WaitGroup
@@ -90,6 +100,13 @@ func (o *OSRM) prefetchChunk(ctx context.Context, lanes []calc.Lane, ferryCheck 
 	dst := make([]int, len(lanes))
 	for i, l := range lanes {
 		dst[i] = add(l.To) - nSrc
+	}
+	// A table computes every origin-destination cell. When the lanes use
+	// only a few of them (scattered, unrelated lanes), single routes are
+	// cheaper, especially on MLD, whose many-to-many tables over long
+	// distances are slow: leave such chunks to Route.
+	if nSrc*(len(coords)-nSrc) > MaxTableWaste*len(lanes) {
+		return
 	}
 
 	all, snapsS, snapsD, err := o.table(ctx, coords, nSrc, "")

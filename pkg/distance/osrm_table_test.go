@@ -118,3 +118,28 @@ func TestOSRM_PrefetchNoExclude(t *testing.T) {
 		t.Errorf("rail prefetched %d tables", tables)
 	}
 }
+
+func TestOSRM_PrefetchSkipsScatteredLanes(t *testing.T) {
+	var tables, routes int32
+	srv := fakeTableOSRM(t, &tables, &routes, true)
+	o, _ := NewOSRM(srv.URL)
+	pt := func(i int) calc.Location { return calc.Location{Lat: 50 + float64(i)/10, Lon: 5 + float64(i)/10} }
+	// 10 unrelated lanes: a 10 x 10 table for 10 lanes is too wasteful.
+	var scattered []calc.Lane
+	for i := 0; i < 10; i++ {
+		scattered = append(scattered, calc.Lane{Mode: calc.Road, From: pt(i), To: pt(100 + i)})
+	}
+	o.Prefetch(context.Background(), scattered)
+	if tables != 0 {
+		t.Fatalf("%d tables for scattered lanes", tables)
+	}
+	// 10 lanes from one origin: one row, worth a table.
+	var fan []calc.Lane
+	for i := 0; i < 10; i++ {
+		fan = append(fan, calc.Lane{Mode: calc.Road, From: pt(0), To: pt(200 + i)})
+	}
+	o.Prefetch(context.Background(), fan)
+	if tables != 1 {
+		t.Fatalf("%d tables for lanes from one origin", tables)
+	}
+}
