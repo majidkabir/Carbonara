@@ -132,12 +132,12 @@ jobs:
           echo "$out" | jq -e '.legs[0].route_parts_km.electrified > 15'
           echo "rail electrification: $(echo "$out" | jq -c '.legs[0].route_parts_km')" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Points far from a waterway are refused
+      - name: Points far from a waterway are refused without road legs
         run: |
-          code=$(curl -s -o /tmp/out.json -w '%{http_code}' -X POST localhost:8080/v1/calculate -d '{"weight_kg":1000,"legs":[{"mode":"inland_waterway","vehicle_type":"barge",
+          code=$(curl -s -o /tmp/out.json -w '%{http_code}' -X POST 'localhost:8080/v1/calculate?add_road_legs=false' -d '{"weight_kg":1000,"legs":[{"mode":"inland_waterway","vehicle_type":"barge",
             "from":{"lat":49.2328,"lon":6.9935},"to":{"lat":49.50,"lon":7.10}}]}')
           cat /tmp/out.json
-          [ "$code" = 422 ] && grep -q "from the nearest" /tmp/out.json
+          [ "$code" = 422 ] && grep -q "destination is .* km from the waterway network" /tmp/out.json
 
       - name: Logs
         if: failure()
