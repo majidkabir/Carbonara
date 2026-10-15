@@ -469,7 +469,9 @@ function buildShipment() {
   return s;
 }
 
-async function calculate(e) {
+// source "example" marks the page's own example, so a hosted service can
+// tell it from what visitors calculate themselves.
+async function calculate(e, source) {
   e && e.preventDefault();
   $("#error").textContent = "";
   const req = buildShipment();
@@ -478,7 +480,7 @@ async function calculate(e) {
   btn.disabled = true; btn.textContent = "Calculating…";
   let res, body;
   try {
-    res = await fetch("v1/calculate?path=true&explain=true", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(req) });
+    res = await fetch("v1/calculate?path=true&explain=true" + (source ? "&source=" + source : ""), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(req) });
     body = await res.json();
   } catch (err) {
     $("#error").textContent = "Couldn't reach the Carbonara server. Check it's still running.";
@@ -904,13 +906,13 @@ $("#rexample").addEventListener("click", () => {
 
 document.querySelectorAll('input[name="cargo"]').forEach(r => r.addEventListener("change", toggleCargo));
 $("#add").addEventListener("click", () => addLeg());
-$("#example").addEventListener("click", () => { loadExample(); calculate(); });
+$("#example").addEventListener("click", () => { loadExample(); calculate(null, "example"); });
 $("#form").addEventListener("submit", calculate);
 // Behind the hosted service's sign-in (served under /app/): link to the
 // account page, where people sign in for an API key and bigger files.
 if (location.pathname.startsWith("/app/")) $("#account").hidden = false;
 loadExample();
-loadFactors().then(() => calculate());
+loadFactors().then(() => calculate(null, "example"));
 </script>
 <footer class="credits">Places: <a href="https://www.geonames.org/">GeoNames</a> (CC BY 4.0), UN/LOCODE (UNECE),
 <a href="https://ourairports.com/">OurAirports</a>. Routing: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>.</footer>
