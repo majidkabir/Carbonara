@@ -42,10 +42,10 @@ const GapKm = 5.0
 // at a port, is inland.
 const SeaAccessKm = 50.0
 
-// SeaPortKm: a sea port (KindSeaPort) this close to the sea network can
-// be routed from, though farther than SeaAccessKm: the network is coarse
-// in places (Durban, Kolkata).
-const SeaPortKm = 200.0
+// SeaPortKm: a large sea port (KindSeaPort) this close to the sea network
+// can be routed from, though farther than SeaAccessKm: the network is
+// coarse in places (Durban, Kolkata, Paranaguá).
+const SeaPortKm = 300.0
 
 // DefaultRoadVehicle is the vehicle type of added road legs when the
 // shipment has no road leg to take it from (Calculator.RoadVehicle).
@@ -298,8 +298,10 @@ func (c Calculator) offNetwork(ctx context.Context, l Leg) (fromKm, toKm float64
 	return fromKm, toKm
 }
 
-// atSeaPort says whether p is at (within 10 km of) a large sea port near
-// the network.
+// atSeaPort says whether p is at (within 10 km of) a sea port: a large
+// cargo sea port up to SeaPortKm from the network, or any port up to
+// 2 × SeaAccessKm from it. The network is coarse in places (Paranaguá is
+// 245 km from it), and UN/LOCODE doesn't tell sea ports from river ports.
 func (c Calculator) atSeaPort(s Snapper, p Location) bool {
 	f, ok := c.Places.(PlaceFinder)
 	if !ok {
@@ -307,6 +309,11 @@ func (c Calculator) atSeaPort(s Snapper, p Location) bool {
 	}
 	for _, q := range f.Near(p, []string{KindSeaPort}, 10, 3) {
 		if km, ok := s.SnapKm(Sea, q, SeaPortKm); ok && km <= SeaPortKm {
+			return true
+		}
+	}
+	for _, q := range f.Near(p, []string{KindPort}, 10, 5) {
+		if km, ok := s.SnapKm(Sea, q, 2*SeaAccessKm); ok && km <= 2*SeaAccessKm {
 			return true
 		}
 	}
