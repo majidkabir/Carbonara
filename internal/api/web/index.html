@@ -88,7 +88,13 @@ input:hover, select:hover { border-color: var(--muted); }
 .ribbon-labels span { min-width: 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding-right: 6px; color: var(--muted); }
 .legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 14px 0 24px; font-size: .85rem; color: var(--muted); }
 .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.btn:disabled { opacity: .6; cursor: progress; }
+.working { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+.working::before { content: ""; width: 16px; height: 16px; flex: none; border-radius: 50%;
+  border: 2px solid var(--rule); border-top-color: var(--blue); }
 @media (prefers-reduced-motion: no-preference) {
+  .working::before { animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
   .ribbon.grow .seg { animation: grow .6s cubic-bezier(.2,.7,.2,1) both; }
   @keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 }
@@ -183,7 +189,7 @@ footer.credits a { color: var(--blue); }
           river leg starts or ends away from its network.</span></label>
       <div class="actions">
         <button type="button" class="btn" id="add">Add leg</button>
-        <button type="submit" class="btn primary">Calculate</button>
+        <button type="submit" class="btn primary" id="csubmit">Calculate</button>
         <button type="button" class="btn quiet" id="example">Load example</button>
       </div>
       <p class="error" id="error" role="alert"></p>
@@ -216,10 +222,11 @@ footer.credits a { color: var(--blue); }
       <label class="check"><input type="checkbox" id="riso">
         <span>Declare conformity with ISO 14083:2023. Only tick this if your data collection and boundaries conform.</span></label>
       <div class="actions">
-        <button type="submit" class="btn primary">Make report</button>
+        <button type="submit" class="btn primary" id="rsubmit">Make report</button>
         <button type="button" class="btn quiet" id="rexample">Try with example data</button>
       </div>
       <p class="error" id="rerror" role="alert"></p>
+      <p class="working" id="rworking" role="status" hidden></p>
     </form>
   </section>
   <section class="panel" aria-labelledby="rep-h" aria-live="polite">
@@ -433,6 +440,9 @@ async function calculate(e) {
   e && e.preventDefault();
   $("#error").textContent = "";
   const req = buildShipment();
+  const btn = $("#csubmit");
+  if (btn.disabled) return; // one calculation at a time
+  btn.disabled = true; btn.textContent = "Calculating…";
   let res, body;
   try {
     res = await fetch("v1/calculate?path=true", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(req) });
@@ -440,6 +450,8 @@ async function calculate(e) {
   } catch (err) {
     $("#error").textContent = "Couldn't reach the Carbonara server. Check it's still running.";
     return;
+  } finally {
+    btn.disabled = false; btn.textContent = "Calculate";
   }
   if (!res.ok) { $("#error").textContent = body.error || `Request failed (HTTP ${res.status}).`; return; }
   render(req, body);
@@ -649,21 +661,43 @@ async function postReport(body, format) {
   return fetch("v1/report?" + reportQuery(format), { method: "POST", headers: { "Content-Type": "text/csv" }, body });
 }
 
+let reportBusy = false;
+
 async function makeReport(e, body) {
   e && e.preventDefault();
+  if (reportBusy) return; // one report at a time
   $("#rerror").textContent = "";
   if (!body) {
     const file = $("#rfile").files[0];
     if (!file) { $("#rerror").textContent = "Choose a CSV file first."; return; }
     body = file;
   }
+  // Show that it's working: large files take a while.
+  reportBusy = true;
+  const buttons = [$("#rsubmit"), $("#rexample")], working = $("#rworking"), started = Date.now();
+  buttons.forEach(b => b.disabled = true);
+  $("#rsubmit").textContent = "Making report…";
+  $("#rform").setAttribute("aria-busy", "true");
+  const tick = () => {
+    const s = Math.round((Date.now() - started) / 1000);
+    working.textContent = `Calculating the shipments${s >= 2 ? `, ${s} s` : ""}. Large files take up to a minute.`;
+  };
+  tick(); working.hidden = false;
+  const timer = setInterval(tick, 1000);
   let res, r;
   try {
     res = await postReport(body);
     r = await res.json();
   } catch {
-    $("#rerror").textContent = "Couldn't reach the Carbonara server. Check it's still running.";
+    $("#rerror").textContent = "Couldn't reach the Carbonara server, or it took too long. Try again.";
     return;
+  } finally {
+    clearInterval(timer);
+    working.hidden = true;
+    buttons.forEach(b => b.disabled = false);
+    $("#rsubmit").textContent = "Make report";
+    $("#rform").removeAttribute("aria-busy");
+    reportBusy = false;
   }
   if (!res.ok) { $("#rerror").textContent = r.error || `Request failed (HTTP ${res.status}).`; return; }
   reportInput = body;
