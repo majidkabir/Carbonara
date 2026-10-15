@@ -44,6 +44,7 @@ button, input, select { font: inherit; color: inherit; }
 .top h1 { font-size: 2rem; letter-spacing: .02em; }
 .top p { margin: 0; color: var(--muted); }
 .top .dataset { margin-left: auto; color: var(--muted); font-size: .9rem; }
+.top .account { color: var(--blue); font-size: .9rem; }
 
 main, .grid { max-width: 1240px; margin: 0 auto; padding: 16px 24px 48px; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 28px; align-items: start; }
 @media (max-width: 900px) { main, .grid { grid-template-columns: minmax(0, 1fr); padding: 12px 16px 40px; } .top { padding: 20px 16px 4px; } }
@@ -175,6 +176,7 @@ footer.credits a { color: var(--blue); }
   <h1>Carbonara</h1>
   <p>Freight emissions, with the working shown.</p>
   <span class="dataset" id="dataset"></span>
+  <a class="account" id="account" href="/" hidden>Account and API key</a>
 </header>
 
 <main>
@@ -904,6 +906,9 @@ document.querySelectorAll('input[name="cargo"]').forEach(r => r.addEventListener
 $("#add").addEventListener("click", () => addLeg());
 $("#example").addEventListener("click", () => { loadExample(); calculate(); });
 $("#form").addEventListener("submit", calculate);
+// Behind the hosted service's sign-in (served under /app/): link to the
+// account page, where people sign in for an API key and bigger files.
+if (location.pathname.startsWith("/app/")) $("#account").hidden = false;
 loadExample();
 loadFactors().then(() => calculate());
 </script>
