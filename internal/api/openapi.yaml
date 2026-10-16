@@ -283,6 +283,9 @@ components:
             Load as a share of the load model's payload (DESNZ's average full
             load, e.g. 17.9 t for an artic over 33 t), not of the truck's rated
             payload; switches the leg to the dataset's load model. Give this or load_tonnes.
+            In GLEC and EcoTransIT a load factor is a share of the rated payload, so the
+            same value means more tonnes there: to compare, or when the weight is known,
+            give load_tonnes.
         load_tonnes:
           type: number
           exclusiveMinimum: 0

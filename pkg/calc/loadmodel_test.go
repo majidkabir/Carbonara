@@ -3,6 +3,7 @@ package calc
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 )
 
@@ -127,6 +128,10 @@ func TestCalculate_LoadTonnes(t *testing.T) {
 	byT, err2 := calc(Leg{LoadTonnes: 10, EmptyTripFactor: 0.5})
 	if err1 != nil || err2 != nil || !approx(byT.WTWKg, byLF.WTWKg) || byT.LoadFactor != 0.5 || byT.LoadTonnes != 10 {
 		t.Fatalf("tonnes vs factor: %v %v, %+v vs %+v", err1, err2, byT, byLF)
+	}
+	// The factor's source says what the load factor meant in tonnes.
+	if !strings.Contains(byLF.Factor.Source, "load factor 0.5 = 10.0 t on the vehicle, a share of the model's 20.0 t payload") {
+		t.Errorf("source: %s", byLF.Factor.Source)
 	}
 	// 30 t is beyond the 20 t payload: the model goes on along its last
 	// segment: 600 + 1.5 × 400 = 1200 g/vkm TTW, 100 + 1.5 × 100 = 250 WTT,

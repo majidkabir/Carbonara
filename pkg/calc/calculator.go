@@ -435,7 +435,11 @@ func (c Calculator) loadLeg(lr LegResult, leg Leg) (LegResult, error) {
 	if err != nil {
 		return LegResult{}, err
 	}
-	lf, load := leg.LoadFactor, fmt.Sprintf("load factor %g", leg.LoadFactor)
+	// A load factor is a share of the model's payload: the dataset's average
+	// full load, not the truck's rated payload (as in GLEC and EcoTransIT),
+	// so the source says how many tonnes it means.
+	lf, load := leg.LoadFactor, fmt.Sprintf("load factor %g = %.1f t on the vehicle, a share of the model's %.1f t payload "+
+		"(an average full load, not the rated payload; give load_tonnes to set the tonnes)", leg.LoadFactor, leg.LoadFactor*m.PayloadT, m.PayloadT)
 	var ttw, wtt float64
 	if leg.LoadTonnes != 0 {
 		// Tonnes on the vehicle, as a share of the model's payload. Loads

@@ -312,15 +312,18 @@ const legsEl = $("#legs");
 let vehicleLists = {};
 let vehicleNames = {}, loadModels = []; // alias -> dataset vehicle type; road load models
 
-// payloadHint says what a load factor of 1 is for the leg's vehicle.
+// payloadHint says what a load factor means in tonnes for the leg's vehicle.
 function payloadHint(node) {
   const el = node.querySelector(".payload-hint");
   const vt = node.querySelector('[name="vehicle_type"]').value.trim();
   const full = vehicleNames[vt] || vt;
   const m = loadModels.find(m => full === m.vehicle_type || full.startsWith(m.vehicle_type + "/"));
-  el.textContent = m ? `Load factor 1 is ${fmt(m.payload_t, 1)} t for this vehicle: the dataset's average full load, not ` +
-    `the truck's rated payload. EcoTransIT's load factor is a share of the rated payload (more tonnes), so to ` +
-    `compare, give the tonnes.` : "";
+  if (!m) { el.textContent = ""; return; }
+  const lf = parseFloat(node.querySelector('[name="load_factor"]').value);
+  const now = lf > 0 ? `Load factor ${lf} here means ${fmt(lf * m.payload_t, 1)} t on the truck. ` : "";
+  el.textContent = now + `Load factor 1 is ${fmt(m.payload_t, 1)} t for this vehicle: the dataset's average full load, not ` +
+    `the truck's rated payload. In GLEC and EcoTransIT a load factor is a share of the rated payload (about 26 t ` +
+    `for a 40 t truck), so the same percentage means more tonnes there. If you know the weight, give the tonnes.`;
 }
 
 const fmt = (v, d = 1) => Number(v).toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -358,7 +361,10 @@ function addLeg(values = {}) {
   };
   mode.addEventListener("change", fillList);
   fillList();
-  for (const ev of ["input", "change"]) vt.addEventListener(ev, () => payloadHint(node));
+  for (const ev of ["input", "change"]) {
+    vt.addEventListener(ev, () => payloadHint(node));
+    node.querySelector('[name="load_factor"]').addEventListener(ev, () => payloadHint(node));
+  }
   payloadHint(node);
   node.querySelectorAll(".place").forEach(el => placeSearch(el, node));
   node.querySelector(".remove").addEventListener("click", () => { node.remove(); renumber(); });
