@@ -111,3 +111,21 @@ func TestSheet_FormulasAddUp(t *testing.T) {
 		t.Errorf("only %d formulas checked", checked)
 	}
 }
+
+// The vehicle type's meaning for the leg's distance is told with the
+// intensity, not the distance.
+func TestSheet_FactorNote(t *testing.T) {
+	sh, r := sheet(t)
+	if r.Legs[1].FactorNote == "" || r.Legs[1].Note != "" {
+		t.Fatalf("ship leg: factor note %q, note %q", r.Legs[1].FactorNote, r.Legs[1].Note)
+	}
+	for _, s := range sh.Steps {
+		if !strings.HasPrefix(s.Group, "Leg 2") {
+			continue
+		}
+		has := strings.Contains(s.Text, `"container_ship" on a 6200 km leg means container_ship/eu_mrv_2024/deep_sea`)
+		if (s.Title == "Emission intensity") != has {
+			t.Errorf("%s: %q", s.Title, s.Text)
+		}
+	}
+}

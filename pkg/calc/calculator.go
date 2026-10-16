@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 )
 
@@ -171,10 +170,7 @@ func (c Calculator) Calculate(ctx context.Context, s Shipment) (Result, error) {
 		if err != nil {
 			return Result{}, fmt.Errorf("leg %q: %w", p.ID, err)
 		}
-		lr.Added = p.added
-		if p.note != "" { // the plan's note first, then the factor's
-			lr.Note = strings.TrimSpace(p.note + " " + lr.Note)
-		}
+		lr.Added, lr.Note = p.added, p.note
 		if !isZero(p.From) && !isZero(p.To) {
 			from, to := p.From, p.To
 			lr.From, lr.To = &from, &to
@@ -383,7 +379,7 @@ func (c Calculator) main(tonnes, dist float64, dtype string, leg Leg) (LegResult
 	var f Factor
 	var err error
 	if dp, ok := c.Factors.(DistanceFactorProvider); ok {
-		f, lr.Note, err = dp.LegFactorFor(leg.Mode, leg.VehicleType, dist)
+		f, lr.FactorNote, err = dp.LegFactorFor(leg.Mode, leg.VehicleType, dist)
 	} else {
 		f, err = c.Factors.LegFactor(leg.Mode, leg.VehicleType)
 	}

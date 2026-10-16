@@ -298,7 +298,7 @@ func intensitySteps(group string, l calc.LegResult, in calc.Leg, t, km, tkm, ttw
 			basis, kind = []string{bPrimary, bDataCats}, "The operator's own intensity (primary data)"
 		}
 		s := Step{Group: group, Title: "Emission intensity",
-			Text: fmt.Sprintf("%s for %s: %s. %s", kind, fac.VehicleType, fac.Source, basisText(fac.DistanceBasis)),
+			Text: strings.TrimSpace(fmt.Sprintf("%s %s for %s: %s. %s", l.FactorNote, kind, fac.VehicleType, fac.Source, basisText(fac.DistanceBasis))),
 			Formula: fmt.Sprintf("intensity = %s g TTW + %s g WTT = %s g CO₂e/tkm (well-to-wheel)",
 				n(fac.TTW, 3), n(fac.WTT, 3), n(fac.WTW(), 3)),
 			Basis: basis}

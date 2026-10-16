@@ -142,10 +142,13 @@ type LegResult struct {
 	// AddedAccess); empty for the shipment's own legs. Note explains an
 	// added leg, or a leg whose end was moved to a port or terminal. From
 	// and To are where the leg was calculated from and to, when known.
-	Added string    `json:"added,omitempty"`
-	Note  string    `json:"note,omitempty"`
-	From  *Location `json:"from,omitempty"`
-	To    *Location `json:"to,omitempty"`
+	Added string `json:"added,omitempty"`
+	Note  string `json:"note,omitempty"`
+	// FactorNote says which factor a vehicle type meant for this leg's
+	// distance, when that depends on it (e.g. "container_ship").
+	FactorNote string    `json:"factor_note,omitempty"`
+	From       *Location `json:"from,omitempty"`
+	To         *Location `json:"to,omitempty"`
 	// Mode and VehicleType are the leg's, as given.
 	Mode        Mode    `json:"mode"`
 	VehicleType string  `json:"vehicle_type,omitempty"`

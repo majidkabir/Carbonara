@@ -369,6 +369,7 @@ components:
           enum: [gap, access]
           description: "Set on road legs the calculator added: gap (the legs didn't join up) or access (to or from the port or terminal a leg was moved to)"
         note: { type: string, description: Why the leg was added, or where its end was moved to }
+        factor_note: { type: string, description: Which factor the vehicle type meant at this leg's distance (e.g. container_ship short-sea or deep-sea) }
         from: { $ref: "#/components/schemas/Location", description: "Where the leg was calculated from (moved for a leg moved to a port or terminal), when known" }
         to: { $ref: "#/components/schemas/Location", description: Where the leg was calculated to, when known }
         mode: { $ref: "#/components/schemas/Mode" }
