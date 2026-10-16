@@ -1,0 +1,41 @@
+name: EU MRV factor
+
+# Rebuilds pkg/factors/data/eu-mrv-2024.json, the container ship factor
+# from EU MRV data published by EMSA, and commits it when it changed.
+on:
+  push:
+    branches: [main]
+    paths: [tools/mrv/**, .github/workflows/mrv.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency: mrv
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build
+        run: |
+          set -o pipefail
+          go run ./tools/mrv -fetch -year 2024 -out pkg/factors/data/eu-mrv-2024.json 2>&1 | tee build.log
+          echo "::notice title=EU MRV::$(tail -1 build.log)"
+      - name: Test
+        run: |
+          set -o pipefail
+          go test ./pkg/factors ./tools/mrv 2>&1 | tee test.log || {
+            grep -E "_test.go|FAIL|panic" test.log | head -9 | sed 's/^[[:space:]]*/::error::/'; exit 1; }
+      - name: Commit
+        run: |
+          git add pkg/factors/data/eu-mrv-2024.json
+          if git diff --cached --quiet; then echo "unchanged"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "EU MRV factor: rebuilt from EMSA's MRV publication"
+          git push
