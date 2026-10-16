@@ -56,7 +56,7 @@ func TestEmbeddedSample_Fuel(t *testing.T) {
 
 func TestOpen(t *testing.T) {
 	names := EmbeddedNames()
-	if strings.Join(names, ",") != "desnz-2026,nl-iww-2026,sample" {
+	if j := strings.Join(names, ","); j != "desnz-2026,nl-iww-2026,sample" && j != "desnz-2026,eu-mrv-2024,nl-iww-2026,sample" {
 		t.Errorf("EmbeddedNames = %v", names)
 	}
 	ds, err := Open("")
