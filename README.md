@@ -356,7 +356,7 @@ It reports how many rows it imported, skipped as blank, or couldn't match to a w
 
 **Updating grid intensities**: `carbonara import-grid -o pkg/factors/data/grid/ember-owid.json owid-energy-data.csv`, with the CSV from [owid/energy-data](https://github.com/owid/energy-data).
 
-**World road routing on one server.** A road graph of the whole planet needs more memory than a 256 GB server has. `-osrm-regions` (or `$CARBONARA_OSRM_REGIONS`) takes several OSRM servers, each built for an overlapping part of the world, as `name=url@minlon,minlat,maxlon,maxlat;...`; each road leg is routed by the smallest region that holds both its ends, and a leg no region holds is reported as an error.
+**World road routing on one server.** A road graph of the whole planet needs more memory than a 256 GB server has. `-osrm-regions` (or `$CARBONARA_OSRM_REGIONS`) takes several OSRM servers, each built for an overlapping part of the world, as `name=url@minlon,minlat,maxlon,maxlat;...`; each road leg is routed by the smallest region that holds both its ends. When no region holds both (Shanghai to Hamburg with Asia and Europe built separately), the leg is joined where the two regions overlap: any road between them crosses that overlap, so Carbonara tries points along it (every 0.5°, then every 0.05° near the best), snapped to the road network, and routes the two halves through the best one. The result matches one graph of both regions to within a few kilometres. Regions that don't overlap aren't joined, and the leg is reported as an error.
 
 ## Performance
 

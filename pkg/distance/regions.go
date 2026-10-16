@@ -27,7 +27,8 @@ func (r Region) area() float64 { return (r.MaxLon - r.MinLon) * (r.MaxLat - r.Mi
 // the world. A road graph of the whole planet needs more memory than most
 // servers have; overlapping regions (say Europe with the Middle East, Asia
 // with the Middle East) each fit, and a route is taken from the smallest
-// region that holds both of its ends.
+// region that holds both of its ends. When none does, the route is joined
+// where two regions overlap (see regions_via.go).
 type Regions []Region
 
 // ParseRegions reads "name=url@minlon,minlat,maxlon,maxlat;name=url@...".
@@ -100,7 +101,7 @@ func (rs Regions) Distance(ctx context.Context, m calc.Mode, from, to calc.Locat
 func (rs Regions) Route(ctx context.Context, m calc.Mode, from, to calc.Location) (calc.Route, error) {
 	r, err := rs.pick(from, to)
 	if err != nil {
-		return calc.Route{}, err
+		return rs.routeVia(ctx, m, from, to, err)
 	}
 	return r.OSRM.Route(ctx, m, from, to)
 }

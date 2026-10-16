@@ -109,15 +109,18 @@ func (o *OSRM) prefetchChunk(ctx context.Context, lanes []calc.Lane, ferryCheck 
 		return
 	}
 
-	all, snapsS, snapsD, err := o.table(ctx, coords, nSrc, "")
+	t, err := o.table(ctx, coords, nSrc, "")
 	if err != nil {
 		return
 	}
+	all, snapsS, snapsD := t.dist, t.srcSnap, t.dstSnap
 	var noFerry [][]*float64
 	if ferryCheck {
-		if noFerry, _, _, err = o.table(ctx, coords, nSrc, "ferry"); err != nil {
+		nf, err := o.table(ctx, coords, nSrc, "ferry")
+		if err != nil {
 			return // e.g. the profile can't exclude ferries: leave all to Route
 		}
+		noFerry = nf.dist
 	}
 	o.mu.Lock()
 	defer o.mu.Unlock()
@@ -142,9 +145,18 @@ func (o *OSRM) prefetchChunk(ctx context.Context, lanes []calc.Lane, ferryCheck 
 	}
 }
 
+// tableResult is an OSRM distance table: metres from each source to each
+// destination (nil where there is no route), and where each coordinate
+// snapped to the network.
+type tableResult struct {
+	dist             [][]*float64
+	srcSnap, dstSnap []float64    // metres from the input point to the network
+	dstLoc           [][2]float64 // [lon, lat] of each destination on the network
+}
+
 // table fetches an OSRM distance table from the first nSrc coordinates to
 // the rest, with snap distances, optionally excluding a road class.
-func (o *OSRM) table(ctx context.Context, coords []string, nSrc int, exclude string) ([][]*float64, []float64, []float64, error) {
+func (o *OSRM) table(ctx context.Context, coords []string, nSrc int, exclude string) (tableResult, error) {
 	profile := o.Profile
 	if profile == "" {
 		profile = "driving"
@@ -164,7 +176,7 @@ func (o *OSRM) table(ctx context.Context, coords []string, nSrc int, exclude str
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
-		return nil, nil, nil, err
+		return tableResult{}, err
 	}
 	client := o.Client
 	if client == nil {
@@ -172,44 +184,58 @@ func (o *OSRM) table(ctx context.Context, coords []string, nSrc int, exclude str
 	}
 	release, err := o.acquire(ctx)
 	if err != nil {
-		return nil, nil, nil, err
+		return tableResult{}, fmt.Errorf("osrm table: %w", err)
 	}
 	resp, err := client.Do(req)
 	release()
 	if err != nil {
-		return nil, nil, nil, err
+		if ctx.Err() != nil {
+			return tableResult{}, fmt.Errorf("osrm table: %w", ctx.Err())
+		}
+		return tableResult{}, fmt.Errorf("osrm table: %w (%v)", calc.ErrTemporary, err)
 	}
 	defer resp.Body.Close()
+	busy := resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500
+	type waypoint struct {
+		Distance float64    `json:"distance"`
+		Location [2]float64 `json:"location"`
+	}
 	var body struct {
-		Code      string       `json:"code"`
-		Distances [][]*float64 `json:"distances"`
-		Sources   []struct {
-			Distance float64 `json:"distance"`
-		} `json:"sources"`
-		Destinations []struct {
-			Distance float64 `json:"distance"`
-		} `json:"destinations"`
+		Code         string       `json:"code"`
+		Message      string       `json:"message"`
+		Distances    [][]*float64 `json:"distances"`
+		Sources      []waypoint   `json:"sources"`
+		Destinations []waypoint   `json:"destinations"`
 	}
 	if err := json.NewDecoder(io.LimitReader(resp.Body, maxResponse*4)).Decode(&body); err != nil {
-		return nil, nil, nil, err
+		if busy || resp.StatusCode == http.StatusOK {
+			return tableResult{}, fmt.Errorf("osrm table: %w (HTTP %d, unreadable response: %v)", calc.ErrTemporary, resp.StatusCode, err)
+		}
+		return tableResult{}, fmt.Errorf("osrm table: HTTP %d, unreadable response: %w", resp.StatusCode, err)
 	}
-	if body.Code != "Ok" || len(body.Distances) != nSrc || len(body.Sources) != nSrc || len(body.Destinations) != len(coords)-nSrc {
-		return nil, nil, nil, fmt.Errorf("osrm table: %s", body.Code)
+	if body.Code != "Ok" {
+		if busy {
+			return tableResult{}, fmt.Errorf("osrm table: %w (HTTP %d, %s: %s)", calc.ErrTemporary, resp.StatusCode, body.Code, body.Message)
+		}
+		return tableResult{}, fmt.Errorf("osrm table: %s: %s", body.Code, body.Message)
+	}
+	if len(body.Distances) != nSrc || len(body.Sources) != nSrc || len(body.Destinations) != len(coords)-nSrc {
+		return tableResult{}, fmt.Errorf("osrm table: wrong size")
 	}
 	for _, row := range body.Distances {
 		if len(row) != len(coords)-nSrc {
-			return nil, nil, nil, fmt.Errorf("osrm table: bad row")
+			return tableResult{}, fmt.Errorf("osrm table: bad row")
 		}
 	}
-	ss := make([]float64, nSrc)
+	t := tableResult{dist: body.Distances, srcSnap: make([]float64, nSrc), dstSnap: make([]float64, len(body.Destinations)), dstLoc: make([][2]float64, len(body.Destinations))}
 	for i, x := range body.Sources {
-		ss[i] = x.Distance
+		t.srcSnap[i] = x.Distance
 	}
-	ds := make([]float64, len(body.Destinations))
 	for i, x := range body.Destinations {
-		ds[i] = x.Distance
+		t.dstSnap[i] = x.Distance
+		t.dstLoc[i] = x.Location
 	}
-	return body.Distances, ss, ds, nil
+	return t, nil
 }
 
 // Prefetch implements calc.Prefetcher, passing each mode's lanes to its
