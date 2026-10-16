@@ -1,0 +1,24 @@
+{
+  "name": "eu-mrv-2024",
+  "note": "Container ship factor from EU MRV data (Regulation (EU) 2015/757), reporting period 2024, as published by EMSA (THETIS-MRV, version 252 of 15-10-2026). Source: European Maritime Safety Agency; reproduction authorised with acknowledgement of the source.",
+  "legs": [
+    {
+      "mode": "sea",
+      "vehicle_type": "container_ship/eu_mrv_2024",
+      "ttw_g_per_tkm": 6.05,
+      "wtt_g_per_tkm": 1.37,
+      "source": "EU MRV 2024 (EMSA THETIS-MRV, version 252 of 15-10-2026): 1993 container ships with full-year reports, 8312 billion tonne-km. TTW: all CO2e (CO2, CH4, N2O) they reported divided by their transport work (cargo mass x distance actually sailed). WTT: their fuel x DESNZ 2026 marine fuel oil well-to-tank (714.9 kg CO2e/t).",
+      "year": 2024,
+      "distance_basis": "actual"
+    }
+  ],
+  "hubs": null,
+  "fuels": null,
+  "vehicle_aliases": [
+    {
+      "mode": "sea",
+      "alias": "container_ship",
+      "vehicle_type": "container_ship/eu_mrv_2024"
+    }
+  ]
+}
