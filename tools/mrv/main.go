@@ -14,7 +14,7 @@
 // times distance actually sailed). Well-to-tank comes from the fuel they
 // report, at DESNZ's well-to-tank factor for marine fuel oil. Distances are
 // actual, so a routed (shortest feasible) sea distance gets the GLEC sea
-// distance adjustment.
+// distance adjustment (x 1.15).
 package main
 
 import (
