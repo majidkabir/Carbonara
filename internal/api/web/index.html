@@ -206,7 +206,9 @@ footer.credits a { color: var(--blue); }
       <div class="actions">
         <button type="button" class="btn" id="add">Add leg</button>
         <button type="submit" class="btn primary" id="csubmit">Calculate</button>
-        <button type="button" class="btn quiet" id="example">Load example</button>
+        <select id="example" aria-label="Load an example" style="width:auto">
+          <option value="">Load an example…</option>
+        </select>
       </div>
       <p class="error" id="error" role="alert"></p>
     </form>
@@ -686,16 +688,49 @@ async function drawMap(r) {
     (straight ? `<span>Dashed: straight line (distance given or estimated, not routed)</span>` : "");
 }
 
-function loadExample() {
+// Examples: realistic shipments, one for each kind of transport chain.
+const P = {
+  suzhou: ["Suzhou, CN", 31.2989, 120.5853], yangshan: ["Shanghai port (Yangshan), CN", 30.6264, 122.065],
+  hamPort: ["Hamburg port, DE", 53.532, 9.931], riem: ["Munich-Riem rail terminal, DE", 48.1366, 11.6942],
+  munich: ["Munich, DE", 48.1374, 11.5755], rtm: ["Rotterdam Maasvlakte, NL", 51.95, 4.05],
+  duisburg: ["Duisburg port, DE", 51.4513, 6.7347], dus: ["Düsseldorf, DE", 51.2277, 6.7735],
+  frankfurt: ["Frankfurt, DE", 50.1109, 8.6821], fra: ["Frankfurt airport (FRA), DE", 50.0379, 8.5622],
+  ord: ["Chicago O'Hare (ORD), US", 41.9742, -87.9073], chicago: ["Chicago, US", 41.8781, -87.6298],
+  turin: ["Turin, IT", 45.0703, 7.6869], zaragoza: ["Zaragoza, ES", 41.6488, -0.8891],
+  milan: ["Milan, IT", 45.4642, 9.19], genoa: ["Genoa port, IT", 44.4056, 8.91],
+  bcnPort: ["Barcelona port, ES", 41.35, 2.16], cph: ["Copenhagen, DK", 55.6761, 12.5683],
+  aarhus: ["Aarhus, DK", 56.1629, 10.2039],
+};
+const between = (a, b) => ({ from_q: P[a][0], from_lat: P[a][1], from_lon: P[a][2], to_q: P[b][0], to_lat: P[b][1], to_lon: P[b][2] });
+const examples = [
+  { name: "Suzhou → Munich: truck, container ship, train", id: "SZH-MUC-0412", weight: 14000, legs: [
+    { mode: "road", vehicle_type: "hgv_artic_33t", ...between("suzhou", "yangshan"), load_tonnes: 14 },
+    { mode: "sea", vehicle_type: "container_ship", ...between("yangshan", "hamPort") },
+    { mode: "rail", vehicle_type: "freight_train", ...between("hamPort", "riem") },
+    { mode: "road", vehicle_type: "hgv_rigid", ...between("riem", "munich") }] },
+  { name: "Rotterdam → Düsseldorf: barge and truck", id: "RTM-DUS-2207", weight: 20000, legs: [
+    { mode: "inland_waterway", vehicle_type: "container_barge", ...between("rtm", "duisburg") },
+    { mode: "road", vehicle_type: "hgv_artic_33t", ...between("duisburg", "dus"), load_tonnes: 20, empty_trip_factor: 0.25 }] },
+  { name: "Frankfurt → Chicago: van and air freight", id: "FRA-CHI-0093", weight: 1200, legs: [
+    { mode: "road", vehicle_type: "van", ...between("frankfurt", "fra") },
+    { mode: "air", vehicle_type: "air_freight", ...between("fra", "ord") },
+    { mode: "road", vehicle_type: "van", ...between("ord", "chicago") }] },
+  { name: "Milan → Barcelona: truck and RoRo ship", id: "MIL-BCN-1150", weight: 16000, legs: [
+    { mode: "road", vehicle_type: "hgv_artic_33t", ...between("milan", "genoa"), load_tonnes: 16 },
+    { mode: "sea", vehicle_type: "roro", ...between("genoa", "bcnPort") }] },
+  { name: "Turin → Zaragoza: full truck, 30% empty running", id: "TRN-ZAZ-0640", weight: 16000, legs: [
+    { mode: "road", vehicle_type: "hgv_artic_33t", ...between("turin", "zaragoza"), load_tonnes: 16, empty_trip_factor: 0.3 }] },
+  { name: "Copenhagen → Aarhus: truck with measured fuel", id: "CPH-AAR-3318", weight: 12000, legs: [
+    { mode: "road", vehicle_type: "hgv", ...between("cph", "aarhus"), fuel: "diesel", fuel_amount: 95 }] },
+];
+
+function loadExample(i = 0) {
+  const ex = examples[i];
   legsEl.innerHTML = "";
-  $("#sid").value = "CPH-RTM-1";
+  $("#sid").value = ex.id;
   $('input[name="cargo"][value="weight"]').checked = true; toggleCargo();
-  $("#weight").value = 12000;
-  addLeg({ mode: "road", vehicle_type: "hgv", from_q: "Copenhagen, DK", to_q: "Hamburg (DEHAM), DE",
-           from_lat: 55.6761, from_lon: 12.5683, to_lat: 53.5511, to_lon: 9.9937, load_factor: 0.8, empty_trip_factor: 0.2 });
-  addLeg({ mode: "sea", vehicle_type: "container_ship", from_q: "Hamburg (DEHAM), DE", to_q: "Rotterdam (NLRTM), NL",
-           from_lat: 53.55, from_lon: 9.96667, to_lat: 51.91667, to_lon: 4.5, distance_km: 560 });
-  addLeg({ mode: "road", vehicle_type: "hgv", distance_km: 40, fuel: "diesel", fuel_amount: 14 });
+  $("#weight").value = ex.weight;
+  ex.legs.forEach(l => addLeg(l));
 }
 
 function toggleCargo() {
@@ -718,14 +753,25 @@ async function loadFactors() {
 }
 
 // ---- Report ----
-const exampleCSV = `shipment_id,weight_kg,leg_id,mode,vehicle_type,distance_km,distance_type,fuel,fuel_amount,hub_id,hub_type
-EX-1,12000,L1,road,hgv,320,sfd,,,,
-EX-1,,L2,sea,container_ship,1100,sfd,,,,
-EX-2,8000,L1,road,hgv,95,,diesel,32,,
-EX-2,,L2,rail,freight_train,640,sfd,,,,
-EX-3,450,L1,air,air_freight,6100,actual,,,,
-EX-4,250000,L1,inland_waterway,barge,220,sfd,,,,
-EX-5,0,L1,road,hgv,10,,,,,
+const exampleCSV = `shipment_id,weight_kg,leg_id,mode,vehicle_type,from_lat,from_lon,to_lat,to_lon,load_tonnes,empty_trip_factor,fuel,fuel_amount
+SZH-MUC-0412,14000,L1,road,hgv_artic_33t,31.2989,120.5853,30.6264,122.065,14,,,
+SZH-MUC-0412,,L2,sea,container_ship,30.6264,122.065,53.532,9.931,,,,
+SZH-MUC-0412,,L3,rail,freight_train,53.532,9.931,48.1366,11.6942,,,,
+SZH-MUC-0412,,L4,road,hgv_rigid,48.1366,11.6942,48.1374,11.5755,,,,
+RTM-DUS-2207,20000,L1,inland_waterway,container_barge,51.95,4.05,51.4513,6.7347,,,,
+RTM-DUS-2207,,L2,road,hgv_artic_33t,51.4513,6.7347,51.2277,6.7735,20,0.25,,
+FRA-CHI-0093,1200,L1,road,van,50.1109,8.6821,50.0379,8.5622,,,,
+FRA-CHI-0093,,L2,air,air_freight,50.0379,8.5622,41.9742,-87.9073,,,,
+FRA-CHI-0093,,L3,road,van,41.9742,-87.9073,41.8781,-87.6298,,,,
+MIL-BCN-1150,16000,L1,road,hgv_artic_33t,45.4642,9.19,44.4056,8.91,16,,,
+MIL-BCN-1150,,L2,sea,roro,44.4056,8.91,41.35,2.16,,,,
+TRN-ZAZ-0640,16000,L1,road,hgv_artic_33t,45.0703,7.6869,41.6488,-0.8891,16,0.3,,
+CPH-AAR-3318,12000,L1,road,hgv,55.6761,12.5683,56.1629,10.2039,,,diesel,95
+HAM-GDN-0571,10000,L1,sea,container_ship,53.532,9.931,54.4,18.67,,,,
+HAM-POZ-0208,24000,L1,rail,freight_train,53.532,9.931,52.4064,16.9252,,,,
+GOT-NYC-0815,9000,L1,sea,container_ship,57.6889,11.8606,40.6681,-74.0451,,,,
+GOT-NYC-0815,,L2,road,hgv_artic_33t,40.6681,-74.0451,40.7357,-74.1724,9,,,
+CPH-LHR-0042,300,L1,air,air_freight,55.618,12.656,51.47,-0.4543,,,,
 `;
 
 function reportQuery(format) {
@@ -912,12 +958,18 @@ $("#rexample").addEventListener("click", () => {
 
 document.querySelectorAll('input[name="cargo"]').forEach(r => r.addEventListener("change", toggleCargo));
 $("#add").addEventListener("click", () => addLeg());
-$("#example").addEventListener("click", () => { loadExample(); calculate(null, "example"); });
+examples.forEach((ex, i) => $("#example").add(new Option(ex.name, String(i))));
+$("#example").addEventListener("change", e => {
+  if (e.target.value === "") return;
+  loadExample(Number(e.target.value));
+  e.target.value = "";
+  calculate(null, "example");
+});
 $("#form").addEventListener("submit", calculate);
 // Behind the hosted service's sign-in (served under /app/): link to the
 // account page, where people sign in for an API key and bigger files.
 if (location.pathname.startsWith("/app/")) $("#account").hidden = false;
-loadExample();
+loadExample(0);
 loadFactors().then(() => calculate(null, "example"));
 </script>
 <footer class="credits">Places: <a href="https://www.geonames.org/">GeoNames</a> (CC BY 4.0), UN/LOCODE (UNECE),
