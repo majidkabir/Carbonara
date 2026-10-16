@@ -61,10 +61,10 @@ type Dataset struct {
 	legIdx   map[string]calc.Factor
 	shortIdx map[string]shortAlias
 	loadIdx  map[string]calc.LoadModel
-	dafIdx  map[string]calc.DAF
-	gridIdx map[string]calc.GridFactor
-	hubIdx  map[string]calc.HubFactor
-	fuelIdx map[string]calc.FuelFactor
+	dafIdx   map[string]calc.DAF
+	gridIdx  map[string]calc.GridFactor
+	hubIdx   map[string]calc.HubFactor
+	fuelIdx  map[string]calc.FuelFactor
 }
 
 // Embedded loads a dataset bundled in the binary, e.g. "sample".

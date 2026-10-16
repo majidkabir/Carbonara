@@ -307,15 +307,16 @@ Protections for running it on a network: at most `-max-concurrent` calculation r
 
 ## Factor datasets
 
-`-factors` (or `CARBONARA_FACTORS`) takes an embedded dataset name or a JSON file, or several separated by commas to layer them: `-factors desnz-2026,my-hubs.json`. Layers are combined; defining the same factor twice is an error, so nothing is silently overridden.
+`-factors` (or `CARBONARA_FACTORS`) takes an embedded dataset name or a JSON file, or several separated by commas to layer them: `-factors desnz-2026,my-hubs.json`. Layers are combined; defining the same factor twice is an error, so nothing is silently overridden. The one exception is a short alias (such as `container_ship`) defined again: it then means the later dataset's vehicle type.
 
 | Dataset | What |
 |---|---|
 | `desnz-2026` | UK government GHG conversion factors 2026, imported from the official flat file |
 | `nl-iww-2026` | Inland waterway factors from the Dutch [CO2 emission factor list](https://www.co2emissiefactoren.nl/) 2026 (CE Delft STREAM 2020) |
-
-The default is `desnz-2026,nl-iww-2026`.
+| `eu-mrv-2024` | Container ship factors from EU MRV data for 2024, published by EMSA |
 | `sample` | Placeholder values, for tests only |
+
+The default is `desnz-2026,nl-iww-2026,eu-mrv-2024`.
 
 A dataset is JSON with `legs` (g CO2e/tkm), `hubs` (g CO2e/t), `fuels` (kg CO2e/unit) and optional `load_models`, `dafs`, `distance_adjustments`, `vehicle_aliases`, `fuel_aliases` and `container_loads`, each factor with a TTW/WTT split, source and year. See [`sample.json`](pkg/factors/data/sample.json) for the shape.
 
@@ -325,7 +326,7 @@ A dataset is JSON with `legs` (g CO2e/tkm), `hubs` (g CO2e/t), `fuels` (kg CO2e/
 |---|---|
 | road | `hgv`, `hgv_rigid`, `hgv_artic`, `hgv_artic_33t`, `hgv_reefer`, `van`, `van_electric` |
 | rail | `freight_train` |
-| sea | `container_ship`, `bulk_carrier`, `general_cargo`, `roro`, `ropax` |
+| sea | `container_ship` (EU MRV, short-sea under 2,000 km, deep-sea from 2,000 km), `container_ship_short_sea`, `container_ship_deep_sea`, `bulk_carrier`, `general_cargo`, `roro`, `ropax` |
 | air | `air_freight` (international, without radiative forcing) |
 | inland_waterway | `barge` (1500–3000 t, the Dutch list's average), `container_barge` (208 TEU, likewise) |
 | fuel (per litre) | `diesel`, `diesel_mineral`, `petrol`, `hvo`, `marine_gas_oil`, `marine_fuel_oil`, `jet_fuel` |
@@ -333,6 +334,10 @@ A dataset is JSON with `legs` (g CO2e/tkm), `hubs` (g CO2e/t), `fuels` (kg CO2e/
 Road aliases use DESNZ's "average laden" factors.
 
 **Inland waterways** (`nl-iww-2026`): three bulk vessel classes (`barge_bulk_small`/`medium`/`large`, 300 t to 11,000 t) and four container vessels (`barge_container_40teu`, `96teu`, `208teu`, `348teu`). Factors are per *actual* tonne-km and include sailing empty. Give coordinates with [waterway routing](#inland-waterway-routing) set up, or the river distance as `distance_km`; a shortest feasible distance (`distance_type: sfd`) is used as is, since GLEC needs no DAF for inland waterways. Without routing, a leg with only coordinates is refused: a straight line would undercount a river route, and there's no default correction for it. Source: www.co2emissiefactoren.nl, free to use with attribution.
+
+**Container ships** (`eu-mrv-2024`): from what container ships calling at EU ports reported for 2024 under the EU MRV regulation (Regulation (EU) 2015/757): fuel, CO2e and transport work (cargo mass × distance actually sailed), per ship, as published by the European Maritime Safety Agency ([THETIS-MRV](https://mrv.emsa.europa.eu/#public/emission-report); reproduction authorised with acknowledgement of the source). Ships that emit at least half their voyage CO2 between EU ports count as short-sea (350 ships), the rest as deep-sea (1,643 ships); each factor is its fleet's total CO2e divided by its total transport work, so big ships weigh in by the work they do. Well-to-tank is the fuel they reported × DESNZ's marine fuel oil well-to-tank. Factors are per *actual* tonne-km, so a routed sea distance gets the GLEC sea DAF (× 1.15). `container_ship` means the short-sea factor on legs under 2,000 km and the deep-sea factor from 2,000 km (Carbonara's threshold, not a standard's); the leg's note says which, and `container_ship_short_sea` or `container_ship_deep_sea` choose one. DESNZ's container ship factors by size stay available by their full ids (e.g. `cargo_ship/container_ship/8000_teu`). Rebuilt by `tools/mrv`.
+
+Why: DESNZ's container ship factors (about 20 g CO2e per tonne-km on average, 15.5 g for the largest ships) gave Shanghai → Hamburg about 2.4× the highest of six calculators compared in Schramm & Lehner (2024); the deep-sea factor from EU MRV is in their range.
 
 **Notes on DESNZ data:**
 - Air freight comes `with_rf` and `without_rf` (radiative forcing). ISO 14083 reports without RF.
@@ -343,7 +348,7 @@ Road aliases use DESNZ's "average laden" factors.
    "hubs": [{"hub_type": "transhipment_ambient", "wtw_g_per_tonne": 0, "source": "…", "year": 2024}]}
   ```
   Fill in real values (g CO2e per tonne handled) from a source you're allowed to use.
-- Air factors are marked as great-circle based; the GLEC default DAFs above are added. Sea factors state no distance basis, so no DAF applies to them.
+- Air factors are marked as great-circle based; the GLEC default DAFs above are added. DESNZ sea factors state no distance basis, so no DAF applies to them.
 - GLEC default values can't be bundled: Smart Freight Centre limits them to members and certified tools. If you have access, put them in a dataset file.
 
 **Updating DESNZ** each year: download the "flat file" from [gov.uk](https://www.gov.uk/government/collections/government-conversion-factors-for-company-reporting) and run

@@ -33,8 +33,8 @@ func Example() {
 	fmt.Printf("total: %.1f kg CO2e WTW, %.1f g/tkm\n", res.WTWKg, res.IntensityG)
 	// Output:
 	// truck: 442.5 kg CO2e (intensity, default data)
-	// ship: 132.9 kg CO2e (intensity, default data)
-	// total: 575.3 kg CO2e WTW, 56.4 g/tkm
+	// ship: 112.0 kg CO2e (intensity, default data)
+	// total: 554.4 kg CO2e WTW, 54.4 g/tkm
 }
 
 // A leg with its own load factor and empty running uses the load model.
