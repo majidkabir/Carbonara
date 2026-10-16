@@ -1,13 +1,22 @@
 {
   "name": "eu-mrv-2024",
-  "note": "Container ship factor from EU MRV data (Regulation (EU) 2015/757), reporting period 2024, as published by EMSA (THETIS-MRV, version 252 of 15-10-2026). Source: European Maritime Safety Agency; reproduction authorised with acknowledgement of the source.",
+  "note": "Container ship factors from EU MRV data (Regulation (EU) 2015/757), reporting period 2024, as published by EMSA (THETIS-MRV, version 252 of 15-10-2026). Source: European Maritime Safety Agency; reproduction authorised with acknowledgement of the source. \"container_ship\" means the short-sea factor on legs under 2000 km and the deep-sea factor from 2000 km.",
   "legs": [
     {
       "mode": "sea",
-      "vehicle_type": "container_ship/eu_mrv_2024",
-      "ttw_g_per_tkm": 6.05,
-      "wtt_g_per_tkm": 1.37,
-      "source": "EU MRV 2024 (EMSA THETIS-MRV, version 252 of 15-10-2026): 1993 container ships with full-year reports, 8312 billion tonne-km. TTW: all CO2e (CO2, CH4, N2O) they reported divided by their transport work (cargo mass x distance actually sailed). WTT: their fuel x DESNZ 2026 marine fuel oil well-to-tank (714.9 kg CO2e/t).",
+      "vehicle_type": "container_ship/eu_mrv_2024/short_sea",
+      "ttw_g_per_tkm": 13.6,
+      "wtt_g_per_tkm": 3.06,
+      "source": "EU MRV 2024 (EMSA THETIS-MRV, version 252 of 15-10-2026): 350 short-sea container ships (at least 50% of their voyage CO2 between EU ports) with full-year reports, 396 billion tonne-km. TTW: all CO2e (CO2, CH4, N2O) they reported divided by their transport work (cargo mass x distance actually sailed). WTT: their fuel x DESNZ 2026 marine fuel oil well-to-tank (714.9 kg CO2e/t).",
+      "year": 2024,
+      "distance_basis": "actual"
+    },
+    {
+      "mode": "sea",
+      "vehicle_type": "container_ship/eu_mrv_2024/deep_sea",
+      "ttw_g_per_tkm": 5.67,
+      "wtt_g_per_tkm": 1.28,
+      "source": "EU MRV 2024 (EMSA THETIS-MRV, version 252 of 15-10-2026): 1643 deep-sea container ships (less than 50% of their voyage CO2 between EU ports) with full-year reports, 7916 billion tonne-km. TTW: all CO2e (CO2, CH4, N2O) they reported divided by their transport work (cargo mass x distance actually sailed). WTT: their fuel x DESNZ 2026 marine fuel oil well-to-tank (714.9 kg CO2e/t).",
       "year": 2024,
       "distance_basis": "actual"
     }
@@ -18,7 +27,19 @@
     {
       "mode": "sea",
       "alias": "container_ship",
-      "vehicle_type": "container_ship/eu_mrv_2024"
+      "vehicle_type": "container_ship/eu_mrv_2024/deep_sea",
+      "short_vehicle_type": "container_ship/eu_mrv_2024/short_sea",
+      "short_below_km": 2000
+    },
+    {
+      "mode": "sea",
+      "alias": "container_ship_short_sea",
+      "vehicle_type": "container_ship/eu_mrv_2024/short_sea"
+    },
+    {
+      "mode": "sea",
+      "alias": "container_ship_deep_sea",
+      "vehicle_type": "container_ship/eu_mrv_2024/deep_sea"
     }
   ]
 }
