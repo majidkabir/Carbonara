@@ -20,8 +20,10 @@ import (
 )
 
 // Default is the embedded dataset used when none is chosen: UK DESNZ for
-// road, rail, sea, air and hubs, layered with Dutch inland waterway factors.
-const Default = "desnz-2026,nl-iww-2026"
+// road, rail, sea, air and hubs, layered with Dutch inland waterway factors
+// and a container ship factor from EU MRV data (which "container_ship"
+// then means).
+const Default = "desnz-2026,nl-iww-2026,eu-mrv-2024"
 
 //go:embed data/*.json data/grid/*.json
 var embedded embed.FS
@@ -56,8 +58,9 @@ type Dataset struct {
 	Grids    []calc.GridFactor `json:"grids,omitempty"`
 	GridNote string            `json:"grid_note,omitempty"`
 
-	legIdx  map[string]calc.Factor
-	loadIdx map[string]calc.LoadModel
+	legIdx   map[string]calc.Factor
+	shortIdx map[string]shortAlias
+	loadIdx  map[string]calc.LoadModel
 	dafIdx  map[string]calc.DAF
 	gridIdx map[string]calc.GridFactor
 	hubIdx  map[string]calc.HubFactor
@@ -79,6 +82,10 @@ type VehicleAlias struct {
 	Mode        calc.Mode `json:"mode"`
 	Alias       string    `json:"alias"`
 	VehicleType string    `json:"vehicle_type"`
+	// ShortVehicleType, if set, is what the alias means on legs shorter
+	// than ShortBelowKm (e.g. a short-sea ship for "container_ship").
+	ShortVehicleType string  `json:"short_vehicle_type,omitempty"`
+	ShortBelowKm     float64 `json:"short_below_km,omitempty"`
 }
 
 // EmbeddedNames lists the datasets bundled in the binary.
@@ -99,8 +106,9 @@ func EmbeddedNames() []string {
 // An empty name opens Default.
 //
 // A comma-separated list layers datasets, e.g. "desnz-2026,my-hubs.json":
-// their contents are combined, and defining the same factor, alias,
-// container profile or grid country twice is an error.
+// their contents are combined, and defining the same factor, fuel alias,
+// container profile or grid country twice is an error. A vehicle alias
+// defined again points to the later dataset's vehicle type.
 func Open(nameOrPath string) (*Dataset, error) {
 	if nameOrPath == "" {
 		nameOrPath = Default
@@ -178,7 +186,17 @@ func mergeInto(dst *Dataset, src Dataset) error {
 	dst.Fuels = append(dst.Fuels, src.Fuels...)
 	dst.LoadModels = append(dst.LoadModels, src.LoadModels...)
 	dst.DAFs = append(dst.DAFs, src.DAFs...)
-	dst.VehicleAliases = append(dst.VehicleAliases, src.VehicleAliases...)
+	for _, a := range src.VehicleAliases {
+		replaced := false
+		for i, b := range dst.VehicleAliases {
+			if a.Mode == b.Mode && a.Alias == b.Alias {
+				dst.VehicleAliases[i], replaced = a, true
+			}
+		}
+		if !replaced {
+			dst.VehicleAliases = append(dst.VehicleAliases, a)
+		}
+	}
 	dst.Grids = append(dst.Grids, src.Grids...)
 	if src.GridNote != "" {
 		dst.GridNote = strings.TrimPrefix(dst.GridNote+" | "+src.GridNote, " | ")
@@ -277,6 +295,16 @@ func Parse(r io.Reader) (*Dataset, error) {
 			return nil, fmt.Errorf("vehicle alias %s clashes with an existing vehicle type", k)
 		}
 		d.legIdx[k] = target
+		if a.ShortVehicleType != "" || a.ShortBelowKm != 0 {
+			short, ok := d.legIdx[legKey(a.Mode, a.ShortVehicleType)]
+			if !ok || a.ShortBelowKm <= 0 {
+				return nil, fmt.Errorf("vehicle alias %s: short_vehicle_type must name a vehicle type and short_below_km be > 0", k)
+			}
+			if d.shortIdx == nil {
+				d.shortIdx = map[string]shortAlias{}
+			}
+			d.shortIdx[k] = shortAlias{alias: a.Alias, belowKm: a.ShortBelowKm, short: short, long: target}
+		}
 	}
 	d.dafIdx = make(map[string]calc.DAF, len(d.DAFs))
 	for _, x := range d.DAFs {
@@ -337,6 +365,27 @@ func Parse(r io.Reader) (*Dataset, error) {
 }
 
 func legKey(m calc.Mode, vt string) string { return string(m) + "/" + vt }
+
+// shortAlias is an alias whose meaning depends on the leg's distance.
+type shortAlias struct {
+	alias       string
+	belowKm     float64
+	short, long calc.Factor
+}
+
+// LegFactorFor implements calc.DistanceFactorProvider: aliases with a
+// short_vehicle_type mean it on legs shorter than short_below_km.
+func (d *Dataset) LegFactorFor(m calc.Mode, vt string, km float64) (calc.Factor, string, error) {
+	a, ok := d.shortIdx[legKey(m, vt)]
+	if !ok {
+		f, err := d.LegFactor(m, vt)
+		return f, "", err
+	}
+	if km < a.belowKm {
+		return a.short, fmt.Sprintf("%q on a %.0f km leg means %s (legs under %.0f km).", a.alias, km, a.short.VehicleType, a.belowKm), nil
+	}
+	return a.long, fmt.Sprintf("%q on a %.0f km leg means %s (legs of %.0f km or more).", a.alias, km, a.long.VehicleType, a.belowKm), nil
+}
 
 // LegFactor implements calc.FactorProvider.
 func (d *Dataset) LegFactor(m calc.Mode, vt string) (calc.Factor, error) {

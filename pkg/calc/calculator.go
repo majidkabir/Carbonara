@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -12,6 +13,14 @@ type FactorProvider interface {
 	LegFactor(mode Mode, vehicleType string) (Factor, error)
 	HubFactor(hubType string) (HubFactor, error)
 	FuelFactor(fuel string) (FuelFactor, error)
+}
+
+// DistanceFactorProvider is optionally implemented by a FactorProvider whose
+// factor for a vehicle type depends on the leg's distance, such as
+// "container_ship" meaning a short-sea ship on short legs. note says which
+// factor a distance chose ("" when the distance made no difference).
+type DistanceFactorProvider interface {
+	LegFactorFor(mode Mode, vehicleType string, km float64) (f Factor, note string, err error)
 }
 
 // DistanceProvider supplies the distance in km for a leg when it isn't given.
@@ -162,7 +171,10 @@ func (c Calculator) Calculate(ctx context.Context, s Shipment) (Result, error) {
 		if err != nil {
 			return Result{}, fmt.Errorf("leg %q: %w", p.ID, err)
 		}
-		lr.Added, lr.Note = p.added, p.note
+		lr.Added = p.added
+		if p.note != "" { // the plan's note first, then the factor's
+			lr.Note = strings.TrimSpace(p.note + " " + lr.Note)
+		}
 		if !isZero(p.From) && !isZero(p.To) {
 			from, to := p.From, p.To
 			lr.From, lr.To = &from, &to
@@ -368,7 +380,13 @@ func (c Calculator) main(tonnes, dist float64, dtype string, leg Leg) (LegResult
 		return c.loadLeg(lr, leg)
 	}
 
-	f, err := c.Factors.LegFactor(leg.Mode, leg.VehicleType)
+	var f Factor
+	var err error
+	if dp, ok := c.Factors.(DistanceFactorProvider); ok {
+		f, lr.Note, err = dp.LegFactorFor(leg.Mode, leg.VehicleType, dist)
+	} else {
+		f, err = c.Factors.LegFactor(leg.Mode, leg.VehicleType)
+	}
 	if err != nil {
 		return LegResult{}, err
 	}

@@ -47,7 +47,7 @@ open http://localhost:8080
 | `OSRM_PBF_URL` | Denmark from Geofabrik | any `.osm.pbf`; preparing needs roughly 5–10× its size in RAM |
 | `SEA_RESOLUTION_KM` | `20` | `5`, `10`, `20`, `50` or `100` |
 | `CARBONARA_PORT` | `8080` | |
-| `CARBONARA_FACTORS` | `desnz-2026,nl-iww-2026` | as `-factors` |
+| `CARBONARA_FACTORS` | `desnz-2026,nl-iww-2026,eu-mrv-2024` | as `-factors` |
 
 Prepared data is kept in volumes and reused; changing the region re-prepares it. The maritime network (EUPL-1.2) is downloaded on your machine from a pinned SeaRoute commit and checked by SHA-256. A weekly CI job brings the whole stack up on a small region and checks that road and sea legs are actually routed.
 

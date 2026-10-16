@@ -9,10 +9,13 @@
 // Without -fetch it reads -in, the "EU MRV Publication of information"
 // workbook downloaded from https://mrv.emsa.europa.eu/#public/emission-report.
 //
-// The factor is the fleet's transport-work-weighted average: all CO2e
-// (TTW) the ships report, divided by all their transport work (cargo mass
-// times distance actually sailed). Well-to-tank comes from the fuel they
-// report, at DESNZ's well-to-tank factor for marine fuel oil. Distances are
+// Ships are split by trade: short-sea ships emit at least half their voyage
+// CO2 on voyages between EU ports, deep-sea ships less. Each factor is its
+// fleet's transport-work-weighted average: all CO2e (TTW) the ships report,
+// divided by all their transport work (cargo mass times distance actually
+// sailed). Well-to-tank comes from the fuel they report, at DESNZ's
+// well-to-tank factor for marine fuel oil. "container_ship" means the
+// short-sea factor on legs under ShortBelowKm and deep-sea above. Distances are
 // actual, so a routed (shortest feasible) sea distance gets the GLEC sea
 // distance adjustment (x 1.15).
 package main
@@ -47,6 +50,16 @@ const maxCargoT, minCargoT = 250_000.0, 1.0
 
 // wttFuel is the DESNZ fuel whose well-to-tank factor per tonne is used.
 const wttFuel = "liquid_fuels/marine_fuel_oil/tonnes"
+
+// ShortBelowKm is the leg distance below which "container_ship" means a
+// short-sea ship. It is Carbonara's rule, not a standard's: feeder and
+// intra-European services sail legs of hundreds to a couple of thousand km,
+// deep-sea services thousands.
+const ShortBelowKm = 2000
+
+// shortSeaShare is the share of a ship's voyage CO2 on voyages between EU
+// ports from which it counts as short-sea.
+const shortSeaShare = 0.5
 
 func main() {
 	fetch := flag.Bool("fetch", false, "download the workbook from EMSA")
@@ -89,11 +102,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fl, err := fleet(rows, "Container ship")
+	short, deep, err := fleet(rows, "Container ship")
 	if err != nil {
 		log.Fatal(err)
 	}
-	ds := dataset(*year, version, fl, fuel.WTT)
+	ds := dataset(*year, version, short, deep, fuel.WTT)
 	b, err := json.MarshalIndent(ds, "", "  ")
 	if err != nil {
 		log.Fatal(err)
@@ -104,8 +117,10 @@ func main() {
 	} else if err := os.WriteFile(*out, b, 0o644); err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("%d container ships (%d left out for bad data): TTW %.2f, WTT %.2f g CO2e per actual tonne-km",
-		fl.ships, fl.skipped, ds.Legs[0].TTW, ds.Legs[0].WTT)
+	for i, t := range []totals{short, deep} {
+		log.Printf("%s: %d ships (%d left out for bad data), TTW %.2f, WTT %.2f g CO2e per actual tonne-km",
+			ds.Legs[i].VehicleType, t.ships, t.skipped, ds.Legs[i].TTW, ds.Legs[i].WTT)
+	}
 }
 
 // download fetches the latest version of a reporting period's workbook.
@@ -153,10 +168,10 @@ type totals struct {
 	hasCO2e        bool    // CO2e (with CH4 and N2O) rather than CO2 only
 }
 
-// fleet adds up the full-year reports of one ship type. rows is the
-// workbook sheet: a few title rows, then a header row starting with
-// "IMO Number".
-func fleet(rows [][]string, shipType string) (totals, error) {
+// fleet adds up the full-year reports of one ship type, short-sea and
+// deep-sea apart. rows is the workbook sheet: a few title rows, then a
+// header row starting with "IMO Number".
+func fleet(rows [][]string, shipType string) (short, deep totals, err error) {
 	h := -1
 	for i, r := range rows {
 		if len(r) > 0 && strings.TrimSpace(r[0]) == "IMO Number" {
@@ -165,7 +180,7 @@ func fleet(rows [][]string, shipType string) (totals, error) {
 		}
 	}
 	if h < 0 {
-		return totals{}, fmt.Errorf("no header row")
+		return short, deep, fmt.Errorf("no header row")
 	}
 	col := func(prefix string) int {
 		for i, name := range rows[h] {
@@ -177,10 +192,12 @@ func fleet(rows [][]string, shipType string) (totals, error) {
 	}
 	cType, cFuel, cCO2, cCO2e := col("Ship type"), col("Total fuel consumption ["), col("Total CO₂ emissions ["), col("Total CO₂eq emissions [")
 	cPerWork := col("CO₂ emissions per transport work (mass) [")
-	if cType < 0 || cFuel < 0 || cCO2 < 0 || cPerWork < 0 {
-		return totals{}, fmt.Errorf("missing columns (type %d, fuel %d, CO2 %d, CO2 per transport work %d)", cType, cFuel, cCO2, cPerWork)
+	cIntra, cFrom, cTo := col("CO₂ emissions from all voyages between ports"), col("CO₂ emissions from all voyages which departed"), col("CO₂ emissions from all voyages to ports")
+	if cType < 0 || cFuel < 0 || cCO2 < 0 || cPerWork < 0 || cIntra < 0 || cFrom < 0 || cTo < 0 {
+		return short, deep, fmt.Errorf("missing columns (type %d, fuel %d, CO2 %d, CO2 per transport work %d, voyages %d %d %d)",
+			cType, cFuel, cCO2, cPerWork, cIntra, cFrom, cTo)
 	}
-	t := totals{hasCO2e: cCO2e >= 0}
+	short.hasCO2e, deep.hasCO2e = cCO2e >= 0, cCO2e >= 0
 	cell := func(r []string, i int) float64 {
 		if i < 0 || i >= len(r) {
 			return math.NaN()
@@ -198,17 +215,23 @@ func fleet(rows [][]string, shipType string) (totals, error) {
 		}
 		fuel, co2, perWork := cell(r, cFuel), cell(r, cCO2), cell(r, cPerWork) // g CO2 per t·nm
 		co2e := co2
-		if t.hasCO2e {
+		if cCO2e >= 0 {
 			co2e = cell(r, cCO2e)
 		}
-		ok := fuel > 0 && co2 > 0 && co2e > 0 && perWork > 0
+		intra, from, to := cell(r, cIntra), cell(r, cFrom), cell(r, cTo)
+		voyages := intra + from + to
+		ok := fuel > 0 && co2 > 0 && co2e > 0 && perWork > 0 && voyages > 0
 		if ok && cPerDist >= 0 {
 			// Average cargo on board: (kg CO2 per nm) / (g CO2 per t·nm).
 			cargo := cell(r, cPerDist) * 1000 / perWork
 			ok = cargo >= minCargoT && cargo <= maxCargoT
 		}
+		t := &deep
+		if ok && intra/voyages >= shortSeaShare {
+			t = &short
+		}
 		if !ok {
-			t.skipped++
+			deep.skipped++ // counted once, with the whole fleet
 			continue
 		}
 		t.ships++
@@ -216,35 +239,45 @@ func fleet(rows [][]string, shipType string) (totals, error) {
 		t.co2eT += co2e
 		t.workTNm += co2 * 1e6 / perWork
 	}
-	if t.ships == 0 {
-		return t, fmt.Errorf("no %s reports", shipType)
+	if short.ships == 0 || deep.ships == 0 {
+		return short, deep, fmt.Errorf("%s reports: %d short-sea, %d deep-sea", shipType, short.ships, deep.ships)
 	}
-	return t, nil
+	short.skipped = deep.skipped
+	return short, deep, nil
 }
 
 // dataset is the factor file for a year's fleet totals; wttKgPerT is the
 // well-to-tank kg CO2e per tonne of fuel.
-func dataset(year int, version string, t totals, wttKgPerT float64) factors.Dataset {
-	workTKm := t.workTNm * nmKm
-	ttw := t.co2eT * 1e6 / workTKm
-	wtt := t.fuelT * wttKgPerT * 1000 / workTKm
-	gases := "CO2e (CO2, CH4, N2O)"
-	if !t.hasCO2e {
-		gases = "CO2 only"
-	}
-	id := fmt.Sprintf("container_ship/eu_mrv_%d", year)
-	return factors.Dataset{
-		Name: fmt.Sprintf("eu-mrv-%d", year),
-		Note: fmt.Sprintf("Container ship factor from EU MRV data (Regulation (EU) 2015/757), reporting period %d, as published by EMSA (THETIS-MRV, %s). "+
-			"Source: European Maritime Safety Agency; reproduction authorised with acknowledgement of the source.", year, version),
-		Legs: []calc.Factor{{
-			Mode: calc.Sea, VehicleType: id, TTW: round2(ttw), WTT: round2(wtt), DistanceBasis: calc.DistActual, Year: year,
-			Source: fmt.Sprintf("EU MRV %d (EMSA THETIS-MRV, %s): %d container ships with full-year reports, %.0f billion tonne-km. "+
+func dataset(year int, version string, short, deep totals, wttKgPerT float64) factors.Dataset {
+	leg := func(kind, who string, t totals) calc.Factor {
+		workTKm := t.workTNm * nmKm
+		gases := "CO2e (CO2, CH4, N2O)"
+		if !t.hasCO2e {
+			gases = "CO2 only"
+		}
+		return calc.Factor{
+			Mode: calc.Sea, VehicleType: fmt.Sprintf("container_ship/eu_mrv_%d/%s", year, kind), Year: year, DistanceBasis: calc.DistActual,
+			TTW: round2(t.co2eT * 1e6 / workTKm), WTT: round2(t.fuelT * wttKgPerT * 1000 / workTKm),
+			Source: fmt.Sprintf("EU MRV %d (EMSA THETIS-MRV, %s): %d %s container ships (%s) with full-year reports, %.0f billion tonne-km. "+
 				"TTW: all %s they reported divided by their transport work (cargo mass x distance actually sailed). "+
 				"WTT: their fuel x DESNZ 2026 marine fuel oil well-to-tank (%.1f kg CO2e/t).",
-				year, version, t.ships, workTKm/1e9, gases, wttKgPerT),
-		}},
-		VehicleAliases: []factors.VehicleAlias{{Mode: calc.Sea, Alias: "container_ship", VehicleType: id}},
+				year, version, t.ships, strings.ReplaceAll(kind, "_", "-"), who, workTKm/1e9, gases, wttKgPerT),
+		}
+	}
+	pct := fmt.Sprintf("%.0f%%", shortSeaShare*100)
+	s := leg("short_sea", "at least "+pct+" of their voyage CO2 between EU ports", short)
+	d := leg("deep_sea", "less than "+pct+" of their voyage CO2 between EU ports", deep)
+	return factors.Dataset{
+		Name: fmt.Sprintf("eu-mrv-%d", year),
+		Note: fmt.Sprintf("Container ship factors from EU MRV data (Regulation (EU) 2015/757), reporting period %d, as published by EMSA (THETIS-MRV, %s). "+
+			"Source: European Maritime Safety Agency; reproduction authorised with acknowledgement of the source. "+
+			"\"container_ship\" means the short-sea factor on legs under %d km and the deep-sea factor from %d km.", year, version, ShortBelowKm, ShortBelowKm),
+		Legs: []calc.Factor{s, d},
+		VehicleAliases: []factors.VehicleAlias{
+			{Mode: calc.Sea, Alias: "container_ship", VehicleType: d.VehicleType, ShortVehicleType: s.VehicleType, ShortBelowKm: ShortBelowKm},
+			{Mode: calc.Sea, Alias: "container_ship_short_sea", VehicleType: s.VehicleType},
+			{Mode: calc.Sea, Alias: "container_ship_deep_sea", VehicleType: d.VehicleType},
+		},
 	}
 }
 

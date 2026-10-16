@@ -56,14 +56,14 @@ func TestEmbeddedSample_Fuel(t *testing.T) {
 
 func TestOpen(t *testing.T) {
 	names := EmbeddedNames()
-	if j := strings.Join(names, ","); j != "desnz-2026,nl-iww-2026,sample" && j != "desnz-2026,eu-mrv-2024,nl-iww-2026,sample" {
+	if strings.Join(names, ",") != "desnz-2026,eu-mrv-2024,nl-iww-2026,sample" {
 		t.Errorf("EmbeddedNames = %v", names)
 	}
 	ds, err := Open("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ds.Name != "desnz-2026+nl-iww-2026" || len(ds.Legs) < 100 || len(ds.Fuels) < 100 ||
+	if ds.Name != "desnz-2026+nl-iww-2026+eu-mrv-2024" || len(ds.Legs) < 100 || len(ds.Fuels) < 100 ||
 		!strings.Contains(ds.Note, "Open Government Licence v3.0") {
 		t.Errorf("default dataset: name=%q legs=%d fuels=%d", ds.Name, len(ds.Legs), len(ds.Fuels))
 	}
@@ -275,7 +275,7 @@ func TestOpen_Layered(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ds.Name != "desnz-2026+nl-iww-2026+my-hubs" || !strings.Contains(ds.Note, "own measurements") || !strings.Contains(ds.Note, "Open Government Licence") {
+	if ds.Name != "desnz-2026+nl-iww-2026+eu-mrv-2024+my-hubs" || !strings.Contains(ds.Note, "own measurements") || !strings.Contains(ds.Note, "Open Government Licence") {
 		t.Errorf("name=%q note=%q", ds.Name, ds.Note)
 	}
 	if h, err := ds.HubFactor("transhipment"); err != nil || h.WTWPerTonneG != 1300 {
@@ -397,5 +397,45 @@ func TestInlandWaterway_NL2026(t *testing.T) {
 			From: calc.Location{Lat: 51.95, Lon: 4.05}, To: calc.Location{Lat: 51.45, Lon: 6.73}}}})
 	if !errors.Is(err, calc.ErrNoDAF) {
 		t.Errorf("coordinates only: want ErrNoDAF, got %v", err)
+	}
+}
+
+func TestShortAlias(t *testing.T) {
+	dir := t.TempDir()
+	base := dir + "/base.json"
+	over := dir + "/over.json"
+	write := func(p, s string) {
+		if err := os.WriteFile(p, []byte(s), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write(base, `{"name":"base","legs":[{"mode":"sea","vehicle_type":"avg","ttw_g_per_tkm":16}],
+		"vehicle_aliases":[{"mode":"sea","alias":"ship","vehicle_type":"avg"}]}`)
+	write(over, `{"name":"over","legs":[{"mode":"sea","vehicle_type":"feeder","ttw_g_per_tkm":14},{"mode":"sea","vehicle_type":"ocean","ttw_g_per_tkm":6}],
+		"vehicle_aliases":[{"mode":"sea","alias":"ship","vehicle_type":"ocean","short_vehicle_type":"feeder","short_below_km":2000}]}`)
+	ds, err := Open(base + "," + over)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		km   float64
+		want string
+	}{{560, "feeder"}, {1999, "feeder"}, {2000, "ocean"}, {20000, "ocean"}} {
+		f, note, err := ds.LegFactorFor(calc.Sea, "ship", tc.km)
+		if err != nil || f.VehicleType != tc.want || !strings.Contains(note, tc.want) {
+			t.Errorf("%v km: %s %q %v", tc.km, f.VehicleType, note, err)
+		}
+	}
+	// Without a distance, the long meaning; plain types are untouched.
+	if f, _ := ds.LegFactor(calc.Sea, "ship"); f.VehicleType != "ocean" {
+		t.Errorf("LegFactor: %s", f.VehicleType)
+	}
+	if f, note, _ := ds.LegFactorFor(calc.Sea, "avg", 100); f.VehicleType != "avg" || note != "" {
+		t.Errorf("plain: %s %q", f.VehicleType, note)
+	}
+	write(over, `{"name":"over","legs":[{"mode":"sea","vehicle_type":"ocean","ttw_g_per_tkm":6}],
+		"vehicle_aliases":[{"mode":"sea","alias":"ship2","vehicle_type":"ocean","short_vehicle_type":"nope","short_below_km":2000}]}`)
+	if _, err := Open(base + "," + over); err == nil {
+		t.Error("unknown short vehicle type accepted")
 	}
 }
