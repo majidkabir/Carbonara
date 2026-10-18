@@ -40,7 +40,7 @@ func runServe(args []string) error {
 	}()
 	srv := &http.Server{
 		Addr: *addr,
-		Handler: (&api.Server{Calc: calculator, Factors: ds, Log: log,
+		Handler: (&api.Server{Calc: calculator, Factors: ds, Log: log, Version: version,
 			Limits: api.Limits{MaxConcurrent: *maxConcurrent, Timeout: *timeout, MaxLegs: *maxLegs, BatchWorkers: *batchWorkers,
 				BigBatch: *bigBatch, BigConcurrent: *bigConcurrent}}).Handler(),
 		ReadHeaderTimeout: 5 * time.Second,

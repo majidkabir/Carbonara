@@ -50,6 +50,8 @@ type Server struct {
 	Places func() (*places.Index, error)
 	Log    *slog.Logger
 	Limits Limits
+	// Version is reported to MCP clients.
+	Version string
 
 	sem chan struct{}
 	big chan struct{} // turns for big batches (Limits.BigBatch)
@@ -138,6 +140,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/calculate", s.limited(s.calculate))
 	mux.HandleFunc("POST /v1/calculate/batch", s.limited(s.calculateBatch))
 	mux.HandleFunc("POST /v1/report", s.limited(s.report))
+	mux.HandleFunc(MCPPath, s.mcp)
 	var h http.Handler = s.recoverPanics(secureHeaders(mux))
 	if s.Log != nil {
 		h = s.logRequests(h)
@@ -363,34 +366,64 @@ func (s *Server) calculateBatch(w http.ResponseWriter, r *http.Request) {
 }
 
 // each calculates shipments, passing each result or error to fn in input
-// order. Distances for the batch's lanes are fetched first in bulk where
-// the distance provider can, then shipments run on parallel workers. It
-// writes an error response and returns false if the batch is too big or
-// the request times out or is cancelled; a shipment that merely fails is
-// passed to fn.
+// order (see calcAll). It writes an error response and returns false if
+// the batch is too big or the request times out or is cancelled; a
+// shipment that merely fails is passed to fn.
 func (s *Server) each(w http.ResponseWriter, r *http.Request, shipments []calc.Shipment, fn func(string, calc.Result, error)) bool {
-	if len(shipments) > maxBatchItems {
-		writeError(w, http.StatusRequestEntityTooLarge,
-			fmt.Errorf("batch has %d shipments, max is %d", len(shipments), maxBatchItems))
+	outs, err := s.calcAll(r.Context(), shipments)
+	if err != nil {
+		var tooBig *batchTooBig
+		if errors.As(err, &tooBig) {
+			writeError(w, http.StatusRequestEntityTooLarge, err)
+		} else if errors.Is(err, errNoTurn) {
+			writeError(w, http.StatusServiceUnavailable, err)
+		} else {
+			writeError(w, calcStatus(err), err)
+		}
 		return false
 	}
-	ctx := r.Context()
+	for i, o := range outs {
+		fn(shipments[i].ID, o.res, o.err)
+	}
+	return true
+}
+
+// outcome is one shipment's result or error.
+type outcome struct {
+	res  calc.Result
+	err  error
+	done bool // calculated, without being cut off by the request's end
+}
+
+// errNoTurn: a big batch waited for its turn until its time was up.
+var errNoTurn = errors.New("other big files are being calculated and this one didn't get its turn in time; try again in a few minutes")
+
+// batchTooBig reports a batch over maxBatchItems.
+type batchTooBig struct{ n int }
+
+func (e *batchTooBig) Error() string {
+	return fmt.Sprintf("batch has %d shipments, max is %d", e.n, maxBatchItems)
+}
+
+// calcAll calculates shipments, in input order. Distances for the batch's
+// lanes are fetched first in bulk where the distance provider can, then
+// shipments run on parallel workers. It returns an error, and no results,
+// if the batch is too big (*batchTooBig) or ctx ends first; a shipment that
+// merely fails has its error in its outcome.
+func (s *Server) calcAll(ctx context.Context, shipments []calc.Shipment) ([]outcome, error) {
+	if len(shipments) > maxBatchItems {
+		return nil, &batchTooBig{len(shipments)}
+	}
 	if len(shipments) >= s.Limits.BigBatch {
 		// Wait for a turn: big batches run BigConcurrent at a time.
 		select {
 		case s.big <- struct{}{}:
 			defer func() { <-s.big }()
 		case <-ctx.Done():
-			writeError(w, http.StatusServiceUnavailable, fmt.Errorf("other big files are being calculated and this one didn't get its turn in time; try again in a few minutes"))
-			return false
+			return nil, errNoTurn
 		}
 	}
-	type out struct {
-		res  calc.Result
-		err  error
-		done bool // calculated, without being cut off by the request's end
-	}
-	results := make([]out, len(shipments))
+	results := make([]outcome, len(shipments))
 	var valid []calc.Shipment
 	for i, sh := range shipments {
 		if err := s.checkSize(sh); err != nil {
@@ -433,13 +466,9 @@ feed:
 				done++
 			}
 		}
-		writeError(w, calcStatus(err), fmt.Errorf("batch stopped after %d of %d shipments: %w", done, len(shipments), err))
-		return false
+		return nil, fmt.Errorf("batch stopped after %d of %d shipments: %w", done, len(shipments), err)
 	}
-	for i, o := range results {
-		fn(shipments[i].ID, o.res, o.err)
-	}
-	return true
+	return results, nil
 }
 
 // ReportRequest is the body of POST /v1/report.
@@ -498,17 +527,9 @@ func (s *Server) report(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	m := req.Meta
-	for _, f := range []string{m.Title, m.Organisation, m.Reference, m.PeriodFrom, m.PeriodTo} {
-		if len(f) > maxMetaLen {
-			writeError(w, http.StatusBadRequest, fmt.Errorf("report text fields are limited to %d bytes", maxMetaLen))
-			return
-		}
-	}
-	for _, d := range []string{m.PeriodFrom, m.PeriodTo} {
-		if _, err := time.Parse(time.DateOnly, d); d != "" && err != nil {
-			writeError(w, http.StatusBadRequest, fmt.Errorf("period dates must be YYYY-MM-DD, got %q", d))
-			return
-		}
+	if err := checkMeta(m); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
 	}
 	b := report.New(m)
 	q := r.URL.Query()
@@ -578,6 +599,11 @@ func (s *Server) report(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, rep)
 }
 
+func validDate(d string) bool {
+	_, err := time.Parse(time.DateOnly, d)
+	return err == nil
+}
+
 // decode reads a JSON body into v, writing a 4xx and returning false on failure.
 func (s *Server) decode(w http.ResponseWriter, r *http.Request, v any) bool {
 	r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
@@ -587,6 +613,8 @@ func (s *Server) decode(w http.ResponseWriter, r *http.Request, v any) bool {
 		var tooBig *http.MaxBytesError
 		if errors.As(err, &tooBig) {
 			writeError(w, http.StatusRequestEntityTooLarge, err)
+		} else if errors.Is(err, errNoTurn) {
+			writeError(w, http.StatusServiceUnavailable, err)
 		} else {
 			writeError(w, http.StatusBadRequest, fmt.Errorf("invalid JSON: %w", err))
 		}
