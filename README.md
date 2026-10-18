@@ -300,32 +300,10 @@ Each output line is `{"line": n, "shipment_id": "...", "result": {...}}`, or `{"
 | `GET` | `/openapi.yaml` | spec |
 | `GET` | `/healthz` | liveness |
 | `GET` | `/` | web page |
-| `POST` | `/mcp` | [MCP](#mcp-for-ai-assistants) server for AI assistants |
 
 A leg's `from` and `to` can be a code instead of coordinates: `{"code": "NLRTM"}` (UN/LOCODE) or `{"code": "CPH"}` (IATA); in CSV, `from_code` and `to_code`. The place list is embedded (about 160,000 places: GeoNames cities of 5,000 people or more, UN/LOCODE transport locations with coordinates, airports with IATA codes) and rebuilt monthly by `tools/gazetteer`; searches need no outside service.
 
 Protections for running it on a network: at most `-max-concurrent` calculation requests at once (default 4 × CPUs; more get `503` with `Retry-After`), a `-request-timeout` per request (default 30 s, then `504`), `-max-legs` per shipment (default 100), big batches taking turns (batches and reports of `-big-batch` shipments or more, default 1,000, run `-big-concurrent` at a time, default 2; the rest wait in line, first come first served), at most 32 requests at a time to each OSRM server (the rest wait instead of timing out), 10 MiB bodies, 10,000 shipments per batch, panics answered with `500` without taking the server down, and `nosniff`/`no-store` headers. There's no authentication: put it behind your own gateway if it faces the internet.
-
-### MCP for AI assistants
-
-`/mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server, so AI assistants (Claude, ChatGPT, Cursor, …) can calculate with Carbonara and see how every number was found. It uses the Streamable HTTP transport without sessions (JSON answers, no event stream). Tools:
-
-| Tool | |
-|---|---|
-| `calculate_shipment` | one shipment: the result per leg and the step-by-step calculation sheet (arithmetic, GLEC page and ISO 14083 clause per step) |
-| `calculate_shipments` | many at once; failures listed with their reason and whether to retry; `explain` adds sheets |
-| `emissions_report` | an ISO 14083 style report over many shipments, as Markdown and structured data |
-| `find_places` | cities, ports, terminals and airports with coordinates and codes |
-| `list_vehicle_types` | vehicle types and aliases with their factors, sources, distance basis and load-model payload; optionally fuels |
-| `get_methodology` | the whole method (also the resource `carbonara://methodology`): scope, inputs, methods and formulas, routing, DAFs, added road legs, factor datasets and their limitations, data quality, every result field, errors, and how to present results |
-
-Each answer is text for the assistant to read plus the same data as structured content. The server's instructions tell the assistant how to use the tools and what to watch for, such as the load factor's meaning.
-
-On the public service, add `https://carbonara-co2.org/mcp` as a remote MCP server: in Claude, as a custom connector, with no sign-in, or with your API key as a request header (`Authorization: Bearer <key>`). Without a key it works like the web page without signing in (up to 100 shipments per call, 2,000 a day per connection); with a key, as the API. In Claude Code:
-
-```sh
-claude mcp add --transport http carbonara https://carbonara-co2.org/mcp --header "Authorization: Bearer $CARBONARA_KEY"
-```
 
 ## Factor datasets
 

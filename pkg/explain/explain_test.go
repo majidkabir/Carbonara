@@ -129,18 +129,3 @@ func TestSheet_FactorNote(t *testing.T) {
 		}
 	}
 }
-
-func TestMarkdown(t *testing.T) {
-	sh, _ := sheet(t)
-	md := Markdown(sh)
-	for _, want := range []string{"# Calculation: S1", "## Leg 2 (sea)", "### Emission intensity", "```\n", "- ISO 14083", "References:"} {
-		if !strings.Contains(md, want) {
-			t.Errorf("markdown lacks %q", want)
-		}
-	}
-	for _, st := range sh.Steps {
-		if st.Formula != "" && !strings.Contains(md, st.Formula) {
-			t.Errorf("formula %q missing", st.Formula)
-		}
-	}
-}
