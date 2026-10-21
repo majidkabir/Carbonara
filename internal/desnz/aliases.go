@@ -42,9 +42,9 @@ var fuelAliases = map[string]string{
 // only when a leg's distance type differs from a factor's distance basis.
 var dafs = []calc.DAF{
 	{Mode: calc.Air, From: calc.DistActual, To: calc.DistGCD, AddKm: -95,
-		Source: "GLEC Framework v3.2, Section 1 Chapter 4 (air): without specific data, DAF = GCD / (GCD + 95 km), i.e. actual flown distance minus 95 km"},
+		Source: "GLEC Framework v3.2 (Smart Freight Centre, 2025), Section 1 Chapter 4 (air): without specific data, DAF = GCD / (GCD + 95 km), i.e. actual flown distance minus 95 km"},
 	{Mode: calc.Sea, From: calc.DistSFD, To: calc.DistActual, Multiplier: 1.15,
-		Source: "GLEC Framework v3.2, Section 1 Chapter 4 (sea), citing Clean Cargo: actual container distances average 15% above the shortest feasible route"},
+		Source: "GLEC Framework v3.2 (Smart Freight Centre, 2025), Section 1 Chapter 4 (sea), citing Clean Cargo: actual container distances average 15% above the shortest feasible route"},
 }
 
 // addAliases attaches the aliases whose targets exist in ds.

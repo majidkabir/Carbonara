@@ -349,7 +349,7 @@ Why: DESNZ's container ship factors (about 20 g CO2e per tonne-km on average, 15
   ```
   Fill in real values (g CO2e per tonne handled) from a source you're allowed to use.
 - Air factors are marked as great-circle based; the GLEC default DAFs above are added. DESNZ sea factors state no distance basis, so no DAF applies to them.
-- GLEC default values can't be bundled: Smart Freight Centre limits them to members and certified tools. If you have access, put them in a dataset file.
+- GLEC default values aren't included yet. Smart Freight Centre has given permission to use them with acknowledgment of the source ("Global Logistics Emissions Council Framework for Logistics Emissions Accounting and Reporting; v3.2 edition, revised and updated (2025)"); they are planned from its next update. The distance adjustments above are GLEC's, © Smart Freight Centre.
 
 **Updating DESNZ** each year: download the "flat file" from [gov.uk](https://www.gov.uk/government/collections/government-conversion-factors-for-company-reporting) and run
 
