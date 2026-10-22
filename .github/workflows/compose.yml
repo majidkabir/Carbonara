@@ -25,6 +25,11 @@ on:
   schedule:
     - cron: "17 4 * * 1" # weekly, to catch upstream image or data changes
   workflow_dispatch:
+    inputs:
+      OSRM_PBF_URL:
+        description: "URL for the OSRM PBF file"
+        required: false
+        default: "https://download.geofabrik.de/europe/monaco-latest.osm.pbf"
 
 permissions:
   contents: read
@@ -34,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      OSRM_PBF_URL: https://download.geofabrik.de/europe/monaco-latest.osm.pbf
+      OSRM_PBF_URL: ${{ github.event.inputs.OSRM_PBF_URL || 'https://download.geofabrik.de/europe/monaco-latest.osm.pbf' }}
       SEA_RESOLUTION_KM: "100"
     steps:
       - uses: actions/checkout@v4
