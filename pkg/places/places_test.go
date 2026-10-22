@@ -1,7 +1,7 @@
 package places
 
 import (
-	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/calc"
 	"testing"
 	"time"
 )

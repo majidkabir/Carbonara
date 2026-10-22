@@ -3,8 +3,8 @@ package factors_test
 import (
 	"fmt"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
-	"github.com/majidkabir/carbonara/pkg/factors"
+	"github.com/majidkabir/sootcase/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/factors"
 )
 
 // Look up factors by alias or full id; results carry the full id and source.

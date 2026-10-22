@@ -9,10 +9,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/majidkabir/carbonara/pkg/batch"
-	"github.com/majidkabir/carbonara/pkg/calc"
-	"github.com/majidkabir/carbonara/pkg/csvio"
-	"github.com/majidkabir/carbonara/pkg/report"
+	"github.com/majidkabir/sootcase/pkg/batch"
+	"github.com/majidkabir/sootcase/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/csvio"
+	"github.com/majidkabir/sootcase/pkg/report"
 )
 
 // runReport calculates a shipments CSV and prints an ISO 14083 style

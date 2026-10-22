@@ -19,11 +19,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
-	"github.com/majidkabir/carbonara/pkg/csvio"
-	"github.com/majidkabir/carbonara/pkg/explain"
-	"github.com/majidkabir/carbonara/pkg/places"
-	"github.com/majidkabir/carbonara/pkg/report"
+	"github.com/majidkabir/sootcase/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/csvio"
+	"github.com/majidkabir/sootcase/pkg/explain"
+	"github.com/majidkabir/sootcase/pkg/places"
+	"github.com/majidkabir/sootcase/pkg/report"
 )
 
 //go:embed openapi.yaml

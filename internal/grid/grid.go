@@ -1,5 +1,5 @@
 // Package grid converts Our World in Data's energy dataset (electricity
-// carbon intensity from Ember) into Carbonara grid factors: the latest year
+// carbon intensity from Ember) into Sootcase grid factors: the latest year
 // with data for each country.
 //
 // OWID data is CC BY 4.0; Ember data is CC BY 4.0. Both need attribution,
@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/calc"
 )
 
 // Attribution is the credit CC BY 4.0 requires.

@@ -11,15 +11,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/majidkabir/carbonara/internal/api"
-	"github.com/majidkabir/carbonara/pkg/places"
+	"github.com/majidkabir/sootcase/internal/api"
+	"github.com/majidkabir/sootcase/pkg/places"
 )
 
 func runServe(args []string) error {
 	fs := flag.NewFlagSet("serve", flag.ExitOnError)
 	var c common
 	c.register(fs)
-	addr := fs.String("addr", envOr("CARBONARA_ADDR", ":8080"), "listen address")
+	addr := fs.String("addr", envOr("ADDR", ":8080"), "listen address")
 	maxConcurrent := fs.Int("max-concurrent", 0, "calculation requests at once; more get 503 (default 4 x CPUs)")
 	timeout := fs.Duration("request-timeout", 30*time.Second, "time limit per calculation request; past it 504")
 	maxLegs := fs.Int("max-legs", 100, "legs (and hubs) allowed per shipment")
@@ -76,8 +76,17 @@ func runServe(args []string) error {
 	}
 }
 
-func envOr(key, def string) string {
-	if v := os.Getenv(key); v != "" {
+// env reads SOOTCASE_<name>, falling back to the old CARBONARA_<name> so
+// existing setups keep working after the rename.
+func env(name string) string {
+	if v := os.Getenv("SOOTCASE_" + name); v != "" {
+		return v
+	}
+	return os.Getenv("CARBONARA_" + name)
+}
+
+func envOr(name, def string) string {
+	if v := env(name); v != "" {
 		return v
 	}
 	return def

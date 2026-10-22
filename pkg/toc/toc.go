@@ -19,8 +19,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
-	"github.com/majidkabir/carbonara/pkg/factors"
+	"github.com/majidkabir/sootcase/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/factors"
 )
 
 // Operations is the input: one period of an operator's measured data.

@@ -1,6 +1,6 @@
 // Package ndjson reads shipments as newline-delimited JSON (one shipment
 // object per line) and writes one result object per line, for piping
-// Carbonara between tools such as Kafka consumers and producers.
+// Sootcase between tools such as Kafka consumers and producers.
 package ndjson
 
 import (
@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
-	"github.com/majidkabir/carbonara/pkg/csvio"
+	"github.com/majidkabir/sootcase/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/csvio"
 )
 
 // DefaultMaxLine is the default longest line accepted, in bytes.

@@ -10,7 +10,7 @@
 --
 -- Weights are distance, so routes are shortest feasible distances (SFD, in
 -- GLEC / ISO 14083 terms). Speeds are nominal and only used for durations,
--- which Carbonara ignores.
+-- which Sootcase ignores.
 
 api_version = 4
 

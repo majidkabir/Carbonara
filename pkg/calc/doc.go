@@ -1,4 +1,4 @@
-// Package calc is Carbonara's calculation core: the shipment model and the
+// Package calc is Sootcase's calculation core: the shipment model and the
 // emission calculation, with no dependencies outside the standard library.
 //
 // A Calculator combines a FactorProvider (emission factors) with an

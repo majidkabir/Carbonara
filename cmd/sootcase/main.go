@@ -1,4 +1,4 @@
-// Command carbonara calculates freight emissions.
+// Command sootcase calculates freight emissions.
 package main
 
 import (
@@ -11,37 +11,37 @@ import (
 	"os"
 	"strings"
 
-	"github.com/majidkabir/carbonara/pkg/batch"
-	"github.com/majidkabir/carbonara/pkg/calc"
-	"github.com/majidkabir/carbonara/pkg/csvio"
-	"github.com/majidkabir/carbonara/pkg/distance"
-	"github.com/majidkabir/carbonara/pkg/factors"
-	"github.com/majidkabir/carbonara/pkg/places"
+	"github.com/majidkabir/sootcase/pkg/batch"
+	"github.com/majidkabir/sootcase/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/csvio"
+	"github.com/majidkabir/sootcase/pkg/distance"
+	"github.com/majidkabir/sootcase/pkg/factors"
+	"github.com/majidkabir/sootcase/pkg/places"
 )
 
 // version is set at build time with -ldflags "-X main.version=...".
 var version = "dev"
 
-const usageText = `Carbonara — freight CO2e calculator
+const usageText = `Sootcase — freight CO2e calculator
 
 Usage:
-  carbonara calc    [-factors name|file] shipment.json   one shipment, JSON result
-  carbonara batch   [-factors name|file] shipments.csv   many shipments, CSV result
-  carbonara report  [-factors name|file] [-from -to -org] shipments.csv   ISO 14083 style report (Markdown or JSON)
-  carbonara stream  [-factors name|file] [file]          one shipment JSON per line in, one result per line out
-  carbonara serve   [-factors name|file] [-addr :8080]   HTTP API
-  carbonara factors [-factors name|file]                 print the factor dataset
-  carbonara import-desnz [-o out.json] flat-file.xlsx   convert UK DESNZ factors
-  carbonara import-grid  [-o out.json] owid-energy.csv  convert grid intensities
-  carbonara toc     [-o layer.json] operations.json      intensities from your own fuel data
-  carbonara health  [-addr :8080]                        check a running server (for healthchecks)
-  carbonara version
+  sootcase calc    [-factors name|file] shipment.json   one shipment, JSON result
+  sootcase batch   [-factors name|file] shipments.csv   many shipments, CSV result
+  sootcase report  [-factors name|file] [-from -to -org] shipments.csv   ISO 14083 style report (Markdown or JSON)
+  sootcase stream  [-factors name|file] [file]          one shipment JSON per line in, one result per line out
+  sootcase serve   [-factors name|file] [-addr :8080]   HTTP API
+  sootcase factors [-factors name|file]                 print the factor dataset
+  sootcase import-desnz [-o out.json] flat-file.xlsx   convert UK DESNZ factors
+  sootcase import-grid  [-o out.json] owid-energy.csv  convert grid intensities
+  sootcase toc     [-o layer.json] operations.json      intensities from your own fuel data
+  sootcase health  [-addr :8080]                        check a running server (for healthchecks)
+  sootcase version
 
 Use "-" as the file name to read stdin. The default datasets are UK DESNZ 2026
 and Dutch inland waterway factors 2026.
 calc, batch, report and serve also take -osrm URL (road routing),
 -osrm-rail URL, -osrm-waterway URL and -sea-network file.geojson (sea
-routing); see "carbonara calc -h".`
+routing); see "sootcase calc -h".`
 
 func main() {
 	if len(os.Args) < 2 {
@@ -87,28 +87,28 @@ type common struct {
 }
 
 func (c *common) register(fs *flag.FlagSet) {
-	fs.StringVar(&c.factorFile, "factors", os.Getenv("CARBONARA_FACTORS"),
+	fs.StringVar(&c.factorFile, "factors", env("FACTORS"),
 		"embedded dataset name ("+strings.Join(factors.EmbeddedNames(), ", ")+") or a dataset JSON file, "+
 			"or several comma-separated to layer them (e.g. "+factors.Default+",my-hubs.json); "+
-			"also $CARBONARA_FACTORS (default "+factors.Default+")")
-	fs.StringVar(&c.osrmURL, "osrm", os.Getenv("CARBONARA_OSRM_URL"),
-		"OSRM server URL for road distances, also $CARBONARA_OSRM_URL (default: adjusted great-circle)")
-	fs.StringVar(&c.roadRegions, "osrm-regions", os.Getenv("CARBONARA_OSRM_REGIONS"),
+			"also $SOOTCASE_FACTORS (default "+factors.Default+")")
+	fs.StringVar(&c.osrmURL, "osrm", env("OSRM_URL"),
+		"OSRM server URL for road distances, also $SOOTCASE_OSRM_URL (default: adjusted great-circle)")
+	fs.StringVar(&c.roadRegions, "osrm-regions", env("OSRM_REGIONS"),
 		"road OSRM servers by region, \"name=url@minlon,minlat,maxlon,maxlat;...\"; a route uses the smallest region "+
-			"holding both ends; replaces -osrm. Also $CARBONARA_OSRM_REGIONS")
-	fs.StringVar(&c.waterwayURL, "osrm-waterway", os.Getenv("CARBONARA_OSRM_WATERWAY_URL"),
-		"OSRM server built with deploy/barge.lua for inland waterway distances, also $CARBONARA_OSRM_WATERWAY_URL "+
+			"holding both ends; replaces -osrm. Also $SOOTCASE_OSRM_REGIONS")
+	fs.StringVar(&c.waterwayURL, "osrm-waterway", env("OSRM_WATERWAY_URL"),
+		"OSRM server built with deploy/barge.lua for inland waterway distances, also $SOOTCASE_OSRM_WATERWAY_URL "+
 			"(default: none; give distance_km)")
 	fs.Float64Var(&c.waterwayMaxSnapKm, "waterway-max-snap-km", 10,
 		"reject inland waterway points farther than this from a navigable waterway (0 = no limit)")
-	fs.StringVar(&c.railURL, "osrm-rail", os.Getenv("CARBONARA_OSRM_RAIL_URL"),
-		"OSRM server built with deploy/rail.lua for rail distances, also $CARBONARA_OSRM_RAIL_URL (default: great-circle)")
+	fs.StringVar(&c.railURL, "osrm-rail", env("OSRM_RAIL_URL"),
+		"OSRM server built with deploy/rail.lua for rail distances, also $SOOTCASE_OSRM_RAIL_URL (default: great-circle)")
 	fs.Float64Var(&c.railMaxSnapKm, "rail-max-snap-km", 5,
 		"reject rail points farther than this from a railway line (0 = no limit)")
 	fs.StringVar(&c.ferryVehicle, "ferry-vehicle", calc.DefaultFerryVehicle,
 		"sea vehicle type for ferry crossings on routed road legs")
-	fs.StringVar(&c.seaNetwork, "sea-network", os.Getenv("CARBONARA_SEA_NETWORK"),
-		"maritime network GeoJSON for sea distances, also $CARBONARA_SEA_NETWORK (default: adjusted great-circle)")
+	fs.StringVar(&c.seaNetwork, "sea-network", env("SEA_NETWORK"),
+		"maritime network GeoJSON for sea distances, also $SOOTCASE_SEA_NETWORK (default: adjusted great-circle)")
 	fs.StringVar(&c.seaAvoid, "sea-avoid", "", "comma-separated passages to avoid, e.g. suez,panama")
 	fs.StringVar(&c.seaOpen, "sea-open", "", "comma-separated passages to open that are closed by default ("+
 		strings.Join(distance.DefaultAvoid, ",")+")")

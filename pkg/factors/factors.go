@@ -15,8 +15,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
-	"github.com/majidkabir/carbonara/pkg/distance"
+	"github.com/majidkabir/sootcase/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/distance"
 )
 
 // Default is the embedded dataset used when none is chosen: UK DESNZ for
@@ -398,7 +398,7 @@ func (d *Dataset) LegFactor(m calc.Mode, vt string) (calc.Factor, error) {
 		}
 	}
 	return calc.Factor{}, fmt.Errorf("dataset %q has no %s factors; add a layer with your own (-factors %s,mine.json) "+
-		"or build one from fuel data with carbonara toc", d.Name, m, d.Name)
+		"or build one from fuel data with sootcase toc", d.Name, m, d.Name)
 }
 
 // HubFactor implements calc.FactorProvider.

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/majidkabir/carbonara/pkg/factors"
+	"github.com/majidkabir/sootcase/pkg/factors"
 )
 
 func FuzzParseBuild(f *testing.F) {

@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/calc"
 )
 
 // fakeTableOSRM answers tables with distance = 1000 m x (row+1) x (col+1);

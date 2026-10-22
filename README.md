@@ -1,41 +1,43 @@
-# Carbonara 🍝
+# Sootcase
 
-[![CI](https://github.com/majidkabir/Carbonara/actions/workflows/ci.yml/badge.svg)](https://github.com/majidkabir/Carbonara/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/majidkabir/Carbonara)](https://github.com/majidkabir/Carbonara/releases)
-[![Go Reference](https://pkg.go.dev/badge/github.com/majidkabir/carbonara.svg)](https://pkg.go.dev/github.com/majidkabir/carbonara)
+*Formerly Carbonara (renamed October 2026; old links and `CARBONARA_*` settings still work).*
+
+[![CI](https://github.com/majidkabir/Sootcase/actions/workflows/ci.yml/badge.svg)](https://github.com/majidkabir/Sootcase/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/majidkabir/Sootcase)](https://github.com/majidkabir/Sootcase/releases)
+[![Go Reference](https://pkg.go.dev/badge/github.com/majidkabir/sootcase.svg)](https://pkg.go.dev/github.com/majidkabir/sootcase)
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue)](LICENSE)
-[![Try it](https://img.shields.io/badge/try%20it-carbonara--co2.org-1F5E8C)](https://carbonara-co2.org)
+[![Try it](https://img.shields.io/badge/try%20it-sootcase.org-1F5E8C)](https://sootcase.org)
 
 Source-available freight emissions calculator following the GLEC Framework / ISO 14083 approach. Free for non-commercial use; see [License](#license).
 
-**Try it at [carbonara-co2.org](https://carbonara-co2.org)**: a free test service with worldwide road, rail, inland waterway and sea routing. Sign in with your email to use the calculator and get an API key.
+**Try it at [sootcase.org](https://sootcase.org)**: a free test service with worldwide road, rail, inland waterway and sea routing. Sign in with your email to use the calculator and get an API key.
 
-![The Carbonara web page: a shipment entered leg by leg on the left; on the right its emissions, a bar per leg split into vehicle and fuel-supply emissions, and how each number was made](docs/screenshot.png)
+![The Sootcase web page: a shipment entered leg by leg on the left; on the right its emissions, a bar per leg split into vehicle and fuel-supply emissions, and how each number was made](docs/screenshot.png)
 
 Ships with the **UK DESNZ 2026** conversion factors built in: 127 freight factors (road, rail, sea, air) and 166 fuel factors, each split into tank-to-wheel and well-to-tank.
 
 ## Quick start
 
 ```sh
-go install github.com/majidkabir/carbonara/cmd/carbonara@latest
+go install github.com/majidkabir/sootcase/cmd/sootcase@latest
 
-carbonara calc examples/cph-rotterdam.json      # one shipment -> JSON
-carbonara batch examples/shipments.csv          # many shipments -> CSV
-carbonara serve -addr :8080                     # HTTP API
-carbonara factors                               # list vehicle types and fuels
-carbonara calc -factors my-glec.json shipment.json   # use your own dataset
+sootcase calc examples/cph-rotterdam.json      # one shipment -> JSON
+sootcase batch examples/shipments.csv          # many shipments -> CSV
+sootcase serve -addr :8080                     # HTTP API
+sootcase factors                               # list vehicle types and fuels
+sootcase calc -factors my-glec.json shipment.json   # use your own dataset
 ```
 
 Docker:
 
 ```sh
-docker run -p 8080:8080 ghcr.io/majidkabir/carbonara
+docker run -p 8080:8080 ghcr.io/majidkabir/sootcase
 curl -X POST localhost:8080/v1/calculate --data @examples/cph-rotterdam.json
 ```
 
 ### Everything, with real routing
 
-[`compose.yaml`](compose.yaml) runs Carbonara with an OSRM road router and Eurostat's maritime network:
+[`compose.yaml`](compose.yaml) runs Sootcase with an OSRM road router and Eurostat's maritime network:
 
 ```sh
 docker compose up -d            # first start downloads and prepares the data
@@ -46,15 +48,15 @@ open http://localhost:8080
 |---|---|---|
 | `OSRM_PBF_URL` | Denmark from Geofabrik | any `.osm.pbf`; preparing needs roughly 5–10× its size in RAM |
 | `SEA_RESOLUTION_KM` | `20` | `5`, `10`, `20`, `50` or `100` |
-| `CARBONARA_PORT` | `8080` | |
-| `CARBONARA_FACTORS` | `desnz-2026,nl-iww-2026,eu-mrv-2024` | as `-factors` |
+| `SOOTCASE_PORT` | `8080` | |
+| `SOOTCASE_FACTORS` | `desnz-2026,nl-iww-2026,eu-mrv-2024` | as `-factors` |
 
 Prepared data is kept in volumes and reused; changing the region re-prepares it. The maritime network (EUPL-1.2) is downloaded on your machine from a pinned SeaRoute commit and checked by SHA-256. A weekly CI job brings the whole stack up on a small region and checks that road and sea legs are actually routed.
 
 ## As a Go library
 
 ```sh
-go get github.com/majidkabir/carbonara
+go get github.com/majidkabir/sootcase
 ```
 
 ```go
@@ -67,7 +69,7 @@ res, err := c.Calculate(ctx, calc.Shipment{
 // res.WTWKg, res.Legs[0].DataType, res.Legs[0].Factor.Source, ...
 ```
 
-`pkg/calc` has no dependencies outside the standard library; nothing in the module does. Runnable examples for each package are on [pkg.go.dev](https://pkg.go.dev/github.com/majidkabir/carbonara) (they appear after the next release is fetched there).
+`pkg/calc` has no dependencies outside the standard library; nothing in the module does. Runnable examples for each package are on [pkg.go.dev](https://pkg.go.dev/github.com/majidkabir/sootcase) (they appear after the next release is fetched there).
 
 ## Calculation
 
@@ -130,7 +132,7 @@ Uses Eurostat's [SeaRoute](https://github.com/eurostat/searoute) maritime networ
 ```sh
 curl -LO https://github.com/eurostat/searoute/raw/master/modules/core/src/main/resources/marnet/marnet_plus_20km.gpkg
 ogr2ogr -f GeoJSON marnet_20km.geojson marnet_plus_20km.gpkg
-carbonara calc -sea-network marnet_20km.geojson shipment.json
+sootcase calc -sea-network marnet_20km.geojson shipment.json
 ```
 
 Straits and canals can be closed with `-sea-avoid suez,panama`. The Arctic routes (`northwest`, `northeast`) are closed by default; open them with `-sea-open`. Points are snapped to the nearest network node; `-sea-max-snap-km` rejects points too far from the sea.
@@ -146,7 +148,7 @@ docker run -t -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osrm-extract -p 
 docker run -t -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osrm-partition /data/denmark-latest.osrm
 docker run -t -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osrm-customize /data/denmark-latest.osrm
 docker run -t -p 5000:5000 -v "$PWD:/data" ghcr.io/project-osrm/osrm-backend osrm-routed --algorithm mld /data/denmark-latest.osrm
-carbonara calc -osrm http://localhost:5000 examples/cph-rotterdam.json
+sootcase calc -osrm http://localhost:5000 examples/cph-rotterdam.json
 ```
 
 ### Rail routing
@@ -174,11 +176,11 @@ OSRM_PBF_URL=https://download.geofabrik.de/europe/netherlands-latest.osm.pbf \
   docker compose -f compose.yaml -f compose.waterway.yaml up -d
 ```
 
-Or by hand, as for roads, with `osrm-extract -p barge.lua`, then `carbonara calc -osrm-waterway http://localhost:5001 ...`. CI routes a barge along the Saar on Saarland's map each week. Routes follow OSM's tagging, so check a few known distances for your region.
+Or by hand, as for roads, with `osrm-extract -p barge.lua`, then `sootcase calc -osrm-waterway http://localhost:5001 ...`. CI routes a barge along the Saar on Saarland's map each week. Routes follow OSM's tagging, so check a few known distances for your region.
 
 ### Missing road legs
 
-A shipment's legs should join up, and a sea, rail or river leg should start and end on its network. When they don't, Carbonara adds road legs (on by default):
+A shipment's legs should join up, and a sea, rail or river leg should start and end on its network. When they don't, Sootcase adds road legs (on by default):
 
 - **Gaps.** When a leg starts more than 5 km from where the one before ended, a road leg is added across the gap.
 - **First and last mile.** When a sea leg starts or ends inland (more than 50 km from the sea network and not at a sea port), it is moved to a large cargo sea port, and a road leg is added between the port and the inland point. The port is the one with the best trip from the point by road and on by sea, counting a road kilometre as three sea kilometres and preferring ports in the same country, so Munich goes to Hamburg for New York and to Venice for Shanghai. The port list is [`pkg/places/seaports.go`](pkg/places/seaports.go). A rail or river leg whose end is off its network (more than 5 km / 10 km away) is moved to the nearest rail terminal or port on the network that gives the best trip in the same way.
@@ -189,10 +191,10 @@ Turn it off with `"add_road_legs": false` on a shipment, `?add_road_legs=false` 
 
 ## Verified against GLEC
 
-[`pkg/toc/glec_test.go`](pkg/toc/glec_test.go) reproduces the worked examples in the GLEC Framework v3.2 (Section 3, Module 4) end to end through Carbonara: fuel and activity data → TOC/HOC intensities → shipment emissions. Road (p.116), air (p.128), bulk sea with hubs (p.131–132) and a two-intensity container terminal (p.134–135) all match GLEC's published figures to the precision printed. Two notes from doing this:
+[`pkg/toc/glec_test.go`](pkg/toc/glec_test.go) reproduces the worked examples in the GLEC Framework v3.2 (Section 3, Module 4) end to end through Sootcase: fuel and activity data → TOC/HOC intensities → shipment emissions. Road (p.116), air (p.128), bulk sea with hubs (p.131–132) and a two-intensity container terminal (p.134–135) all match GLEC's published figures to the precision printed. Two notes from doing this:
 
 - GLEC sometimes rounds an intensity before applying it (air: 1.244 kg/tkm; hub: 0.218 kg/t), so a few published results differ from the unrounded calculation in the last digit. The tests check both.
-- In the bulk sea example, the final chain total (3,687,546 kg) only adds up with 1.3 kg CO₂e/t at the terminals, while the example states 1.2 kg/t; with 1.2 it matches GLEC's own sum of TCE emissions (3,679,673 kg), which is what Carbonara gives.
+- In the bulk sea example, the final chain total (3,687,546 kg) only adds up with 1.3 kg CO₂e/t at the terminals, while the example states 1.2 kg/t; with 1.2 it matches GLEC's own sum of TCE emissions (3,679,673 kg), which is what Sootcase gives.
 
 ## Reporting
 
@@ -203,11 +205,11 @@ Results are shaped for ISO 14083-style reporting:
 - **Data type** per element: `primary` (measured fuel), `modelled` (load or energy model from shipment inputs) or `default` (published factor), and `primary_data_share` of total WTW.
 - **Traceability**: each leg carries its factor with source and year, its `distance_method`, and the result names the `dataset`.
 
-Carbonara isn't certified or verified against ISO 14083. Treat results as calculations for your own reporting process.
+Sootcase isn't certified or verified against ISO 14083. Treat results as calculations for your own reporting process.
 
 ### Report over many shipments
 
-`carbonara report` (or `POST /v1/report`) turns a set of shipments into a report with the basic content ISO 14083 asks for at the level of transport or hub services (GLEC v3.2, Section 2, Chapter 1):
+`sootcase report` (or `POST /v1/report`) turns a set of shipments into a report with the basic content ISO 14083 asks for at the level of transport or hub services (GLEC v3.2, Section 2, Chapter 1):
 
 - what's covered: period, shipments, legs, hub stops, and the shipments that failed (excluded and listed);
 - total emissions, split into operational (TTW) and energy provision (WTT), and the emission intensity with the types of distance used;
@@ -216,8 +218,8 @@ Carbonara isn't certified or verified against ISO 14083. Treat results as calcul
 - distance adjustment factors applied, notes on omissions and deviations, and where supporting information is.
 
 ```sh
-carbonara report -org "Acme Logistics" -from 2026-01-01 -to 2026-03-31 shipments.csv > q1.md
-carbonara report -format json shipments.csv > q1.json
+sootcase report -org "Acme Logistics" -from 2026-01-01 -to 2026-03-31 shipments.csv > q1.md
+sootcase report -format json shipments.csv > q1.json
 ```
 
 It reads the same CSV as `batch`, streaming, so any size works. The ISO sentence "These calculation results have been established in accordance with ISO 14083:2023" is added only with `-declare-iso` (`"declare_iso": true` in the API): conformity depends on your data collection and boundaries, which only you can vouch for.
@@ -231,13 +233,13 @@ TOC intensity (g CO2e/tkm) = Σ fuel × fuel factor / tonne-km carried (incl. em
 HOC intensity (g CO2e/t)   = Σ energy × energy factor / tonnes handled
 ```
 
-`carbonara toc` turns an [operations file](examples/operations.json) into a dataset layer. Shipments then use the TOC id as their vehicle type, or the HOC id as their hub type, and are labelled primary data:
+`sootcase toc` turns an [operations file](examples/operations.json) into a dataset layer. Shipments then use the TOC id as their vehicle type, or the HOC id as their hub type, and are labelled primary data:
 
 ```sh
-carbonara toc -o acme-2025.json examples/operations.json
+sootcase toc -o acme-2025.json examples/operations.json
 #  TOC dk_road_ambient   83.54 g CO2e/tkm WTW (64.33 TTW + 19.22 WTT)
 #  HOC cph_crossdock    777.4 g CO2e/t WTW
-carbonara calc -factors desnz-2026,acme-2025.json shipment.json
+sootcase calc -factors desnz-2026,acme-2025.json shipment.json
 ```
 
 Fuels are converted with the selected dataset's fuel factors, including `electricity/<country>`.
@@ -268,7 +270,7 @@ A bad row fails only its shipment; the rest still calculate. Only failures cause
 
 ## Web page
 
-`carbonara serve` also serves a page at `/`: enter a shipment leg by leg, picking each leg's start and end by name or code (cities, ports, rail and road terminals, airports; the list follows the mode), and see its emissions, a bar of each leg's share split into vehicle and fuel-supply emissions, and for every number the distance method, calculation method, data type and factor source. It opens with a worked example.
+`sootcase serve` also serves a page at `/`: enter a shipment leg by leg, picking each leg's start and end by name or code (cities, ports, rail and road terminals, airports; the list follows the mode), and see its emissions, a bar of each leg's share split into vehicle and fuel-supply emissions, and for every number the distance method, calculation method, data type and factor source. It opens with a worked example.
 
 Below it, **Report** takes a shipments CSV (the `batch` columns), an organisation and a period, and shows the [report](#report-over-many-shipments): totals, modes, hubs, energy carriers, data quality, notes. Download it as Markdown or JSON, and each shipment's full calculation as CSV (a row per leg and hub: distance and how it was found, method, data type, emissions, factor source, notes on added legs) or JSON, all from the one calculation. `POST /v1/report` takes the CSV directly with `Content-Type: text/csv`, report details in the query (`?organisation=...&period_from=...`).
 
@@ -278,11 +280,11 @@ Each calculation also shows the legs on a map: the route as routed (road, rail, 
 
 ## Streaming (Kafka and pipes)
 
-`carbonara stream` reads one shipment JSON per line and writes one result per line, in input order:
+`sootcase stream` reads one shipment JSON per line and writes one result per line, in input order:
 
 ```sh
 kcat -C -b broker:9092 -t shipments -u -q -o end \
-  | carbonara stream \
+  | sootcase stream \
   | kcat -P -b broker:9092 -t shipment-emissions
 ```
 
@@ -307,7 +309,7 @@ Protections for running it on a network: at most `-max-concurrent` calculation r
 
 ## Factor datasets
 
-`-factors` (or `CARBONARA_FACTORS`) takes an embedded dataset name or a JSON file, or several separated by commas to layer them: `-factors desnz-2026,my-hubs.json`. Layers are combined; defining the same factor twice is an error, so nothing is silently overridden. The one exception is a short alias (such as `container_ship`) defined again: it then means the later dataset's vehicle type.
+`-factors` (or `SOOTCASE_FACTORS`) takes an embedded dataset name or a JSON file, or several separated by commas to layer them: `-factors desnz-2026,my-hubs.json`. Layers are combined; defining the same factor twice is an error, so nothing is silently overridden. The one exception is a short alias (such as `container_ship`) defined again: it then means the later dataset's vehicle type.
 
 | Dataset | What |
 |---|---|
@@ -320,7 +322,7 @@ The default is `desnz-2026,nl-iww-2026,eu-mrv-2024`.
 
 A dataset is JSON with `legs` (g CO2e/tkm), `hubs` (g CO2e/t), `fuels` (kg CO2e/unit) and optional `load_models`, `dafs`, `distance_adjustments`, `vehicle_aliases`, `fuel_aliases` and `container_loads`, each factor with a TTW/WTT split, source and year. See [`sample.json`](pkg/factors/data/sample.json) for the shape.
 
-**Vehicle types and fuel ids** follow the source's labels, e.g. `hgv_refrigerated_all_diesel/articulated_33t/100pct_laden` or `liquid_fuels/marine_gas_oil/tonnes`. Run `carbonara factors` to list them. Common ones have short aliases; results always show the full id used:
+**Vehicle types and fuel ids** follow the source's labels, e.g. `hgv_refrigerated_all_diesel/articulated_33t/100pct_laden` or `liquid_fuels/marine_gas_oil/tonnes`. Run `sootcase factors` to list them. Common ones have short aliases; results always show the full id used:
 
 | Mode | Aliases |
 |---|---|
@@ -335,7 +337,7 @@ Road aliases use DESNZ's "average laden" factors.
 
 **Inland waterways** (`nl-iww-2026`): three bulk vessel classes (`barge_bulk_small`/`medium`/`large`, 300 t to 11,000 t) and four container vessels (`barge_container_40teu`, `96teu`, `208teu`, `348teu`). Factors are per *actual* tonne-km and include sailing empty. Give coordinates with [waterway routing](#inland-waterway-routing) set up, or the river distance as `distance_km`; a shortest feasible distance (`distance_type: sfd`) is used as is, since GLEC needs no DAF for inland waterways. Without routing, a leg with only coordinates is refused: a straight line would undercount a river route, and there's no default correction for it. Source: www.co2emissiefactoren.nl, free to use with attribution.
 
-**Container ships** (`eu-mrv-2024`): from what container ships calling at EU ports reported for 2024 under the EU MRV regulation (Regulation (EU) 2015/757): fuel, CO2e and transport work (cargo mass × distance actually sailed), per ship, as published by the European Maritime Safety Agency ([THETIS-MRV](https://mrv.emsa.europa.eu/#public/emission-report); reproduction authorised with acknowledgement of the source). Ships that emit at least half their voyage CO2 between EU ports count as short-sea (350 ships), the rest as deep-sea (1,643 ships); each factor is its fleet's total CO2e divided by its total transport work, so big ships weigh in by the work they do. Well-to-tank is the fuel they reported × DESNZ's marine fuel oil well-to-tank. Factors are per *actual* tonne-km, so a routed sea distance gets the GLEC sea DAF (× 1.15). `container_ship` means the short-sea factor on legs under 2,000 km and the deep-sea factor from 2,000 km (Carbonara's threshold, not a standard's); the leg's note says which, and `container_ship_short_sea` or `container_ship_deep_sea` choose one. DESNZ's container ship factors by size stay available by their full ids (e.g. `cargo_ship/container_ship/8000_teu`). Rebuilt by `tools/mrv`.
+**Container ships** (`eu-mrv-2024`): from what container ships calling at EU ports reported for 2024 under the EU MRV regulation (Regulation (EU) 2015/757): fuel, CO2e and transport work (cargo mass × distance actually sailed), per ship, as published by the European Maritime Safety Agency ([THETIS-MRV](https://mrv.emsa.europa.eu/#public/emission-report); reproduction authorised with acknowledgement of the source). Ships that emit at least half their voyage CO2 between EU ports count as short-sea (350 ships), the rest as deep-sea (1,643 ships); each factor is its fleet's total CO2e divided by its total transport work, so big ships weigh in by the work they do. Well-to-tank is the fuel they reported × DESNZ's marine fuel oil well-to-tank. Factors are per *actual* tonne-km, so a routed sea distance gets the GLEC sea DAF (× 1.15). `container_ship` means the short-sea factor on legs under 2,000 km and the deep-sea factor from 2,000 km (Sootcase's threshold, not a standard's); the leg's note says which, and `container_ship_short_sea` or `container_ship_deep_sea` choose one. DESNZ's container ship factors by size stay available by their full ids (e.g. `cargo_ship/container_ship/8000_teu`). Rebuilt by `tools/mrv`.
 
 Why: DESNZ's container ship factors (about 20 g CO2e per tonne-km on average, 15.5 g for the largest ships) gave Shanghai → Hamburg about 2.4× the highest of six calculators compared in Schramm & Lehner (2024); the deep-sea factor from EU MRV is in their range.
 
@@ -354,18 +356,18 @@ Why: DESNZ's container ship factors (about 20 g CO2e per tonne-km on average, 15
 **Updating DESNZ** each year: download the "flat file" from [gov.uk](https://www.gov.uk/government/collections/government-conversion-factors-for-company-reporting) and run
 
 ```sh
-carbonara import-desnz -o pkg/factors/data/desnz-2027.json ghg-conversion-factors-2027-flat-format.xlsx
+sootcase import-desnz -o pkg/factors/data/desnz-2027.json ghg-conversion-factors-2027-flat-format.xlsx
 ```
 
 It reports how many rows it imported, skipped as blank, or couldn't match to a well-to-tank factor.
 
-**Updating grid intensities**: `carbonara import-grid -o pkg/factors/data/grid/ember-owid.json owid-energy-data.csv`, with the CSV from [owid/energy-data](https://github.com/owid/energy-data).
+**Updating grid intensities**: `sootcase import-grid -o pkg/factors/data/grid/ember-owid.json owid-energy-data.csv`, with the CSV from [owid/energy-data](https://github.com/owid/energy-data).
 
-**World road routing on one server.** A road graph of the whole planet needs more memory than a 256 GB server has. `-osrm-regions` (or `$CARBONARA_OSRM_REGIONS`) takes several OSRM servers, each built for an overlapping part of the world, as `name=url@minlon,minlat,maxlon,maxlat;...`; each road leg is routed by the smallest region that holds both its ends. When no region holds both (Shanghai to Hamburg with Asia and Europe built separately), the leg is joined where the two regions overlap: any road between them crosses that overlap, so Carbonara tries points along it (every 0.5°, then every 0.05° near the best), snapped to the road network, and routes the two halves through the best one. The result matches one graph of both regions to within a few kilometres. Regions that don't overlap aren't joined, and the leg is reported as an error.
+**World road routing on one server.** A road graph of the whole planet needs more memory than a 256 GB server has. `-osrm-regions` (or `$SOOTCASE_OSRM_REGIONS`) takes several OSRM servers, each built for an overlapping part of the world, as `name=url@minlon,minlat,maxlon,maxlat;...`; each road leg is routed by the smallest region that holds both its ends. When no region holds both (Shanghai to Hamburg with Asia and Europe built separately), the leg is joined where the two regions overlap: any road between them crosses that overlap, so Sootcase tries points along it (every 0.5°, then every 0.05° near the best), snapped to the road network, and routes the two halves through the best one. The result matches one graph of both regions to within a few kilometres. Regions that don't overlap aren't joined, and the leg is reported as an error.
 
 ## Performance
 
-Measured with [`tools/loadtest`](tools/loadtest/main.go) against `carbonara serve` with the default datasets, the server pinned to **one CPU core** and the load generator to another (Go 1.24, Linux, a small cloud VM). Each shipment has a road and a sea leg, distances by great-circle; routing via OSRM adds its own time.
+Measured with [`tools/loadtest`](tools/loadtest/main.go) against `sootcase serve` with the default datasets, the server pinned to **one CPU core** and the load generator to another (Go 1.24, Linux, a small cloud VM). Each shipment has a road and a sea leg, distances by great-circle; routing via OSRM adds its own time.
 
 | Request | Concurrent | Throughput | Latency p50 / p99 |
 |---|---:|---:|---:|
@@ -378,7 +380,7 @@ Measured with [`tools/loadtest`](tools/loadtest/main.go) against `carbonara serv
 Throughput scales with cores. Under overload (32 concurrent 1,000-shipment batches on one core) requests beyond `-max-concurrent` got an immediate `503` with `Retry-After`, throughput held at 59,000 shipments/s, and the server stayed at 48 MB of memory. To run it yourself:
 
 ```sh
-carbonara serve &
+sootcase serve &
 go run ./tools/loadtest -kind calc -c 32 -d 20s
 go run ./tools/loadtest -kind batch -batch 1000 -c 4 -d 20s
 ```
@@ -400,7 +402,7 @@ go run ./tools/loadtest -kind batch -batch 1000 -c 4 -d 20s
 | `internal/xlsx` | Minimal stdlib-only .xlsx reader. |
 | `internal/grid` | Grid intensity importer (Our World in Data / Ember). |
 | `internal/api` | HTTP handlers and OpenAPI spec. |
-| `cmd/carbonara` | CLI. |
+| `cmd/sootcase` | CLI. |
 | `tools/loadtest` | Load generator for a running server. |
 | `tools/gazetteer` | Builds the embedded place list. |
 
@@ -424,7 +426,7 @@ go run ./tools/loadtest -kind batch -batch 1000 -c 4 -d 20s
 - [x] Electricity by country (213 grids) for electric rail and trucks
 - [x] Dataset layering (e.g. DESNZ + your own hub factors)
 - [ ] Bundled hub / warehouse factors (needs an openly licensed source)
-- [x] Web page for `carbonara serve`
+- [x] Web page for `sootcase serve`
 - [x] Streaming, parallel batch
 - [x] NDJSON stream mode for pipes and Kafka
 - [x] Input validation, fuzzing of every parser in CI, API limits
@@ -433,7 +435,7 @@ go run ./tools/loadtest -kind batch -batch 1000 -c 4 -d 20s
 - [x] Package docs and runnable examples
 - [x] Bundled inland waterway factors (Dutch CO2 emission factor list)
 - [x] Inland waterway routing (OSRM barge profile on OpenStreetMap)
-- [x] ISO 14083 style reports (`carbonara report`, `/v1/report`)
+- [x] ISO 14083 style reports (`sootcase report`, `/v1/report`)
 - [x] Missing road legs: gaps between legs, first and last mile to ports and rail terminals
 - [ ] Cargo-type presets (needs licensed values, e.g. EcoTransIT with permission)
 
@@ -444,12 +446,12 @@ Either:
 - **From GitHub** (works on mobile): Actions → Release → Run workflow, enter a version like `v0.1.0`. It runs the tests, creates the tag, then builds.
 - **From a terminal**: `git tag v0.1.0 && git push origin v0.1.0`.
 
-Binaries for Linux, macOS and Windows go to GitHub Releases, the image to `ghcr.io/majidkabir/carbonara`.
+Binaries for Linux, macOS and Windows go to GitHub Releases, the image to `ghcr.io/majidkabir/sootcase`.
 
 ## License
 
-Code: [PolyForm Noncommercial 1.0.0](LICENSE). Free for personal, educational, research, non-profit and government use; commercial use needs a separate licence from the author. This matches the terms of the GLEC Framework, which Carbonara follows. Versions up to and including v0.1.0 were released under Apache 2.0 and stay available under it.
+Code: [PolyForm Noncommercial 1.0.0](LICENSE). Free for personal, educational, research, non-profit and government use; commercial use needs a separate licence from the author. This matches the terms of the GLEC Framework, which Sootcase follows. Versions up to and including v0.1.0 were released under Apache 2.0 and stay available under it.
 
-Required Notice: Copyright 2026 majidkabir (https://github.com/majidkabir/carbonara)
+Required Notice: Copyright 2026 majidkabir (https://github.com/majidkabir/sootcase)
 
 DESNZ data: Crown copyright, contains public sector information licensed under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). Grid intensities: Ember via Our World in Data, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). See [NOTICE](NOTICE).

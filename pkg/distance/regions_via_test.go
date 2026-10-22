@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/calc"
 )
 
 // geoOSRM is a fake OSRM server whose roads run in straight lines inside

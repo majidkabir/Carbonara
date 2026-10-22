@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/calc"
 )
 
 const input = `shipment_id,weight_kg,leg_id,mode,vehicle_type,distance_km,from_lat,from_lon,to_lat,to_lon,fuel,fuel_amount,vehicle_tonne_km,hub_id,hub_type

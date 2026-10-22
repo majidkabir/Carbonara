@@ -13,10 +13,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/majidkabir/carbonara/pkg/batch"
-	"github.com/majidkabir/carbonara/pkg/calc"
-	"github.com/majidkabir/carbonara/pkg/csvio"
-	"github.com/majidkabir/carbonara/pkg/ndjson"
+	"github.com/majidkabir/sootcase/pkg/batch"
+	"github.com/majidkabir/sootcase/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/csvio"
+	"github.com/majidkabir/sootcase/pkg/ndjson"
 )
 
 // runStream reads one shipment JSON per line and writes one result per line,

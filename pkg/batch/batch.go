@@ -9,8 +9,8 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
-	"github.com/majidkabir/carbonara/pkg/csvio"
+	"github.com/majidkabir/sootcase/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/csvio"
 )
 
 // Source yields shipments; Next returns io.EOF after the last one.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Carbonara</title>
+<title>Sootcase</title>
 <style>
 :root {
   --paper: #EEF1F4;
@@ -173,7 +173,7 @@ footer.credits a { color: var(--blue); }
 </head>
 <body>
 <header class="top">
-  <h1>Carbonara</h1>
+  <h1>Sootcase</h1>
   <p>Freight emissions, with the working shown.</p>
   <span class="dataset" id="dataset"></span>
   <a class="account" id="account" href="/" hidden>Account and API key</a>
@@ -228,7 +228,7 @@ footer.credits a { color: var(--blue); }
   <section class="panel" aria-labelledby="rep-form-h">
     <h2 id="rep-form-h">Shipments file</h2>
     <form id="rform" novalidate>
-      <div class="row"><div><label for="rfile">CSV, one row per leg (same columns as <code>carbonara batch</code>)</label>
+      <div class="row"><div><label for="rfile">CSV, one row per leg (same columns as <code>sootcase batch</code>)</label>
         <input id="rfile" type="file" accept=".csv,text/csv"></div></div>
       <div class="row"><div><label for="rorg">Organisation</label><input id="rorg" autocomplete="organization"></div></div>
       <div class="row">
@@ -491,7 +491,7 @@ async function calculate(e, source) {
     res = await fetch("v1/calculate?path=true&explain=true" + (source ? "&source=" + source : ""), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(req) });
     body = await res.json();
   } catch (err) {
-    $("#error").textContent = "Couldn't reach the Carbonara server. Check it's still running.";
+    $("#error").textContent = "Couldn't reach the Sootcase server. Check it's still running.";
     return;
   } finally {
     btn.disabled = false; btn.textContent = "Calculate";
@@ -626,7 +626,7 @@ function sheetMarkdown(sh) {
     if ((st.basis || []).length) out.push("");
   }
   out.push("---", "", sh.note, "", "References:", "", ...sh.references.map(r => `- ${r}`), "",
-    "Calculated with Carbonara (https://carbonara-co2.org).", "");
+    "Calculated with Sootcase (https://sootcase.org).", "");
   return out.join("\n");
 }
 
@@ -819,7 +819,7 @@ async function makeReport(e, body) {
     res = await postReport(body);
     r = await res.json();
   } catch {
-    $("#rerror").textContent = "Couldn't reach the Carbonara server, or it took too long. Try again.";
+    $("#rerror").textContent = "Couldn't reach the Sootcase server, or it took too long. Try again.";
     return;
   } finally {
     clearInterval(timer);

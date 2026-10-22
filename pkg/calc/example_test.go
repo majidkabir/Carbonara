@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
-	"github.com/majidkabir/carbonara/pkg/factors"
+	"github.com/majidkabir/sootcase/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/factors"
 )
 
 // Calculate a two-leg shipment with the built-in UK DESNZ factors.

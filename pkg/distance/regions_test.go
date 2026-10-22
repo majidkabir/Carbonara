@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/calc"
 )
 
 func TestRegions(t *testing.T) {

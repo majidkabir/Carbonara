@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/calc"
 )
 
 // fakeOSRM answers /route/v1/... like an OSRM server and counts calls.

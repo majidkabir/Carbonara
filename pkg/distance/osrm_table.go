@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/calc"
 )
 
 // TableChunk is how many lanes go into one OSRM table request. With

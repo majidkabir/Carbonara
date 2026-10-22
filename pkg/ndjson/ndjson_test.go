@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/majidkabir/carbonara/pkg/batch"
-	"github.com/majidkabir/carbonara/pkg/calc"
-	"github.com/majidkabir/carbonara/pkg/csvio"
-	"github.com/majidkabir/carbonara/pkg/factors"
+	"github.com/majidkabir/sootcase/pkg/batch"
+	"github.com/majidkabir/sootcase/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/csvio"
+	"github.com/majidkabir/sootcase/pkg/factors"
 )
 
 func readAll(t *testing.T, in string, maxLine int) []csvio.Item {

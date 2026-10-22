@@ -39,12 +39,12 @@ services:
       - waterway-data:/wdata:ro
     restart: unless-stopped
 
-  carbonara:
+  sootcase:
     depends_on:
       osrm-waterway:
         condition: service_started
     environment:
-      CARBONARA_OSRM_WATERWAY_URL: http://osrm-waterway:5000
+      SOOTCASE_OSRM_WATERWAY_URL: http://osrm-waterway:5000
 
 volumes:
   waterway-data:

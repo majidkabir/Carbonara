@@ -34,9 +34,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/majidkabir/carbonara/internal/xlsx"
-	"github.com/majidkabir/carbonara/pkg/calc"
-	"github.com/majidkabir/carbonara/pkg/factors"
+	"github.com/majidkabir/sootcase/internal/xlsx"
+	"github.com/majidkabir/sootcase/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/factors"
 )
 
 const api = "https://mrv.emsa.europa.eu/api/public-emission-report"
@@ -52,7 +52,7 @@ const maxCargoT, minCargoT = 250_000.0, 1.0
 const wttFuel = "liquid_fuels/marine_fuel_oil/tonnes"
 
 // ShortBelowKm is the leg distance below which "container_ship" means a
-// short-sea ship. It is Carbonara's rule, not a standard's: feeder and
+// short-sea ship. It is Sootcase's rule, not a standard's: feeder and
 // intra-European services sail legs of hundreds to a couple of thousand km,
 // deep-sea services thousands.
 const ShortBelowKm = 2000

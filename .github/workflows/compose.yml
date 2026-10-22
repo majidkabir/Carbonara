@@ -1,6 +1,6 @@
 name: Compose
 
-# Brings up the full stack (OSRM + sea network + Carbonara) on a tiny
+# Brings up the full stack (OSRM + sea network + Sootcase) on a tiny
 # region and checks that road and sea legs are really routed; and the
 # waterway add-on on a small region with a navigable river.
 on:
@@ -42,13 +42,13 @@ jobs:
       - name: Start stack
         run: docker compose up -d --build
 
-      - name: Wait for Carbonara
+      - name: Wait for Sootcase
         run: |
           for i in $(seq 1 60); do
             if curl -fs localhost:8080/healthz; then exit 0; fi
             sleep 5
           done
-          echo "Carbonara did not become healthy"; exit 1
+          echo "Sootcase did not become healthy"; exit 1
 
       - name: Road leg is routed by OSRM
         run: |
@@ -95,13 +95,13 @@ jobs:
       - name: Start stack with waterway and rail routing
         run: docker compose up -d --build
 
-      - name: Wait for Carbonara
+      - name: Wait for Sootcase
         run: |
           for i in $(seq 1 90); do
             if curl -fs localhost:8080/healthz; then exit 0; fi
             sleep 5
           done
-          echo "Carbonara did not become healthy"; exit 1
+          echo "Sootcase did not become healthy"; exit 1
 
       - name: Barge leg is routed along the Saar
         run: |
@@ -160,13 +160,13 @@ jobs:
       - name: Start stack
         run: docker compose up -d --build
 
-      - name: Wait for Carbonara
+      - name: Wait for Sootcase
         run: |
           for i in $(seq 1 60); do
             if curl -fs localhost:8080/healthz; then exit 0; fi
             sleep 5
           done
-          echo "Carbonara did not become healthy"; exit 1
+          echo "Sootcase did not become healthy"; exit 1
 
       - name: Ferry crossing on a road route is calculated as sea
         run: |

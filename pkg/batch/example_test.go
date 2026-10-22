@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/majidkabir/carbonara/pkg/batch"
-	"github.com/majidkabir/carbonara/pkg/calc"
-	"github.com/majidkabir/carbonara/pkg/csvio"
-	"github.com/majidkabir/carbonara/pkg/factors"
+	"github.com/majidkabir/sootcase/pkg/batch"
+	"github.com/majidkabir/sootcase/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/csvio"
+	"github.com/majidkabir/sootcase/pkg/factors"
 )
 
 // Stream shipments from CSV and calculate them in parallel; results arrive

@@ -4,7 +4,7 @@ Usage: python prepare_sea.py RESOLUTION_KM OUTPUT.geojson
 
 Standard library only (sqlite3 reads the GeoPackage). The network is
 EUPL-1.2 licensed and is downloaded on your machine, not shipped with
-Carbonara. Files are pinned to a SeaRoute commit and checked by SHA-256.
+Sootcase. Files are pinned to a SeaRoute commit and checked by SHA-256.
 """
 import hashlib
 import json

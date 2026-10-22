@@ -26,7 +26,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/calc"
 )
 
 // Item is a parsed shipment, or the error that stopped it from parsing.

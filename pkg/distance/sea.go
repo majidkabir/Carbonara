@@ -12,7 +12,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/calc"
 )
 
 // SeaNetwork routes sea legs over a maritime line network, such as

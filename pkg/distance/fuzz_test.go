@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/calc"
 )
 
 func FuzzSeaNetwork(f *testing.F) {

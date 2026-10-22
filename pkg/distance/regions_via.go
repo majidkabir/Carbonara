@@ -7,7 +7,7 @@ import (
 	"math"
 	"sync"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/calc"
 )
 
 // Routes between regions.

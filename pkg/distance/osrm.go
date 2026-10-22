@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/calc"
 )
 
 // OSRM gets distances from an OSRM server's route service

@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Carbonara API
+  title: Sootcase API
   version: 0.1.0
   description: >
     Freight emissions calculator following the GLEC Framework / ISO 14083 approach.
@@ -9,10 +9,10 @@ info:
     name: PolyForm Noncommercial 1.0.0
     identifier: PolyForm-Noncommercial-1.0.0
 servers:
-  - url: https://carbonara-co2.org
-    description: "Free test service; send your API key as 'Authorization: Bearer <key>' (get one at https://carbonara-co2.org)"
+  - url: https://sootcase.org
+    description: "Free test service; send your API key as 'Authorization: Bearer <key>' (get one at https://sootcase.org)"
   - url: http://localhost:8080
-    description: carbonara serve
+    description: sootcase serve
 paths:
   /healthz:
     get:

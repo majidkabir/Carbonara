@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/calc"
 )
 
 func TestEmbeddedSample(t *testing.T) {
@@ -320,7 +320,7 @@ func TestOpen_Layered(t *testing.T) {
 func TestLegFactor_MissingModeHint(t *testing.T) {
 	ds, _ := Open("desnz-2026") // DESNZ alone has no inland waterway factors
 	_, err := ds.LegFactor(calc.InlandWaterway, "barge")
-	if err == nil || !strings.Contains(err.Error(), "has no inland_waterway factors") || !strings.Contains(err.Error(), "carbonara toc") {
+	if err == nil || !strings.Contains(err.Error(), "has no inland_waterway factors") || !strings.Contains(err.Error(), "sootcase toc") {
 		t.Errorf("err = %v", err)
 	}
 	if _, err := ds.LegFactor(calc.Road, "unicycle"); err == nil || strings.Contains(err.Error(), "has no road factors") {

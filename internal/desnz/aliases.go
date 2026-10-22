@@ -1,8 +1,8 @@
 package desnz
 
 import (
-	"github.com/majidkabir/carbonara/pkg/calc"
-	"github.com/majidkabir/carbonara/pkg/factors"
+	"github.com/majidkabir/sootcase/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/factors"
 )
 
 // Short names for the most-used factors. Targets are DESNZ label slugs; if

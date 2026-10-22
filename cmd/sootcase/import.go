@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/majidkabir/carbonara/internal/desnz"
-	"github.com/majidkabir/carbonara/internal/grid"
-	"github.com/majidkabir/carbonara/internal/xlsx"
-	"github.com/majidkabir/carbonara/pkg/toc"
+	"github.com/majidkabir/sootcase/internal/desnz"
+	"github.com/majidkabir/sootcase/internal/grid"
+	"github.com/majidkabir/sootcase/internal/xlsx"
+	"github.com/majidkabir/sootcase/pkg/toc"
 )
 
 // runImportDESNZ converts the UK DESNZ flat-file spreadsheet to a dataset.

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/calc"
 )
 
 // Any dataset JSON either fails to parse or gives a dataset whose own

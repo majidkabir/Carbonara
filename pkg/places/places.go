@@ -16,7 +16,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/calc"
 )
 
 //go:embed data/places.tsv.gz

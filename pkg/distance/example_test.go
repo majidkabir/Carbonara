@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
-	"github.com/majidkabir/carbonara/pkg/distance"
+	"github.com/majidkabir/sootcase/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/distance"
 )
 
 // Route over a maritime network, with and without a canal.

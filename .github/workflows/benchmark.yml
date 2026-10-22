@@ -1,11 +1,11 @@
 name: Benchmark
 
-# Measures OSRM road routing (CH and MLD) and Carbonara end to end on one
+# Measures OSRM road routing (CH and MLD) and Sootcase end to end on one
 # region, with fresh random points per request so nothing is cached.
 # Run by hand: Actions -> Benchmark -> Run workflow. Results appear as
 # annotations and in the job summary.
 #
-# Cores (GitHub's standard runner has 4): OSRM gets cores 0-1, Carbonara
+# Cores (GitHub's standard runner has 4): OSRM gets cores 0-1, Sootcase
 # core 2, the load generator core 3, so figures are per pinned core.
 on:
   workflow_dispatch:
@@ -47,7 +47,7 @@ jobs:
 
       - name: Build tools
         run: |
-          go build -o bin/carbonara ./cmd/carbonara
+          go build -o bin/sootcase ./cmd/sootcase
           go build -o bin/osrmbench ./tools/osrmbench
           go build -o bin/loadtest ./tools/loadtest
 
@@ -98,7 +98,7 @@ jobs:
             docker rm -f osrm-$algo >/dev/null
           done
 
-      - name: Benchmark Carbonara with OSRM (CH)
+      - name: Benchmark Sootcase with OSRM (CH)
         run: |
           ready() {
             for i in $(seq 1 120); do
@@ -108,14 +108,14 @@ jobs:
           docker run -d --name osrm-ch --cpuset-cpus 0,1 -p 5000:5000 -v "$PWD/data:/data" "$OSRM_IMAGE" \
             osrm-routed --algorithm ch --threads 2 /data/region.osrm
           ready || { docker logs osrm-ch; exit 1; }
-          taskset -c 2 bin/carbonara serve -addr 127.0.0.1:8080 -osrm http://localhost:5000 -max-concurrent 64 -batch-workers 32 > serve.log 2>&1 &
+          taskset -c 2 bin/sootcase serve -addr 127.0.0.1:8080 -osrm http://localhost:5000 -max-concurrent 64 -batch-workers 32 > serve.log 2>&1 &
           for i in $(seq 1 30); do curl -fs localhost:8080/healthz >/dev/null && break; sleep 1; done
           # One routed shipment must succeed before measuring.
           curl -fsS -X POST localhost:8080/v1/calculate -d '{"weight_kg":1000,"legs":[{"mode":"road","vehicle_type":"hgv",
             "from":{"lat":52.37,"lon":4.90},"to":{"lat":51.92,"lon":4.48}}]}' | grep -q '"distance_method":"osrm"' || { cat serve.log; exit 1; }
           for args in "-kind calc -c 16" "-kind batch -batch 100 -c 4" "-kind batch -batch 1000 -c 2"; do
             line=$(taskset -c 3 bin/loadtest -url http://127.0.0.1:8080 $args -d "$DUR" -fresh -road-only -bbox "$BBOX")
-            echo "$line"; echo "::notice title=Carbonara + OSRM CH ($args)::$line"; echo "- carbonara $line" >> results.md
+            echo "$line"; echo "::notice title=Sootcase + OSRM CH ($args)::$line"; echo "- sootcase $line" >> results.md
           done
 
       - name: Summary
@@ -123,7 +123,7 @@ jobs:
         run: |
           {
             echo "## Benchmark: $REGION"
-            echo "Runner: $(nproc) cores, $(free -g | awk '/Mem/{print $2}') GB. OSRM pinned to 2 cores, Carbonara to 1, load to 1."
+            echo "Runner: $(nproc) cores, $(free -g | awk '/Mem/{print $2}') GB. OSRM pinned to 2 cores, Sootcase to 1, load to 1."
             echo; echo "| Prepare | Time | Peak memory |"; echo "|---|---|---|"; cat prep.md 2>/dev/null
             echo; cat results.md 2>/dev/null
           } >> "$GITHUB_STEP_SUMMARY"

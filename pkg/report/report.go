@@ -24,15 +24,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/calc"
 )
 
 // ISOStatement is the sentence ISO 14083 requires in a report that claims
-// conformity. Carbonara adds it only when the reporter declares it.
+// conformity. Sootcase adds it only when the reporter declares it.
 const ISOStatement = "These calculation results have been established in accordance with ISO 14083:2023."
 
 // MethodStatement is used when conformity is not declared.
-const MethodStatement = "Calculated with Carbonara following the GLEC Framework v3.2 and ISO 14083:2023 methodology. " +
+const MethodStatement = "Calculated with Sootcase following the GLEC Framework v3.2 and ISO 14083:2023 methodology. " +
 	"Conformity with ISO 14083 is not declared by this report."
 
 // Meta describes the report: who, what and when. All fields are optional.
@@ -47,7 +47,7 @@ type Meta struct {
 	Reference string `json:"reference,omitempty"`
 	// DeclareISO adds the ISO 14083 conformity statement. Only the reporter
 	// can make that claim: it covers data collection and boundaries that
-	// Carbonara cannot see.
+	// Sootcase cannot see.
 	DeclareISO bool `json:"declare_iso,omitempty"`
 }
 
@@ -519,7 +519,7 @@ func (b *Builder) Report() Report {
 		r.Statement = ISOStatement
 	}
 	if r.Reference == "" {
-		r.Reference = "Per-shipment results with factors, sources and distances: Carbonara batch output for the same input. Method: https://github.com/majidkabir/carbonara"
+		r.Reference = "Per-shipment results with factors, sources and distances: Sootcase batch output for the same input. Method: https://github.com/majidkabir/sootcase"
 	}
 	r.Datasets = sortedKeys(b.datasets)
 

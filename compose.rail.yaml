@@ -39,12 +39,12 @@ services:
       - rail-data:/rdata:ro
     restart: unless-stopped
 
-  carbonara:
+  sootcase:
     depends_on:
       osrm-rail:
         condition: service_started
     environment:
-      CARBONARA_OSRM_RAIL_URL: http://osrm-rail:5000
+      SOOTCASE_OSRM_RAIL_URL: http://osrm-rail:5000
 
 volumes:
   rail-data:

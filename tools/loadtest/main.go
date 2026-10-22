@@ -1,4 +1,4 @@
-// Command loadtest measures a running Carbonara server's throughput and
+// Command loadtest measures a running Sootcase server's throughput and
 // latency.
 //
 //	go run ./tools/loadtest -url http://localhost:8080 -kind calc -c 32 -d 20s

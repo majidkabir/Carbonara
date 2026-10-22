@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/majidkabir/carbonara/pkg/factors"
-	"github.com/majidkabir/carbonara/pkg/toc"
+	"github.com/majidkabir/sootcase/pkg/factors"
+	"github.com/majidkabir/sootcase/pkg/toc"
 )
 
 // Build a transport operation category's intensity from a year of fuel data.

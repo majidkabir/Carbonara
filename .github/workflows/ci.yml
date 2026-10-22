@@ -63,10 +63,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build image
-        run: docker build -t carbonara:ci .
+        run: docker build -t sootcase:ci .
       - name: Smoke test
         run: |
-          docker run -d --name carbonara -p 8080:8080 carbonara:ci
+          docker run -d --name sootcase -p 8080:8080 sootcase:ci
           for i in $(seq 1 20); do curl -fs localhost:8080/healthz && break; sleep 0.5; done
           curl -fs -X POST localhost:8080/v1/calculate --data @examples/cph-rotterdam.json
-          docker rm -f carbonara
+          docker rm -f sootcase

@@ -29,7 +29,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/majidkabir/carbonara/pkg/places"
+	"github.com/majidkabir/sootcase/pkg/places"
 )
 
 var sources = []string{

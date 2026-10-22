@@ -12,7 +12,7 @@ import (
 // in images without curl. Exit status 0 means healthy.
 func runHealth(args []string) error {
 	fs := flag.NewFlagSet("health", flag.ExitOnError)
-	addr := fs.String("addr", envOr("CARBONARA_ADDR", ":8080"), "address the server listens on")
+	addr := fs.String("addr", envOr("ADDR", ":8080"), "address the server listens on")
 	_ = fs.Parse(args)
 	host, port, err := net.SplitHostPort(*addr)
 	if err != nil {

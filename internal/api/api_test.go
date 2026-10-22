@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
-	"github.com/majidkabir/carbonara/pkg/distance"
-	"github.com/majidkabir/carbonara/pkg/factors"
-	"github.com/majidkabir/carbonara/pkg/places"
+	"github.com/majidkabir/sootcase/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/distance"
+	"github.com/majidkabir/sootcase/pkg/factors"
+	"github.com/majidkabir/sootcase/pkg/places"
 )
 
 func newTestServer(t *testing.T) *httptest.Server {

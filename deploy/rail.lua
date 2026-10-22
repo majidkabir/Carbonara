@@ -11,13 +11,13 @@
 -- them when there is no other way.
 --
 -- Electrification is reported through the travel mode of each part of the
--- route (Carbonara reads the route's steps): "train" for electrified track,
+-- route (Sootcase reads the route's steps): "train" for electrified track,
 -- "driving" for track tagged electrified=no, "cycling" for track without
 -- the tag. These are only labels; the modes don't change the routing.
 --
 -- Weights are distance, so routes are shortest feasible distances (SFD, in
 -- GLEC / ISO 14083 terms). Speeds are nominal and only used for durations,
--- which Carbonara ignores.
+-- which Sootcase ignores.
 
 api_version = 4
 

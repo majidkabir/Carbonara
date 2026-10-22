@@ -2,7 +2,7 @@ package toc
 
 // Golden tests: the worked examples in the GLEC Framework v3.2, Section 3
 // Module 4 ("Examples of emission calculations - step-by-step"), reproduced
-// end to end through Carbonara: operations -> TOC/HOC intensities (toc.Build)
+// end to end through Sootcase: operations -> TOC/HOC intensities (toc.Build)
 // -> layered dataset (factors.Open) -> shipment emissions (calc.Calculate).
 //
 // Source: Smart Freight Centre (2025), GLEC Framework for Logistics Emissions
@@ -22,8 +22,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
-	"github.com/majidkabir/carbonara/pkg/factors"
+	"github.com/majidkabir/sootcase/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/factors"
 )
 
 // Fuel factors used by the examples, in kg CO2e per unit. Where an example

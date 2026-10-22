@@ -1,5 +1,5 @@
 // Package desnz converts the UK government's GHG conversion factors
-// ("flat file" format, published yearly by DESNZ) into a Carbonara dataset.
+// ("flat file" format, published yearly by DESNZ) into a Sootcase dataset.
 //
 // It imports, in kg CO2e:
 //   - "Freighting goods" rows per tonne.km   -> leg factors (TTW)
@@ -23,8 +23,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
-	"github.com/majidkabir/carbonara/pkg/factors"
+	"github.com/majidkabir/sootcase/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/factors"
 )
 
 // Attribution is the statement the Open Government Licence v3.0 requires.

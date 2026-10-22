@@ -1,4 +1,4 @@
-# Carbonara with real road and sea routing, in one command:
+# Sootcase with real road and sea routing, in one command:
 #
 #   docker compose up -d
 #   open http://localhost:8080
@@ -11,7 +11,7 @@
 x-osrm-image: &osrm-image ${OSRM_IMAGE:-ghcr.io/project-osrm/osrm-backend:v26.8.0-debian}
 x-python-image: &python-image python:3.12-alpine
 
-name: carbonara
+name: sootcase
 
 services:
   download-map:
@@ -57,9 +57,9 @@ services:
       - sea-data:/data
       - ./deploy:/deploy:ro
 
-  carbonara:
+  sootcase:
     build: .
-    image: carbonara:local
+    image: sootcase:local
     command: ["serve"]
     depends_on:
       osrm:
@@ -67,15 +67,15 @@ services:
       prepare-sea:
         condition: service_completed_successfully
     environment:
-      CARBONARA_OSRM_URL: http://osrm:5000
-      CARBONARA_SEA_NETWORK: /sea/marnet.geojson
-      CARBONARA_FACTORS: ${CARBONARA_FACTORS:-desnz-2026,nl-iww-2026,eu-mrv-2024}
+      SOOTCASE_OSRM_URL: http://osrm:5000
+      SOOTCASE_SEA_NETWORK: /sea/marnet.geojson
+      SOOTCASE_FACTORS: ${SOOTCASE_FACTORS:-desnz-2026,nl-iww-2026,eu-mrv-2024}
     volumes:
       - sea-data:/sea:ro
     ports:
-      - "${CARBONARA_PORT:-8080}:8080"
+      - "${SOOTCASE_PORT:-8080}:8080"
     healthcheck:
-      test: ["CMD", "/carbonara", "health"]
+      test: ["CMD", "/sootcase", "health"]
       interval: 10s
       timeout: 5s
       retries: 3

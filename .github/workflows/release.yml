@@ -62,7 +62,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "$VERSION" -m "Carbonara $VERSION"
+          git tag -a "$VERSION" -m "Sootcase $VERSION"
           git push origin "refs/tags/$VERSION"
 
   binaries:
@@ -104,5 +104,5 @@ jobs:
           push: true
           build-args: VERSION=${{ needs.tag.outputs.version }}
           tags: |
-            ghcr.io/${{ github.repository_owner }}/carbonara:${{ needs.tag.outputs.version }}
-            ghcr.io/${{ github.repository_owner }}/carbonara:latest
+            ghcr.io/${{ github.repository_owner }}/sootcase:${{ needs.tag.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/sootcase:latest

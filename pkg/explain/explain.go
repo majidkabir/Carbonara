@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/calc"
 )
 
 // Sheet is a shipment's calculation, step by step.
@@ -133,7 +133,7 @@ func Shipment(s calc.Shipment, r calc.Result, f calc.FactorProvider) Sheet {
 	for _, w := range r.Warnings {
 		sh.Steps = append(sh.Steps, Step{Group: "Total", Title: "Warning", Text: w})
 	}
-	sh.Note = "Carbonara calculates with full precision; the numbers here are rounded for reading, so redoing a step by hand " +
+	sh.Note = "Sootcase calculates with full precision; the numbers here are rounded for reading, so redoing a step by hand " +
 		"can differ in the last digit. Factors and their sources are those of the dataset named above."
 	return sh
 }

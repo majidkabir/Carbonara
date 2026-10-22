@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/majidkabir/carbonara/pkg/calc"
+	"github.com/majidkabir/sootcase/pkg/calc"
 )
 
 const earthRadiusKm = 6371.0088 // mean Earth radius (IUGG)
