@@ -66,6 +66,9 @@ def main():
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     url = URL.format(res=res)
     print(f"downloading {url}")
+    # Validate the URL to prevent SSRF.
+    if not url.startswith("https://raw.githubusercontent.com/eurostat/searoute/"):
+        sys.exit(f"Invalid URL: {url}")
     with urllib.request.urlopen(url, timeout=120) as r:
         data = r.read()
     digest = hashlib.sha256(data).hexdigest()

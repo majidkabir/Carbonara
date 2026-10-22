@@ -90,7 +90,11 @@ func main() {
 		if *fetch {
 			b, err = get(u)
 		} else {
-			b, err = os.ReadFile(filepath.Join(*dir, name))
+			cleanName := filepath.Clean(name)
+			if strings.HasPrefix(cleanName, "..") || strings.HasPrefix(cleanName, "/") || strings.HasPrefix(cleanName, "~") {
+				log.Fatalf("invalid filename: %s", name)
+			}
+			b, err = os.ReadFile(filepath.Join(*dir, cleanName))
 		}
 		if err != nil {
 			if strings.Contains(u, "geonames") {

@@ -9,12 +9,16 @@ import os
 import shutil
 import sys
 import urllib.request
+from urllib.parse import urlparse
 
 
 def main():
     if len(sys.argv) != 3:
         sys.exit("usage: download.py URL DEST")
     url, dest = sys.argv[1], sys.argv[2]
+    parsed_url = urlparse(url)
+    if parsed_url.scheme not in ['http', 'https']:
+        sys.exit(f"Unsupported URL scheme: {parsed_url.scheme}")
     stamp = dest + ".url"
     if os.path.exists(dest) and os.path.exists(stamp) and open(stamp).read() == url:
         print(f"{dest} up to date")

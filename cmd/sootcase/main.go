@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/majidkabir/sootcase/pkg/batch"
@@ -182,7 +183,11 @@ func (c *common) calculator() (calc.Calculator, *factors.Dataset, error) {
 }
 
 func (c *common) loadSea() (*distance.SeaNetwork, error) {
-	f, err := os.Open(c.seaNetwork)
+	cleanPath := filepath.Clean(c.seaNetwork)
+	if filepath.IsAbs(cleanPath) && !strings.HasPrefix(cleanPath, "/var/lib/sootcase/") {
+		return nil, fmt.Errorf("absolute path %q not allowed for -sea-network", c.seaNetwork)
+	}
+	f, err := os.Open(cleanPath)
 	if err != nil {
 		return nil, err
 	}
