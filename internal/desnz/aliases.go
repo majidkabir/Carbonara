@@ -43,17 +43,29 @@ var fuelAliases = map[string]string{
 var dafs = []calc.DAF{
 	{Mode: calc.Air, From: calc.DistActual, To: calc.DistGCD, AddKm: -95,
 		Source: "GLEC Framework v3.2 (Smart Freight Centre, 2025), Section 1 Chapter 4 (air): without specific data, DAF = GCD / (GCD + 95 km), i.e. actual flown distance minus 95 km"},
+	{Mode: calc.Road, From: calc.DistSFD, To: calc.DistActual, Multiplier: 1.05,
+		Source: "GLEC Framework v3.2 (Smart Freight Centre, 2025), Section 1 Chapter 4 (road): when the emission intensity is based on actual distance, a DAF must be applied; 5% as in GLEC's own road default values (Section 3 Module 2), which include a +5% distance conversion between actual and shortest feasible distance"},
 	{Mode: calc.Sea, From: calc.DistSFD, To: calc.DistActual, Multiplier: 1.15,
 		Source: "GLEC Framework v3.2 (Smart Freight Centre, 2025), Section 1 Chapter 4 (sea), citing Clean Cargo: actual container distances average 15% above the shortest feasible route"},
 }
 
 // addAliases attaches the aliases whose targets exist in ds.
+// containerLoads are the GLEC Framework v3.2 net tonnes per TEU for when
+// the cargo mass is known only in TEU (Section 1 Chapter 2, p. 21).
+var containerLoads = map[string]float64{"average": 10, "light": 6, "heavy": 14.5}
+
 func addAliases(ds *factors.Dataset, warn func(string, ...any)) {
 	ds.DAFs = append(ds.DAFs, dafs...)
+	ds.ContainerLoads = containerLoads
 	// GLEC and ISO 14083 measure air transport on great-circle distance.
+	// DESNZ road factors come from fuel used per km actually driven (DfT
+	// road freight survey; real-world uplift for vans): actual distance.
 	for i := range ds.Legs {
-		if ds.Legs[i].Mode == calc.Air {
+		switch ds.Legs[i].Mode {
+		case calc.Air:
 			ds.Legs[i].DistanceBasis = calc.DistGCD
+		case calc.Road:
+			ds.Legs[i].DistanceBasis = calc.DistActual
 		}
 	}
 	legs := map[string]bool{}

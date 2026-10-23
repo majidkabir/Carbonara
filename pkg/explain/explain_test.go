@@ -29,7 +29,7 @@ func sheet(t *testing.T) (Sheet, calc.Result) {
 	}
 	c := calc.Calculator{Factors: ds, Distances: ds.Distances(), NoRoadLegs: true}
 	s := calc.Shipment{ID: "S1", WeightKg: 12000, Legs: []calc.Leg{
-		{ID: "truck", Mode: calc.Road, VehicleType: "hgv_artic_33t", From: cph, To: ham, LoadTonnes: 15.6, EmptyTripFactor: 0.2},
+		{ID: "truck", Mode: calc.Road, VehicleType: "hgv_artic_33t", From: cph, To: ham, DistanceKm: 332, DistanceType: calc.DistSFD, LoadTonnes: 15.6, EmptyTripFactor: 0.2},
 		{ID: "ship", Mode: calc.Sea, VehicleType: "container_ship", From: rtm, To: nyc, DistanceKm: 6200, DistanceType: calc.DistSFD},
 		{ID: "plane", Mode: calc.Air, VehicleType: "air_freight", From: nyc, To: cph},
 		{ID: "fuel", Mode: calc.Road, VehicleType: "hgv", DistanceKm: 40, Fuel: &calc.FuelUse{Fuel: "diesel", Amount: 14, VehicleTonneKm: 960}},

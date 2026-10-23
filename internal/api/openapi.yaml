@@ -313,7 +313,7 @@ components:
     Shipment:
       type: object
       required: [legs]
-      description: Give weight_kg, or teu with teu_net_tonnes or container_load.
+      description: Give weight_kg, or teu with teu_net_tonnes or container_load; teu alone uses the dataset's "average" profile (GLEC, 10 t per TEU).
       properties:
         id: { type: string }
         weight_kg: { type: number, exclusiveMinimum: 0 }
@@ -438,6 +438,7 @@ components:
         shipment_id: { type: string }
         weight_kg: { type: number, description: Cargo weight used }
         weight_basis: { type: string, enum: [weight, teu] }
+        container_load: { type: string, description: Container load profile that set the tonnes per TEU }
         legs:
           type: array
           items: { $ref: "#/components/schemas/LegResult" }

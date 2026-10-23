@@ -58,6 +58,24 @@ type Place struct {
 type Index struct {
 	places []Place
 	byCode map[string]int
+
+	latOnce sync.Once
+	byLat   []int32 // place indices sorted by latitude, for Near
+}
+
+// latWindow returns the indices of the places with latitude within
+// [lo, hi], from a latitude-sorted copy built on first use.
+func (ix *Index) latWindow(lo, hi float64) []int32 {
+	ix.latOnce.Do(func() {
+		ix.byLat = make([]int32, len(ix.places))
+		for i := range ix.byLat {
+			ix.byLat[i] = int32(i)
+		}
+		sort.SliceStable(ix.byLat, func(a, b int) bool { return ix.places[ix.byLat[a]].Lat < ix.places[ix.byLat[b]].Lat })
+	})
+	a := sort.Search(len(ix.byLat), func(i int) bool { return ix.places[ix.byLat[i]].Lat >= lo })
+	b := sort.Search(len(ix.byLat), func(i int) bool { return ix.places[ix.byLat[i]].Lat > hi })
+	return ix.byLat[a:b]
 }
 
 var (
@@ -269,16 +287,22 @@ func (ix *Index) Near(p calc.Location, kinds []string, maxKm float64, n int) []c
 	}
 	var hits []hit
 	dLat := maxKm / 111.0
-	for i := range ix.places {
+	for _, j := range ix.latWindow(p.Lat-dLat, p.Lat+dLat) {
+		i := int(j)
 		q := &ix.places[i]
-		if math.Abs(q.Lat-p.Lat) > dLat || !q.allKinds(kinds) {
+		if !q.allKinds(kinds) {
 			continue
 		}
 		if km := haversine(p.Lat, p.Lon, q.Lat, q.Lon); km <= maxKm {
 			hits = append(hits, hit{i, km})
 		}
 	}
-	sort.Slice(hits, func(a, b int) bool { return hits[a].km < hits[b].km })
+	sort.Slice(hits, func(a, b int) bool {
+		if hits[a].km != hits[b].km {
+			return hits[a].km < hits[b].km
+		}
+		return hits[a].i < hits[b].i
+	})
 	out := make([]calc.Location, 0, min(n, len(hits)))
 	for _, h := range hits[:min(n, len(hits))] {
 		out = append(out, ix.location(ix.places[h.i]))
@@ -289,9 +313,13 @@ func (ix *Index) Near(p calc.Location, kinds []string, maxKm float64, n int) []c
 // SeaPort is the kind Near takes for the large cargo sea ports.
 const SeaPort = "seaport"
 
+// LargeAirport is the kind Near takes for large airports (OurAirports type
+// large_airport, ranked 60 or more).
+const LargeAirport = "largeairport"
+
 func (p *Place) allKinds(want []string) bool {
 	for _, w := range want {
-		found := w == SeaPort && seaports[p.Code]
+		found := (w == SeaPort && seaports[p.Code]) || (w == LargeAirport && p.isAirport() && p.rank >= 60)
 		for _, h := range p.Kinds {
 			found = found || h == w
 		}
@@ -300,6 +328,15 @@ func (p *Place) allKinds(want []string) bool {
 		}
 	}
 	return true
+}
+
+func (p *Place) isAirport() bool {
+	for _, k := range p.Kinds {
+		if k == Airport {
+			return true
+		}
+	}
+	return false
 }
 
 func haversine(lat1, lon1, lat2, lon2 float64) float64 {

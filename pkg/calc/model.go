@@ -222,14 +222,17 @@ type Result struct {
 	ShipmentID string `json:"shipment_id"`
 	// WeightKg is the cargo weight used; WeightBasis says how it was set:
 	// "weight" (given) or "teu" (TEU x net tonnes per TEU).
-	WeightKg    float64     `json:"weight_kg"`
-	WeightBasis string      `json:"weight_basis"`
-	Legs        []LegResult `json:"legs"`
-	Hubs        []HubResult `json:"hubs,omitempty"`
-	TonneKm     float64     `json:"tonne_km"`
-	TTWKg       float64     `json:"ttw_kg"`
-	WTTKg       float64     `json:"wtt_kg"`
-	WTWKg       float64     `json:"wtw_kg"`
+	WeightKg    float64 `json:"weight_kg"`
+	WeightBasis string  `json:"weight_basis"`
+	// ContainerLoad is the container load profile that set the tonnes per
+	// TEU: the shipment's, or DefaultContainerLoad when only TEU was given.
+	ContainerLoad string      `json:"container_load,omitempty"`
+	Legs          []LegResult `json:"legs"`
+	Hubs          []HubResult `json:"hubs,omitempty"`
+	TonneKm       float64     `json:"tonne_km"`
+	TTWKg         float64     `json:"ttw_kg"`
+	WTTKg         float64     `json:"wtt_kg"`
+	WTWKg         float64     `json:"wtw_kg"`
 	// IntensityG is transport WTW intensity in g CO2e per tonne-km (hubs excluded).
 	IntensityG float64 `json:"intensity_g_per_tkm"`
 	// PrimaryDataShare is the share of WTW emissions computed from primary

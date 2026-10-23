@@ -362,7 +362,8 @@ func loadModels(freight, perKm, wttKm []row, year int, warn func(string, ...any)
 		}
 		m := calc.LoadModel{
 			Mode: c.mode, VehicleType: c.id, PayloadT: clean(c.ttw[1] / c.tkm100), Year: year,
-			Source: fmt.Sprintf("DESNZ %d: Freighting goods > %s (per km at 0/50/100%% laden; payload from 100%% laden per tonne.km)", year, c.lbl),
+			DistanceBasis: calc.DistActual, // per km driven, like the road factors (aliases.go)
+			Source:        fmt.Sprintf("DESNZ %d: Freighting goods > %s (per km at 0/50/100%% laden; payload from 100%% laden per tonne.km)", year, c.lbl),
 		}
 		for _, lf := range []float64{0, 0.5, 1} {
 			m.Points = append(m.Points, calc.LoadPoint{Load: lf, TTW: c.ttw[lf], WTT: c.wtt[lf]})

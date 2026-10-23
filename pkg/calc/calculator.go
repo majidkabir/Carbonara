@@ -141,7 +141,7 @@ func (c Calculator) Calculate(ctx context.Context, s Shipment) (Result, error) {
 	if err := validate(s); err != nil {
 		return Result{}, err
 	}
-	weightKg, basis, err := c.weight(s)
+	weightKg, basis, profile, err := c.weight(s)
 	if err != nil {
 		return Result{}, err
 	}
@@ -149,7 +149,7 @@ func (c Calculator) Calculate(ctx context.Context, s Shipment) (Result, error) {
 		return Result{}, ErrNoLegs
 	}
 	tonnes := weightKg / 1000
-	res := Result{ShipmentID: s.ID, WeightKg: weightKg, WeightBasis: basis}
+	res := Result{ShipmentID: s.ID, WeightKg: weightKg, WeightBasis: basis, ContainerLoad: profile}
 	if n, ok := c.Factors.(DatasetNamer); ok {
 		res.Dataset = n.DatasetName()
 	}
@@ -253,37 +253,47 @@ func dataType(method string) string {
 	}
 }
 
-// weight returns the cargo weight in kg and how it was determined.
-func (c Calculator) weight(s Shipment) (float64, string, error) {
+// DefaultContainerLoad is the container load profile used for TEU given
+// without net tonnes: GLEC Framework v3.2 (Section 1 Chapter 2, p. 21; and
+// Chapter 4, sea): when the mass is known only in TEU, an average of 10 t
+// per TEU can be assumed.
+const DefaultContainerLoad = "average"
+
+// weight returns the cargo weight in kg, how it was determined, and the
+// container load profile used ("" if none).
+func (c Calculator) weight(s Shipment) (float64, string, string, error) {
 	if s.TEU == 0 && s.TEUNetTonnes == 0 && s.ContainerLoad == "" {
 		if s.WeightKg <= 0 {
-			return 0, "", ErrInvalidWeight
+			return 0, "", "", ErrInvalidWeight
 		}
-		return s.WeightKg, "weight", nil
+		return s.WeightKg, "weight", "", nil
 	}
 	switch {
 	case s.WeightKg > 0:
-		return 0, "", fmt.Errorf("%w: give weight_kg or teu, not both", ErrInvalidTEU)
+		return 0, "", "", fmt.Errorf("%w: give weight_kg or teu, not both", ErrInvalidTEU)
 	case s.TEU <= 0:
-		return 0, "", fmt.Errorf("%w: teu must be > 0", ErrInvalidTEU)
+		return 0, "", "", fmt.Errorf("%w: teu must be > 0", ErrInvalidTEU)
 	case s.TEUNetTonnes > 0 && s.ContainerLoad != "":
-		return 0, "", fmt.Errorf("%w: give teu_net_tonnes or container_load, not both", ErrInvalidTEU)
+		return 0, "", "", fmt.Errorf("%w: give teu_net_tonnes or container_load, not both", ErrInvalidTEU)
 	}
-	perTEU := s.TEUNetTonnes
-	if s.ContainerLoad != "" {
+	perTEU, profile := s.TEUNetTonnes, s.ContainerLoad
+	if profile == "" && perTEU == 0 {
+		profile = DefaultContainerLoad
+	}
+	if profile != "" {
 		clp, ok := c.Factors.(ContainerLoadProvider)
 		if !ok {
-			return 0, "", fmt.Errorf("%w: dataset has no container load profiles", ErrInvalidTEU)
+			return 0, "", "", fmt.Errorf("%w: give teu_net_tonnes; the dataset has no container load profiles", ErrInvalidTEU)
 		}
 		var err error
-		if perTEU, err = clp.ContainerLoad(s.ContainerLoad); err != nil {
-			return 0, "", fmt.Errorf("%w: %v", ErrInvalidTEU, err)
+		if perTEU, err = clp.ContainerLoad(profile); err != nil {
+			return 0, "", "", fmt.Errorf("%w: %v", ErrInvalidTEU, err)
 		}
 	}
 	if perTEU <= 0 {
-		return 0, "", fmt.Errorf("%w: need teu_net_tonnes or container_load", ErrInvalidTEU)
+		return 0, "", "", fmt.Errorf("%w: need teu_net_tonnes or container_load", ErrInvalidTEU)
 	}
-	return s.TEU * perTEU * 1000, "teu", nil
+	return s.TEU * perTEU * 1000, "teu", profile, nil
 }
 
 func (c Calculator) leg(ctx context.Context, tonnes float64, leg Leg) (LegResult, error) {
@@ -373,7 +383,7 @@ func (c Calculator) main(tonnes, dist float64, dtype string, leg Leg) (LegResult
 		return c.fuelLeg(lr, *leg.Fuel)
 	}
 	if leg.LoadFactor != 0 || leg.LoadTonnes != 0 {
-		return c.loadLeg(lr, leg)
+		return c.loadLeg(lr, leg, tonnes, dist, dtype)
 	}
 
 	var f Factor
@@ -426,7 +436,7 @@ func (c Calculator) fuelLeg(lr LegResult, fu FuelUse) (LegResult, error) {
 	return lr, nil
 }
 
-func (c Calculator) loadLeg(lr LegResult, leg Leg) (LegResult, error) {
+func (c Calculator) loadLeg(lr LegResult, leg Leg, tonnes, dist float64, dtype string) (LegResult, error) {
 	lmp, ok := c.Factors.(LoadModelProvider)
 	if !ok {
 		return LegResult{}, fmt.Errorf("%w: dataset has no load models", ErrInvalidLoad)
@@ -470,11 +480,21 @@ func (c Calculator) loadLeg(lr LegResult, leg Leg) (LegResult, error) {
 		Source: fmt.Sprintf("load model (%s, empty trip factor %g, payload %.1f t) from %s",
 			load, leg.EmptyTripFactor, m.PayloadT, m.Source),
 	}
+	f.DistanceBasis = m.DistanceBasis
+	// Emissions = tonne-km x intensity x DAF, as for fleet-average factors.
+	adjKm, daf, err := c.adjust(leg.Mode, dtype, m.DistanceBasis, dist)
+	if err != nil {
+		return LegResult{}, err
+	}
+	if daf != nil && dist > 0 {
+		lr.DAF, lr.DAFSource = adjKm/dist, daf.Source
+	}
+	adjTkm := tonnes * adjKm
 	lr.Method = MethodLoadModel
 	lr.Factor = &f
 	lr.LoadFactor, lr.LoadTonnes, lr.EmptyTripFactor, lr.PayloadT = lf, leg.LoadTonnes, leg.EmptyTripFactor, m.PayloadT
-	lr.TTWKg = lr.TonneKm * ttw / 1000
-	lr.WTWKg = lr.TonneKm * f.WTW() / 1000
+	lr.TTWKg = adjTkm * ttw / 1000
+	lr.WTWKg = adjTkm * f.WTW() / 1000
 	return lr, nil
 }
 

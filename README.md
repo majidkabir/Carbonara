@@ -111,6 +111,7 @@ This is the capacity-utilisation approach EcoTransIT World and GLEC use, built e
 | rail | an OSRM server built with the rail profile, with `-osrm-rail URL` | shortest feasible (`sfd`) |
 | inland waterway | an OSRM server built with the barge profile, with `-osrm-waterway URL` | shortest feasible (`sfd`) |
 | air, and rail or inland waterway without a server | great-circle | great-circle (`gcd`) |
+| road without a server | great-circle, refused for DESNZ factors (see DAF below) | great-circle (`gcd`) |
 
 A dataset may also define `distance_adjustments` (`gcd × multiplier + add_km`) to estimate route distance from great-circle for a mode; the result then has no known type.
 
@@ -119,9 +120,10 @@ A dataset may also define `distance_adjustments` (`gcd × multiplier + add_km`) 
 | Mode | From → to | DAF |
 |---|---|---|
 | air | actual flown → great-circle | actual − 95 km (GLEC: GCD / (GCD + 95 km)) |
+| road | shortest feasible → actual | × 1.05 (GLEC Section 1 Chapter 4: a DAF must be applied when the intensity is based on actual distance; 5% as in GLEC's own road default values) |
 | sea | shortest feasible → actual | × 1.15 (Clean Cargo, cited by GLEC) |
 
-DESNZ air factors are per great-circle tonne-km, as GLEC and ISO 14083 measure air; so a great-circle leg needs no DAF and a flown distance gets the air DAF. A mismatch with no DAF is an error rather than a silent guess. Results report `distance_type`, `daf` and `daf_source` per leg.
+DESNZ air factors are per great-circle tonne-km, as GLEC and ISO 14083 measure air; so a great-circle leg needs no DAF and a flown distance gets the air DAF. DESNZ road factors and load models are per km actually driven (fuel use from the DfT road freight survey), so a routed road distance gets the road DAF and a given `actual` distance none; GLEC gives no DAF from great-circle to actual for road, so a road leg without a router needs `distance_km`. A mismatch with no DAF is an error rather than a silent guess. Results report `distance_type`, `daf` and `daf_source` per leg.
 
 Each leg result records `distance_method` (`given`, `osrm`, `sea_network`, `great_circle`, `great_circle_adjusted`) so every number can be traced. Plain great-circle badly understates sea distances (Rotterdam–Shanghai: 8,970 km vs 19,696 km routed), so use a sea network for sea legs.
 
@@ -180,14 +182,15 @@ Or by hand, as for roads, with `osrm-extract -p barge.lua`, then `sootcase calc 
 
 ### Missing road legs
 
-A shipment's legs should join up, and a sea, rail or river leg should start and end on its network. When they don't, Sootcase adds road legs (on by default):
+A shipment's legs should join up, a sea, rail or river leg should start and end on its network, and an air leg at airports. When they don't, Sootcase adds road legs (on by default):
 
 - **Gaps.** When a leg starts more than 5 km from where the one before ended, a road leg is added across the gap.
 - **First and last mile.** When a sea leg starts or ends inland (more than 50 km from the sea network and not at a sea port), it is moved to a large cargo sea port, and a road leg is added between the port and the inland point. The port is the one with the best trip from the point by road and on by sea, counting a road kilometre as three sea kilometres and preferring ports in the same country, so Munich goes to Hamburg for New York and to Venice for Shanghai. The port list is [`pkg/places/seaports.go`](pkg/places/seaports.go). A rail or river leg whose end is off its network (more than 5 km / 10 km away) is moved to the nearest rail terminal or port on the network that gives the best trip in the same way.
+- **Airports.** The GLEC Framework measures air distance as the great circle between the origin and destination airports (Section 1 Chapter 4). An air leg whose end is more than 5 km from any airport is moved to a large airport (OurAirports `large_airport`; any airport where there is none within 500 km) chosen the same way, and a road leg is added to it.
 
 Added road legs use the shipment's first road leg's vehicle type, or `hgv` (`-road-leg-vehicle` sets another). They are marked `added` (`gap` or `access`) with a `note` saying why, moved legs carry a `note` too, and reports count them. An added leg that can't be routed is left out with a warning, as it would have been without adding it.
 
-Turn it off with `"add_road_legs": false` on a shipment, `?add_road_legs=false` on the API, the checkbox on the web page or `-road-legs=false` on the command line. Gaps and inland sea ends are then listed in the result's `warnings` instead. Distances given as `distance_km` are never changed.
+Turn it off with `"add_road_legs": false` on a shipment, `?add_road_legs=false` on the API, the checkbox on the web page or `-road-legs=false` on the command line. Gaps, inland sea ends and air ends away from airports are then listed in the result's `warnings` instead. Distances given as `distance_km` are never changed.
 
 ## Verified against GLEC
 
@@ -246,7 +249,7 @@ Fuels are converted with the selected dataset's fuel factors, including `electri
 
 ## Inputs
 
-**Weight or containers.** Give `weight_kg`, or `teu` plus either `teu_net_tonnes` (net cargo tonnes per TEU) or `container_load`, a profile name from the dataset's `container_loads` (e.g. `{"light": 6, "average": 10}`). No profiles ship by default: the common light/average/heavy values come from EcoTransIT's report, which needs their permission to reuse. Results show the `weight_kg` used and its `weight_basis`. Container tare weight is not added.
+**Weight or containers.** Give `weight_kg`, or `teu` plus either `teu_net_tonnes` (net cargo tonnes per TEU) or `container_load`, a profile name from the dataset's `container_loads`. The default dataset has GLEC's: `average` 10 t, `light` 6 t, `heavy` 14.5 t per TEU (GLEC Framework v3.2, Section 1 Chapter 2, for when the mass is known only in TEU); `teu` alone uses `average`. Results show the `weight_kg` used, its `weight_basis` and the `container_load` used. Container tare weight is not added.
 
 **JSON** — see [`examples/cph-rotterdam.json`](examples/cph-rotterdam.json) and the [OpenAPI spec](internal/api/openapi.yaml).
 
@@ -350,7 +353,7 @@ Why: DESNZ's container ship factors (about 20 g CO2e per tonne-km on average, 15
    "hubs": [{"hub_type": "transhipment_ambient", "wtw_g_per_tonne": 0, "source": "…", "year": 2024}]}
   ```
   Fill in real values (g CO2e per tonne handled) from a source you're allowed to use.
-- Air factors are marked as great-circle based; the GLEC default DAFs above are added. DESNZ sea factors state no distance basis, so no DAF applies to them.
+- Air factors are marked as great-circle based and road factors as actual-distance based; the GLEC default DAFs above are added. DESNZ sea factors (from IMO 2009) state no distance basis, so no DAF applies to them; GLEC's own sea default values include +15%.
 - GLEC default values aren't included yet. Smart Freight Centre has given permission to use them with acknowledgment of the source ("Global Logistics Emissions Council Framework for Logistics Emissions Accounting and Reporting; v3.2 edition, revised and updated (2025)"); they are planned from its next update. The distance adjustments above are GLEC's, © Smart Freight Centre.
 
 **Updating DESNZ** each year: download the "flat file" from [gov.uk](https://www.gov.uk/government/collections/government-conversion-factors-for-company-reporting) and run
@@ -420,7 +423,7 @@ go run ./tools/loadtest -kind batch -batch 1000 -c 4 -d 20s
 - [x] Short aliases for common vehicle types and fuels
 - [x] OSRM road routing
 - [x] Sea routing on a maritime network (SeaRoute)
-- [x] GLEC distance types and DAFs (air: actual − 95 km → great-circle; sea: × 1.15)
+- [x] GLEC distance types and DAFs (air: actual − 95 km → great-circle; road: × 1.05; sea: × 1.15)
 - [x] Containers in TEU
 - [x] Truck load model (load factor, empty trip factor)
 - [x] Electricity by country (213 grids) for electric rail and trucks
@@ -436,7 +439,7 @@ go run ./tools/loadtest -kind batch -batch 1000 -c 4 -d 20s
 - [x] Bundled inland waterway factors (Dutch CO2 emission factor list)
 - [x] Inland waterway routing (OSRM barge profile on OpenStreetMap)
 - [x] ISO 14083 style reports (`sootcase report`, `/v1/report`)
-- [x] Missing road legs: gaps between legs, first and last mile to ports and rail terminals
+- [x] Missing road legs: gaps between legs, first and last mile to ports, rail terminals and airports
 - [ ] Cargo-type presets (needs licensed values, e.g. EcoTransIT with permission)
 
 ## Releasing

@@ -44,7 +44,7 @@ const (
 const (
 	bChain     = "ISO 14083 3.1.25 transport chain, 3.1.26 transport chain element (GLEC p.16)"
 	bMass      = "ISO 14083 5.4.2 freight mass (GLEC p.21)"
-	bTEU       = "GLEC p.41: converting TEU to tonnes when the mass isn't known"
+	bTEU       = "GLEC pp.21, 41, 51: converting TEU to tonnes when the mass isn't known (10 t average, 6 t light, 14.5 t heavy)"
 	bDistance  = "ISO 14083 3.1.27 transport distance, 3.3.4 (GLEC pp.21–22): shortest feasible distance (SFD) or great-circle distance (GCD)"
 	bChainDist = "ISO 14083 3.3.4 (GLEC p.22): a transport chain's distance runs from where the shipper hands the goods over to the consignee"
 	bDAF       = "GLEC p.22: distance adjustment factor (DAF) between distance types"
@@ -79,7 +79,7 @@ func Shipment(s calc.Shipment, r calc.Result, f calc.FactorProvider) Sheet {
 		if s.TEU > 0 {
 			perTEU = r.WeightKg / 1000 / s.TEU
 		}
-		cargo.Text = "Given in containers: TEU times net cargo tonnes per TEU" + loadProfile(s) + ". Container tare is not added."
+		cargo.Text = "Given in containers: TEU times net cargo tonnes per TEU" + loadProfile(s, r) + ". Container tare is not added."
 		cargo.Formula = fmt.Sprintf("mass = %s TEU × %s t/TEU = %s t", n(s.TEU, 2), n(perTEU, 3), n(t, 3))
 		cargo.Basis = append(cargo.Basis, bTEU)
 	} else {
@@ -399,9 +399,12 @@ func basisText(b string) string {
 
 func unit(u string) string { return strings.TrimSuffix(u, "s") }
 
-func loadProfile(s calc.Shipment) string {
-	if s.ContainerLoad != "" {
+func loadProfile(s calc.Shipment, r calc.Result) string {
+	switch {
+	case s.ContainerLoad != "":
 		return fmt.Sprintf(" (the dataset's %q container load profile)", s.ContainerLoad)
+	case r.ContainerLoad != "":
+		return fmt.Sprintf(" (not given, so the dataset's %q profile: GLEC's average when the mass is known only in TEU)", r.ContainerLoad)
 	}
 	return ""
 }

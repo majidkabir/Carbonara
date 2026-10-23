@@ -246,3 +246,51 @@ func TestRoadLegs_GivenDistancesUntouched(t *testing.T) {
 		t.Errorf("%v %+v %q", err, r.Legs, r.Warnings)
 	}
 }
+
+// GLEC v3.2 Section 1 Chapter 4 (air): the distance is the great circle
+// between the origin and destination airports, so an air leg from a city is
+// moved to a large airport, with the road to it added.
+func TestRoadLegs_AirFromCity(t *testing.T) {
+	muc := Location{Name: "Munich Airport", Lat: 48.354, Lon: 11.786}
+	ham := Location{Name: "Hamburg Airport", Lat: 53.630, Lon: 9.988}
+	small := Location{Name: "Small field", Lat: 48.20, Lon: 11.55} // nearer, not large
+	places := append(gazetteer{}, toyPlaces...)
+	places = append(places, toyPlace{muc, []string{KindAirport, KindLargeAirport}},
+		toyPlace{ham, []string{KindAirport, KindLargeAirport}}, toyPlace{small, []string{KindAirport}})
+	factors := fakeFactors{legs: map[string]Factor{
+		"road/hgv": {Mode: Road, VehicleType: "hgv", TTW: 60, WTT: 15},
+		"air/air":  {Mode: Air, VehicleType: "air", TTW: 600, WTT: 150},
+	}}
+	c := Calculator{Factors: factors, Distances: toy, Places: places}
+
+	s := Shipment{ID: "s", WeightKg: 1000, Legs: []Leg{{ID: "fly", Mode: Air, VehicleType: "air", From: munich, To: ham}}}
+	r, err := c.Calculate(context.Background(), s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(r.Legs) != 2 {
+		t.Fatalf("want a road to the airport and the flight, got %+v", r.Legs)
+	}
+	road, air := r.Legs[0], r.Legs[1]
+	if road.Added != AddedAccess || road.Mode != Road || road.From.Name != "Munich" || road.To.Name != "Munich Airport" {
+		t.Errorf("road to the airport: %+v", road)
+	}
+	if air.From.Name != "Munich Airport" || !approx(air.DistanceKm, gcKm(muc, ham)) ||
+		!strings.Contains(air.Note, "Starts at Munich Airport instead of Munich, which is 7 km from an airport") {
+		t.Errorf("flight: from %s, %v km, note %q", air.From.Name, air.DistanceKm, air.Note)
+	}
+
+	// Already at airports: nothing added.
+	s.Legs[0].From = muc
+	if r, err = c.Calculate(context.Background(), s); err != nil || len(r.Legs) != 1 || r.Legs[0].Note != "" {
+		t.Errorf("airport to airport: %+v, %v", r.Legs, err)
+	}
+
+	// Off: the distance stays the cities', with a warning.
+	off := false
+	s = Shipment{ID: "s", WeightKg: 1000, AddRoadLegs: &off, Legs: []Leg{{ID: "fly", Mode: Air, VehicleType: "air", From: munich, To: ham}}}
+	if r, err = c.Calculate(context.Background(), s); err != nil || len(r.Legs) != 1 || len(r.Warnings) != 1 ||
+		!strings.Contains(r.Warnings[0], "from an airport") {
+		t.Errorf("off: %+v %q %v", r.Legs, r.Warnings, err)
+	}
+}

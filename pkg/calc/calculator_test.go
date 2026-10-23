@@ -275,7 +275,6 @@ func TestCalculate_TEU(t *testing.T) {
 	bad := map[string]Shipment{
 		"weight and teu":  {WeightKg: 1, TEU: 1, TEUNetTonnes: 10},
 		"zero teu":        {TEU: 0, ContainerLoad: "average"},
-		"no per-TEU":      {TEU: 1},
 		"both per-TEU":    {TEU: 1, TEUNetTonnes: 10, ContainerLoad: "average"},
 		"unknown profile": {TEU: 1, ContainerLoad: "feathers"},
 	}
@@ -289,6 +288,18 @@ func TestCalculate_TEU(t *testing.T) {
 	plain := Calculator{Factors: testFactors}
 	if _, err := plain.Calculate(ctx, Shipment{TEU: 1, ContainerLoad: "average", Legs: legs}); !errors.Is(err, ErrInvalidTEU) {
 		t.Errorf("want ErrInvalidTEU without profiles, got %v", err)
+	}
+	// TEU alone: GLEC's average profile, when the dataset has one.
+	if _, err := plain.Calculate(ctx, Shipment{TEU: 1, Legs: legs}); !errors.Is(err, ErrInvalidTEU) {
+		t.Errorf("TEU alone without profiles: want ErrInvalidTEU, got %v", err)
+	}
+	r, err := c.Calculate(ctx, Shipment{TEU: 2, Legs: legs})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, _ := c.Factors.(ContainerLoadProvider).ContainerLoad(DefaultContainerLoad)
+	if r.WeightBasis != "teu" || r.ContainerLoad != DefaultContainerLoad || r.WeightKg != 2*want*1000 {
+		t.Errorf("TEU alone: basis %q profile %q weight %v", r.WeightBasis, r.ContainerLoad, r.WeightKg)
 	}
 }
 

@@ -17,10 +17,13 @@ import (
 //
 //   - gap: a leg starts more than GapKm from where the one before ended. A
 //     road leg is added across the gap.
-//   - access: a sea leg starts or ends inland, or a rail or waterway leg
-//     starts or ends off its network. The leg is moved to a nearby port or
-//     rail terminal (the one that makes the trip shortest) and a road leg is
-//     added between it and the original point.
+//   - access: a sea leg starts or ends inland, a rail or waterway leg
+//     starts or ends off its network, or an air leg starts or ends away from
+//     an airport. The leg is moved to a nearby port, rail terminal or large
+//     airport (the one that makes the trip shortest) and a road leg is added
+//     between it and the original point. Air: the GLEC Framework v3.2
+//     (Section 1 Chapter 4) measures air distance as the great-circle
+//     distance between the origin and destination airports.
 //
 // Added legs are marked (LegResult.Added) and explained (LegResult.Note);
 // so are moved legs. It is on by default; Shipment.AddRoadLegs = false,
@@ -47,15 +50,21 @@ const SeaAccessKm = 50.0
 // coarse in places (Durban, Kolkata, Paranaguá).
 const SeaPortKm = 300.0
 
+// AirportKm: an air leg end farther than this from any airport is away
+// from an airport.
+const AirportKm = 5.0
+
 // DefaultRoadVehicle is the vehicle type of added road legs when the
 // shipment has no road leg to take it from (Calculator.RoadVehicle).
 const DefaultRoadVehicle = "hgv"
 
 // Place kinds asked of a PlaceFinder.
 const (
-	KindPort    = "port"    // sea or inland port
-	KindRail    = "rail"    // rail terminal
-	KindSeaPort = "seaport" // a large cargo sea port
+	KindPort         = "port"         // sea or inland port
+	KindRail         = "rail"         // rail terminal
+	KindSeaPort      = "seaport"      // a large cargo sea port
+	KindAirport      = "airport"      // an airport with an IATA code
+	KindLargeAirport = "largeairport" // a large airport
 )
 
 // PlaceFinder is optionally implemented by Calculator.Places: the places
@@ -107,6 +116,14 @@ func network(m Mode) string {
 	return string(m)
 }
 
+// awayFrom is what an end that was moved was away from.
+func awayFrom(m Mode) string {
+	if m == Air {
+		return "an airport"
+	}
+	return "the " + network(m) + " network"
+}
+
 type noRoadLegs struct{}
 
 // WithoutRoadLegs makes Calculate add no road legs for shipments that
@@ -153,7 +170,7 @@ func (c Calculator) plan(ctx context.Context, legs []Leg, add bool) ([]planned, 
 			continue
 		}
 		switch l.Mode {
-		case Sea, Rail, InlandWaterway:
+		case Sea, Rail, InlandWaterway, Air:
 		default:
 			continue
 		}
@@ -181,7 +198,7 @@ func (c Calculator) plan(ctx context.Context, legs []Leg, add bool) ([]planned, 
 				l.To = p
 			}
 		}
-		if l.Mode == Sea {
+		if l.Mode == Sea || l.Mode == Air {
 			for _, e := range []struct {
 				km    float64
 				fixed bool
@@ -189,8 +206,13 @@ func (c Calculator) plan(ctx context.Context, legs []Leg, add bool) ([]planned, 
 				p     Location
 			}{{offFrom, from[i] != nil, "starts", legs[i].From}, {offTo, to[i] != nil, "ends", legs[i].To}} {
 				if e.km > 0 && !e.fixed {
-					warnings = append(warnings, fmt.Sprintf("leg %s %s at %s, %.0f km from the sea network; that part is counted as sea distance",
-						legID(legs[i], i), e.end, place(e.p), e.km))
+					if l.Mode == Air {
+						warnings = append(warnings, fmt.Sprintf("leg %s %s at %s, %.0f km from an airport; the GLEC Framework measures air distance between airports, so give the airports",
+							legID(legs[i], i), e.end, place(e.p), e.km))
+					} else {
+						warnings = append(warnings, fmt.Sprintf("leg %s %s at %s, %.0f km from the sea network; that part is counted as sea distance",
+							legID(legs[i], i), e.end, place(e.p), e.km))
+					}
 				}
 			}
 		}
@@ -238,12 +260,12 @@ func (c Calculator) plan(ctx context.Context, legs []Leg, add bool) ([]planned, 
 			if d := gcKm(prev, l.From); d > GapKm {
 				var why []string
 				if prevMoved != nil {
-					why = append(why, fmt.Sprintf("leg %s ends at %s instead of %s, %.0f km from the %s network",
-						legID(legs[i-1], i-1), place(prev), place(legs[i-1].To), prevMoved.offKm, network(legs[i-1].Mode)))
+					why = append(why, fmt.Sprintf("leg %s ends at %s instead of %s, %.0f km from %s",
+						legID(legs[i-1], i-1), place(prev), place(legs[i-1].To), prevMoved.offKm, awayFrom(legs[i-1].Mode)))
 				}
 				if from[i] != nil {
-					why = append(why, fmt.Sprintf("leg %s starts at %s instead of %s, %.0f km from the %s network",
-						legID(legs[i], i), place(l.From), place(legs[i].From), from[i].offKm, network(l.Mode)))
+					why = append(why, fmt.Sprintf("leg %s starts at %s instead of %s, %.0f km from %s",
+						legID(legs[i], i), place(l.From), place(legs[i].From), from[i].offKm, awayFrom(l.Mode)))
 				}
 				kind := AddedAccess
 				if len(why) == 0 {
@@ -260,12 +282,12 @@ func (c Calculator) plan(ctx context.Context, legs []Leg, add bool) ([]planned, 
 		p := planned{Leg: l}
 		var notes []string
 		if from[i] != nil {
-			notes = append(notes, fmt.Sprintf("Starts at %s instead of %s, which is %.0f km from the %s network.",
-				place(l.From), place(legs[i].From), from[i].offKm, network(l.Mode)))
+			notes = append(notes, fmt.Sprintf("Starts at %s instead of %s, which is %.0f km from %s.",
+				place(l.From), place(legs[i].From), from[i].offKm, awayFrom(l.Mode)))
 		}
 		if to[i] != nil {
-			notes = append(notes, fmt.Sprintf("Ends at %s instead of %s, which is %.0f km from the %s network.",
-				place(l.To), place(legs[i].To), to[i].offKm, network(l.Mode)))
+			notes = append(notes, fmt.Sprintf("Ends at %s instead of %s, which is %.0f km from %s.",
+				place(l.To), place(legs[i].To), to[i].offKm, awayFrom(l.Mode)))
 		}
 		if len(notes) > 0 {
 			p.note = strings.Join(notes, " ")
@@ -273,8 +295,8 @@ func (c Calculator) plan(ctx context.Context, legs []Leg, add bool) ([]planned, 
 		out = append(out, p)
 	}
 	if last := len(fixed) - 1; last >= 0 && to[last] != nil {
-		road(fixed[last].To, legs[last].To, AddedAccess, fmt.Sprintf("Added road from %s to %s: leg %s ends at %s instead of %s, %.0f km from the %s network.",
-			place(fixed[last].To), place(legs[last].To), legID(legs[last], last), place(fixed[last].To), place(legs[last].To), to[last].offKm, network(legs[last].Mode)))
+		road(fixed[last].To, legs[last].To, AddedAccess, fmt.Sprintf("Added road from %s to %s: leg %s ends at %s instead of %s, %.0f km from %s.",
+			place(fixed[last].To), place(legs[last].To), legID(legs[last], last), place(fixed[last].To), place(legs[last].To), to[last].offKm, awayFrom(legs[last].Mode)))
 	}
 	return out, warnings, nil
 }
@@ -282,6 +304,23 @@ func (c Calculator) plan(ctx context.Context, legs []Leg, add bool) ([]planned, 
 // offNetwork says how far each end of a sea, rail or waterway leg is off
 // its network, 0 for an end that is on it (or when it can't tell).
 func (c Calculator) offNetwork(ctx context.Context, l Leg) (fromKm, toKm float64, err error) {
+	if l.Mode == Air {
+		f, ok := c.Places.(PlaceFinder)
+		if !ok {
+			return 0, 0, nil
+		}
+		off := func(p Location) float64 {
+			if len(f.Near(p, []string{KindAirport}, AirportKm, 1)) > 0 {
+				return 0
+			}
+			near := nearest(f, p, []string{KindAirport}, 1000, 1)
+			if len(near) == 0 {
+				return 0 // no airport known nearby: can't tell
+			}
+			return gcKm(p, near[0])
+		}
+		return off(l.From), off(l.To), nil
+	}
 	if l.Mode == Sea {
 		s, ok := c.Distances.(Snapper)
 		if !ok {
@@ -403,6 +442,11 @@ func (c Calculator) accessPoint(ctx context.Context, m Mode, p, other Location, 
 		cands = f.Near(p, []string{KindRail}, 300, 8)
 	case InlandWaterway:
 		cands = f.Near(p, []string{KindPort}, 300, 8)
+	case Air:
+		// Large airports; where there are none, any airport.
+		if cands = nearest(f, p, []string{KindLargeAirport}, 500, 8); len(cands) == 0 {
+			cands = nearest(f, p, []string{KindAirport}, 300, 8)
+		}
 	}
 	type scored struct {
 		q  Location
@@ -456,6 +500,17 @@ func (c Calculator) accessPoint(ctx context.Context, m Mode, p, other Location, 
 		}
 	}
 	return Location{}, false, nil
+}
+
+// nearest is f.Near(p, kinds, maxKm, n), looking in a small radius first:
+// when n places are that near, they are the n nearest.
+func nearest(f PlaceFinder, p Location, kinds []string, maxKm float64, n int) []Location {
+	for r := 100.0; r < maxKm; r *= 3 {
+		if got := f.Near(p, kinds, r, n); len(got) == n {
+			return got
+		}
+	}
+	return f.Near(p, kinds, maxKm, n)
 }
 
 func contains(ls []Location, q Location) bool {

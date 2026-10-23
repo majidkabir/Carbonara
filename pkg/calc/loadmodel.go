@@ -23,6 +23,9 @@ type LoadModel struct {
 	Points      []LoadPoint `json:"points"`
 	Source      string      `json:"source"`
 	Year        int         `json:"year"`
+	// DistanceBasis is the distance type the per-km values are for (sfd,
+	// gcd, actual; "" unknown), as for Factor.DistanceBasis.
+	DistanceBasis string `json:"distance_basis,omitempty"`
 }
 
 // LoadPoint is emissions per vehicle-km at one load factor.

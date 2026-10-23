@@ -7,7 +7,9 @@
       "mode": "road",
       "vehicle_type": "hgv",
       "from": { "name": "Copenhagen", "lat": 55.6761, "lon": 12.5683 },
-      "to": { "name": "Hamburg", "lat": 53.5511, "lon": 9.9937 }
+      "to": { "name": "Hamburg", "lat": 53.5511, "lon": 9.9937 },
+      "distance_km": 332,
+      "distance_type": "sfd"
     },
     {
       "id": "feeder",

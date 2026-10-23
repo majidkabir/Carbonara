@@ -269,7 +269,7 @@ func TestOpen_Layered(t *testing.T) {
 	}
 	hubs := write("hubs.json", `{"name":"my-hubs","note":"own measurements",
 		"hubs":[{"hub_type":"transhipment","wtw_g_per_tonne":1300,"source":"own"}],
-		"container_loads":{"average":10}}`)
+		"container_loads":{"pallet_wide":12}}`)
 
 	ds, err := Open(Default + "," + hubs)
 	if err != nil {
@@ -437,5 +437,76 @@ func TestShortAlias(t *testing.T) {
 		"vehicle_aliases":[{"mode":"sea","alias":"ship2","vehicle_type":"ocean","short_vehicle_type":"nope","short_below_km":2000}]}`)
 	if _, err := Open(base + "," + over); err == nil {
 		t.Error("unknown short vehicle type accepted")
+	}
+}
+
+// GLEC v3.2 Section 1 Chapter 4 (road): DESNZ road factors are per km
+// actually driven, so a routed (shortest feasible) road distance gets the
+// +5% DAF, for fleet averages and load models alike; measured fuel needs no
+// distance, and a great-circle road distance has no DAF and is refused.
+func TestRoadDAF_GLEC(t *testing.T) {
+	ds, err := Open("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := calc.Calculator{Factors: ds, Distances: ds.Distances(), NoRoadLegs: true}
+	a, b := calc.Location{Lat: 55.6761, Lon: 12.5683}, calc.Location{Lat: 53.5511, Lon: 9.9937}
+	calcLeg := func(l calc.Leg) (calc.LegResult, error) {
+		r, err := c.Calculate(context.Background(), calc.Shipment{WeightKg: 10000, Legs: []calc.Leg{l}})
+		if err != nil {
+			return calc.LegResult{}, err
+		}
+		return r.Legs[0], nil
+	}
+	f, err := ds.LegFactor(calc.Road, "hgv")
+	if err != nil || f.DistanceBasis != calc.DistActual {
+		t.Fatalf("hgv factor = %+v, %v; want distance basis actual", f, err)
+	}
+	lr, err := calcLeg(calc.Leg{Mode: calc.Road, VehicleType: "hgv", DistanceKm: 100, DistanceType: calc.DistSFD})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if math.Abs(lr.DAF-1.05) > 1e-12 || !strings.Contains(lr.DAFSource, "GLEC") ||
+		math.Abs(lr.WTWKg-10*100*1.05*f.WTW()/1000) > 1e-9 {
+		t.Errorf("fleet average: DAF %v (%s), WTW %v", lr.DAF, lr.DAFSource, lr.WTWKg)
+	}
+	lm, err := calcLeg(calc.Leg{Mode: calc.Road, VehicleType: "hgv_artic_33t", DistanceKm: 100, DistanceType: calc.DistSFD, LoadTonnes: 14})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if math.Abs(lm.DAF-1.05) > 1e-12 || lm.Method != calc.MethodLoadModel {
+		t.Errorf("load model: method %s, DAF %v", lm.Method, lm.DAF)
+	}
+	act, err := calcLeg(calc.Leg{Mode: calc.Road, VehicleType: "hgv", DistanceKm: 100, DistanceType: calc.DistActual})
+	if err != nil || act.DAF != 0 || math.Abs(act.WTWKg*1.05-lr.WTWKg) > 1e-9 {
+		t.Errorf("actual distance: DAF %v, WTW %v, %v; want no DAF", act.DAF, act.WTWKg, err)
+	}
+	fu, err := calcLeg(calc.Leg{Mode: calc.Road, VehicleType: "hgv", DistanceKm: 100, DistanceType: calc.DistSFD,
+		Fuel: &calc.FuelUse{Fuel: "diesel", Amount: 30}})
+	if err != nil || fu.DAF != 0 {
+		t.Errorf("measured fuel: DAF %v, %v; want none", fu.DAF, err)
+	}
+	if _, err := calcLeg(calc.Leg{Mode: calc.Road, VehicleType: "hgv", From: a, To: b}); !errors.Is(err, calc.ErrNoDAF) {
+		t.Errorf("great-circle road leg: err %v, want ErrNoDAF", err)
+	}
+}
+
+// GLEC v3.2 (Section 1 Chapter 2, p. 21): TEU without a known mass is 10 t
+// per TEU on average, 6 t light, 14.5 t heavy.
+func TestContainerLoads_GLEC(t *testing.T) {
+	ds, err := Open("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, want := range map[string]float64{"average": 10, "light": 6, "heavy": 14.5} {
+		if v, err := ds.ContainerLoad(name); err != nil || v != want {
+			t.Errorf("%s = %v, %v; want %v", name, v, err, want)
+		}
+	}
+	c := calc.Calculator{Factors: ds}
+	r, err := c.Calculate(context.Background(), calc.Shipment{TEU: 3, Legs: []calc.Leg{
+		{Mode: calc.Sea, VehicleType: "container_ship", DistanceKm: 1000, DistanceType: calc.DistSFD}}})
+	if err != nil || r.WeightKg != 30000 || r.ContainerLoad != "average" {
+		t.Errorf("TEU alone: weight %v profile %q, %v", r.WeightKg, r.ContainerLoad, err)
 	}
 }
